@@ -1,0 +1,13 @@
+# ไฟล์การตั้งค่าที่มีรหัสผ่าน (ควรสร้างเป็น database.example.php แยกไว้เป็นตัวอย่างบน Github แทน)
+backend/config/database.php
+
+# โฟลเดอร์ไลบรารี (เดี๋ยวเราใช้คำสั่งโหลดใหม่ได้ ไม่ต้องเอาขึ้น)
+vendor/
+node_modules/
+
+# ไฟล์ระบบของ OS
+.DS_Store
+Thumbs.db
+
+# ไฟล์ Log
+*.log
