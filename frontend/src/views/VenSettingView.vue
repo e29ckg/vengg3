@@ -35,12 +35,17 @@
 
             <div class="card-body px-4 pb-4 pt-2">
               <ul class="list-group list-group-flush mb-4 border rounded-3 overflow-hidden">
-                <li class="list-group-item d-flex justify-content-between align-items-center border-bottom-0"
+                <li class="list-group-item d-flex justify-content-between align-items-center border-bottom-0 sub-item"
                     v-for="(sub, sIndex) in ven.subs" :key="sub.id"
-                    :style="{ backgroundColor: sub.color, color: getTextColor(sub.color) }">
+                    :style="{ backgroundColor: sub.color, color: getTextColor(sub.color) }"
+                    draggable="true" 
+                    @dragstart="onDragStartSub(sIndex, ven.id)"
+                    @dragover.prevent
+                    @drop="onDropSub(sIndex, ven.id)">
                   
-                  <span class="fw-semibold fs-6">
-                    {{ sIndex }} <span class="ms-2">{{ sub.name }}</span> 
+                  <span class="fw-semibold fs-6 d-flex align-items-center">
+                    <i class="bi bi-grip-vertical me-2 drag-handle fs-5" title="ลากเพื่อสลับตำแหน่ง"></i>
+                    {{ sub.srt }} <span class="ms-2">{{ sub.name }}</span> 
                     <span class="ms-2 badge bg-white text-dark rounded-pill shadow-sm">
                       <i class="bi bi-cash-coin text-warning me-1"></i>{{ Number(sub.price).toLocaleString() }}
                     </span>
@@ -228,7 +233,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue' // 🌟 เพิ่ม computed ที่นี่
+import { ref, onMounted, computed } from 'vue'
 import api from '../services/api'
 import Swal from 'sweetalert2'
 import { Modal } from 'bootstrap'
@@ -241,13 +246,16 @@ const venData = ref([])
 const fetchVenFullData = async () => {
   try {
     const response = await api.get('?route=admin/setting&action=ven_full')
-    venData.value = response.data
+    // 🌟 ดึงข้อมูลมาแล้ว สั่งเรียงลำดับหน้าที่ย่อย (subs) ตามค่า srt เลย
+    venData.value = response.data.map(ven => {
+      if (ven.subs) ven.subs.sort((a, b) => a.srt - b.srt)
+      return ven
+    })
   } catch (error) {
     Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลเวรได้', 'error')
   }
 }
 
-// ฟังก์ชันลบข้อมูลทั่วไป
 const deleteItem = async (table, id) => {
   const result = await Swal.fire({ title: 'ยืนยันการลบ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' })
   if (result.isConfirmed) {
@@ -256,7 +264,6 @@ const deleteItem = async (table, id) => {
   }
 }
 
-// คำนวณสีตัวอักษร
 const getTextColor = (bgColor) => {
   if (!bgColor) return '#000'
   const darkColors = ['blueviolet', 'brown', 'green', 'magenta', 'darkblue', '#8a2be2', '#a52a2a', '#008000', '#ff00ff']
@@ -287,7 +294,7 @@ const editMainVen = async (ven) => {
         id: data.id, 
         srt: data.srt || 0, 
         name: data.name, 
-        dn: data.dn || 'กลางวัน(08.30-16.30)', // 🌟 แก้จาก data.DN เป็น data.dn
+        dn: data.dn || 'กลางวัน(08.30-16.30)',
         name_full: data.name_full || '' 
       };
       Swal.close();
@@ -317,7 +324,7 @@ const submitMainVen = async () => {
 // ==========================================
 let subModalInstance = null
 const isEditingSub = ref(false)
-const subForm = ref({ id: '', ven_name_id: '', name: '', price: 0, color: 'BlueViolet' })
+const subForm = ref({ id: '', ven_name_id: '', name: '', price: 0, color: 'BlueViolet', srt: 1 }) // เพิ่ม srt
 const presetColors = ref(['BlueViolet', 'Brown', 'Green', 'Magenta', 'Teal', 'DarkBlue', 'Crimson', 'DarkOrange', '#0d6efd', '#198754', '#dc3545', '#ffc107'])
 
 const selectColor = (colorCode) => { subForm.value.color = colorCode }
@@ -325,7 +332,9 @@ const selectColor = (colorCode) => { subForm.value.color = colorCode }
 const openSubModal = (mode, venNameId, sub = null) => {
   if (mode === 'add') {
     isEditingSub.value = false
-    subForm.value = { id: '', ven_name_id: venNameId, name: '', price: 0, color: 'BlueViolet' }
+    const parentVen = venData.value.find(v => v.id === venNameId)
+    const nextSrt = parentVen && parentVen.subs ? parentVen.subs.length + 1 : 1
+    subForm.value = { id: '', ven_name_id: venNameId, name: '', price: 0, color: 'BlueViolet', srt: nextSrt }
   } else {
     isEditingSub.value = true
     subForm.value = { ...sub }
@@ -346,6 +355,44 @@ const submitSubVen = async () => {
 }
 
 // ==========================================
+// 🌟 3.1 Drag & Drop จัดเรียงหน้าที่ย่อย
+// ==========================================
+const draggedIndex = ref(null)
+const draggedVenId = ref(null)
+
+const onDragStartSub = (index, venId) => {
+  draggedIndex.value = index
+  draggedVenId.value = venId
+}
+
+const onDropSub = async (dropIndex, venId) => {
+  // เช็คว่าลากข้ามกลุ่ม หรือ ปล่อยที่เดิมหรือไม่
+  if (draggedVenId.value !== venId) return 
+  if (draggedIndex.value === dropIndex) return 
+
+  const ven = venData.value.find(v => v.id === venId)
+  
+  // สลับตำแหน่งใน Array
+  const draggedItem = ven.subs.splice(draggedIndex.value, 1)[0]
+  ven.subs.splice(dropIndex, 0, draggedItem)
+
+  // จัดเลข srt ใหม่
+  ven.subs.forEach((sub, i) => { sub.srt = i + 1 })
+
+  // เตรียมข้อมูล Payload
+  const payload = ven.subs.map(sub => ({ id: sub.id, srt: sub.srt }))
+
+  try {
+    await api.post('?route=admin/setting&table=ven_name_sub&action=update_order', payload)
+    draggedIndex.value = null
+    draggedVenId.value = null
+  } catch (error) {
+    Swal.fire('ผิดพลาด', 'ไม่สามารถบันทึกการจัดเรียงได้', 'error')
+    fetchVenFullData()
+  }
+}
+
+// ==========================================
 // 🌟 4. ส่วนจัดการผู้อยู่เวร (Ven Users)
 // ==========================================
 const activeManageSub = ref(null)
@@ -355,7 +402,6 @@ const userSearchQuery = ref('')
 let manageUsersModalInstance = null
 
 const fetchAllUsers = async () => {
-  // 🌟 ตรวจสอบ URL ให้ตรงกับ Backend ของคุณ
   const res = await api.get('?route=admin/user/list') 
   allUsers.value = res.data
 }
@@ -391,29 +437,26 @@ const removeUserFromSub = async (vuId) => {
   await fetchAssignedUsers(activeManageSub.value.id) 
 }
 
-// ฟังก์ชันบันทึกลำดับใหม่ไปที่ฐานข้อมูล
 const saveUserOrder = async () => {
   const orderedIds = assignedUsers.value.map(u => u.vu_id)
   await api.post('?route=admin/ven_user&action=update_order', { ordered_ids: orderedIds })
 }
 
-// เลื่อนขึ้น
 const moveUserUp = async (index) => {
   if (index > 0) {
     const temp = assignedUsers.value[index];
     assignedUsers.value[index] = assignedUsers.value[index - 1];
     assignedUsers.value[index - 1] = temp;
-    await saveUserOrder(); // บันทึกอัตโนมัติ
+    await saveUserOrder(); 
   }
 }
 
-// เลื่อนลง
 const moveUserDown = async (index) => {
   if (index < assignedUsers.value.length - 1) {
     const temp = assignedUsers.value[index];
     assignedUsers.value[index] = assignedUsers.value[index + 1];
     assignedUsers.value[index + 1] = temp;
-    await saveUserOrder(); // บันทึกอัตโนมัติ
+    await saveUserOrder();
   }
 }
 
@@ -442,5 +485,24 @@ onMounted(() => {
   opacity: 1 !important; 
   transform: scale(1.1); 
   transition: 0.2s; 
+}
+
+/* 🌟 สไตล์สำหรับการลากวาง (Drag & Drop) */
+.sub-item {
+  transition: transform 0.1s;
+}
+.sub-item:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+.drag-handle {
+  cursor: grab;
+  opacity: 0.6;
+}
+.drag-handle:active {
+  cursor: grabbing;
+}
+.drag-handle:hover {
+  opacity: 1;
 }
 </style>
