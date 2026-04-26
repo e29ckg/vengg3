@@ -2,10 +2,10 @@
 // backend/config/database.php
 
 class Database {
-    private $host = "127.0.0.1";
-    private $db_name = "vengg";
-    private $username = "root"; // เปลี่ยนเป็น username ฐานข้อมูลของคุณ
-    private $password = "";     // เปลี่ยนเป็น password ฐานข้อมูลของคุณ
+    private $host = "db"; 
+    private $db_name = "vengg_db";
+    private $username = "root";
+    private $password = "root"; // รหัสตาม docker-compose
     public $conn;
 
     public function getConnection() {

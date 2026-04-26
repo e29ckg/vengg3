@@ -36,6 +36,15 @@ class SettingController {
                     echo json_encode(["message" => "ลบข้อมูลสำเร็จ"]);
                 }
                 break;  
+
+            case 'create_venname':
+                if ($settingModel->createVenName($data)) {
+                    echo json_encode(["message" => "เพิ่มข้อมูลเวรสำเร็จ"]);
+                } else {
+                    http_response_code(500); echo json_encode(["error" => "ไม่สามารถเพิ่มข้อมูลได้"]);
+                }
+                break;
+                
             case 'update_venname':
                 if ($settingModel->updateVenName($data)) {
                     echo json_encode(["message" => "แก้ไขข้อมูลเวรสำเร็จ"]);
@@ -58,6 +67,14 @@ class SettingController {
                     http_response_code(500); echo json_encode(["error" => "ไม่สามารถแก้ไขข้อมูลได้"]);
                 }
                 break;
+            case 'update_order':
+                if ($settingModel->updateSubDutyOrder($data)){
+                    echo json_encode(["message" => "แก้ไขลำดับหน้าที่สำเร็จ"]);
+                } else {
+                    http_response_code(500); echo json_encode(["error" => "ไม่สามารถแก้ไขข้อมูลได้"]);
+                }
+                break;
+
             case 'get_by_id':
                 $id = $_GET['id'] ?? $data['id'];
                 $result = $settingModel->getById($table, $id);

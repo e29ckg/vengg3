@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-require_once '../config/database.php';
+require_once '../src/config/database.php';
 require_once '../src/Controllers/VenController.php';
 require_once '../src/Controllers/AuthController.php';
 require_once '../src/Controllers/UserController.php';
