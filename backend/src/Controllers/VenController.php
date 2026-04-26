@@ -19,22 +19,20 @@ class VenController {
         $ven_arr = array();
 
         if ($rowCount > 0) {
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                // จัดรูปแบบ Data ให้เข้ากับ Frontend Calendar
-                $ven_item = array(
-                    "id" => $row['id'],
-                    // นำชื่อ-นามสกุล มาต่อกันเป็น Title ให้ปฏิทิน
-                    "title" => $row['first_name'] . ' ' . $row['last_name'],
-                    "start" => $row['ven_date'], 
-                    "color" => $row['color'], // สีพื้นหลังป้ายเวร
-                    "status" => $row['status'],
-                    "role_name" => $row['role_name'],
-                    "extendedProps" => array(
-                        "ven_time" => $row['ven_time']
-                    )
-                );
-                array_push($ven_arr, $ven_item);
-            }
+            $events = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $events[] = [
+                'id' => $row['id'],
+                'title' => $row['title'],
+                'date' => $row['date'],
+                'backgroundColor' => $row['backgroundColor'],
+                'ven_time' => $row['ven_time']
+            ];
+        }
+
+        // ส่งข้อมูลออกไป
+        echo json_encode($events);
+        exit; // 🌟 เติมบรรทัดนี้! เพื่อสั่งให้ PHP หยุดทำงานทันที ป้องกันไม่ให้มี [] หรือขยะอื่นๆ ตามมาต่อท้าย
         }
         
         // ส่งผลลัพธ์กลับไปเป็น JSON

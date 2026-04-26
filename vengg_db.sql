@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1
+-- version 5.2.2
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1
--- Generation Time: Apr 23, 2026 at 11:10 AM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- Host: db
+-- Generation Time: Apr 26, 2026 at 05:32 PM
+-- Server version: 8.0.42
+-- PHP Version: 8.2.27
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `vengg`
+-- Database: `vengg_db`
 --
 
 -- --------------------------------------------------------
@@ -28,10 +28,10 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `dep` (
-  `id` int(11) NOT NULL,
-  `name` varchar(255) NOT NULL,
+  `id` int NOT NULL,
+  `name` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
   `created_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 --
 -- Dumping data for table `dep`
@@ -71,10 +71,10 @@ INSERT INTO `dep` (`id`, `name`, `created_at`) VALUES
 --
 
 CREATE TABLE `fname` (
-  `id` int(11) NOT NULL,
-  `name` varchar(255) NOT NULL,
+  `id` int NOT NULL,
+  `name` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
   `created_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 --
 -- Dumping data for table `fname`
@@ -88,7 +88,8 @@ INSERT INTO `fname` (`id`, `name`, `created_at`) VALUES
 (5, 'พ.ต.อ.', NULL),
 (6, 'พท.', NULL),
 (7, 'สิบตำรวจเอก', NULL),
-(8, 'หม่อมหลวง', NULL);
+(8, 'หม่อมหลวงๅ', NULL),
+(9, 'ฟฟฟ', NULL);
 
 -- --------------------------------------------------------
 
@@ -97,10 +98,10 @@ INSERT INTO `fname` (`id`, `name`, `created_at`) VALUES
 --
 
 CREATE TABLE `group` (
-  `id` int(11) NOT NULL,
-  `name` varchar(255) NOT NULL,
+  `id` int NOT NULL,
+  `name` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
   `created_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 --
 -- Dumping data for table `group`
@@ -128,11 +129,11 @@ INSERT INTO `group` (`id`, `name`, `created_at`) VALUES
 --
 
 CREATE TABLE `line` (
-  `id` int(11) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `token` varchar(255) DEFAULT NULL,
-  `status` smallint(6) DEFAULT 1
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `id` int NOT NULL,
+  `name` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
+  `token` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `status` smallint DEFAULT '1'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 --
 -- Dumping data for table `line`
@@ -150,29 +151,29 @@ INSERT INTO `line` (`id`, `name`, `token`, `status`) VALUES
 --
 
 CREATE TABLE `profile` (
-  `id` int(11) NOT NULL,
-  `user_id` varchar(255) DEFAULT NULL,
-  `id_card` varchar(255) DEFAULT NULL,
-  `fname` varchar(25) DEFAULT NULL,
-  `fname_id` int(11) DEFAULT NULL,
-  `name` varchar(255) DEFAULT NULL,
-  `sname` varchar(255) DEFAULT NULL,
-  `img` varchar(255) DEFAULT NULL,
+  `id` int NOT NULL,
+  `user_id` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `id_card` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `fname` varchar(25) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `fname_id` int DEFAULT NULL,
+  `name` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `sname` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `img` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `birthday` date DEFAULT NULL,
-  `bloodtype` varchar(255) DEFAULT NULL,
-  `dep` varchar(255) DEFAULT NULL,
-  `dep_id` int(11) DEFAULT NULL,
-  `workgroup` varchar(255) DEFAULT NULL,
-  `group_id` int(11) DEFAULT NULL,
-  `address` varchar(255) DEFAULT NULL,
-  `phone` varchar(255) DEFAULT NULL,
-  `bank_account` varchar(100) DEFAULT NULL,
-  `bank_comment` varchar(200) DEFAULT NULL,
-  `status` smallint(6) DEFAULT 10,
+  `bloodtype` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `dep` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `dep_id` int DEFAULT NULL,
+  `workgroup` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `group_id` int DEFAULT NULL,
+  `address` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `phone` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `bank_account` varchar(100) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `bank_comment` varchar(200) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `status` smallint DEFAULT '10',
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
-  `st` smallint(6) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `st` smallint DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 --
 -- Dumping data for table `profile`
@@ -196,13 +197,13 @@ INSERT INTO `profile` (`id`, `user_id`, `id_card`, `fname`, `fname_id`, `name`, 
 --
 
 CREATE TABLE `sign_name` (
-  `id` int(11) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `dep` varchar(255) NOT NULL,
-  `dep2` varchar(255) NOT NULL,
-  `dep3` varchar(255) NOT NULL,
-  `role` varchar(255) NOT NULL,
-  `st` int(11) DEFAULT 1
+  `id` int NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `dep` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `dep2` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `dep3` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `role` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `st` int DEFAULT '1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -221,24 +222,24 @@ INSERT INTO `sign_name` (`id`, `name`, `dep`, `dep2`, `dep3`, `role`, `st`) VALU
 --
 
 CREATE TABLE `user` (
-  `id` int(11) NOT NULL,
-  `username` varchar(255) NOT NULL,
-  `auth_key` varchar(32) DEFAULT NULL,
-  `password_hash` varchar(255) NOT NULL,
-  `password_reset_token` varchar(255) DEFAULT NULL,
-  `email` varchar(255) DEFAULT NULL,
-  `role` smallint(6) NOT NULL DEFAULT 1,
-  `status` smallint(6) NOT NULL DEFAULT 10,
+  `id` int NOT NULL,
+  `username` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
+  `auth_key` varchar(32) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `password_hash` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
+  `password_reset_token` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `email` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `role` smallint NOT NULL DEFAULT '1',
+  `status` smallint NOT NULL DEFAULT '10',
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 --
 -- Dumping data for table `user`
 --
 
 INSERT INTO `user` (`id`, `username`, `auth_key`, `password_hash`, `password_reset_token`, `email`, `role`, `status`, `created_at`, `updated_at`) VALUES
-(1, 'admin', NULL, '$2y$10$SjrUtSxJ8dcOU2cnkltWbOFNzXpCKhd0.5McR3qskS0nIVsOLZrT2', NULL, NULL, 9, 10, '2023-12-14 09:54:13', '2024-04-27 18:13:27'),
+(1, 'admin', 'c06e8012eb737091e547b4fc269de59b', '$2y$10$SjrUtSxJ8dcOU2cnkltWbOFNzXpCKhd0.5McR3qskS0nIVsOLZrT2', NULL, NULL, 9, 10, '2023-12-14 09:54:13', '2024-04-27 18:13:27'),
 (1680162049, 'j1', NULL, '$2y$10$ZYsif1LMin6gCWhKLZZ4hObuMqc8CtHBfPQ2jf/BL4ayNDvCO4hjq', NULL, NULL, 1, 10, '2025-09-02 11:14:34', '2025-09-02 11:14:34'),
 (1680162050, 'j2', NULL, '$2y$10$EWjmeA.i7d1ZaEZAOv3zouA3r0fBsJUu6VUaJ5WYF8WKgOLi5p8wK', NULL, NULL, 1, 10, '2025-09-02 11:15:07', '2025-09-02 11:15:07'),
 (1680162051, 'j3', NULL, '$2y$10$p8jIYxzYWdvsMupgq063w.hnOR0HX4bMixbUX8U0KkDd5zoZ2Mdiq', NULL, NULL, 1, 10, '2025-09-02 11:15:44', '2025-09-02 11:15:44'),
@@ -255,23 +256,23 @@ INSERT INTO `user` (`id`, `username`, `auth_key`, `password_hash`, `password_res
 --
 
 CREATE TABLE `ven` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `ven_com_id` int(11) DEFAULT NULL,
-  `ven_com_idb` varchar(255) DEFAULT NULL,
+  `id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `ven_com_id` int DEFAULT NULL,
+  `ven_com_idb` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `ven_date` date NOT NULL,
-  `ven_time` varchar(255) NOT NULL,
-  `vn_id` int(11) DEFAULT NULL,
-  `vns_id` int(11) DEFAULT NULL,
-  `gcal_id` varchar(255) DEFAULT NULL,
-  `ref1` varchar(255) DEFAULT NULL,
-  `ref2` varchar(255) DEFAULT NULL,
-  `file` varchar(255) DEFAULT NULL,
-  `comment` varchar(255) DEFAULT NULL,
-  `status` int(11) DEFAULT NULL,
+  `ven_time` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
+  `vn_id` int DEFAULT NULL,
+  `vns_id` int DEFAULT NULL,
+  `gcal_id` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `ref1` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `ref2` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `file` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `comment` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `status` int DEFAULT NULL,
   `update_at` datetime DEFAULT NULL,
   `create_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 --
 -- Dumping data for table `ven`
@@ -300,29 +301,14 @@ INSERT INTO `ven` (`id`, `user_id`, `ven_com_id`, `ven_com_idb`, `ven_date`, `ve
 --
 
 CREATE TABLE `ven_change` (
-  `id` varchar(255) NOT NULL,
-  `ven_month` varchar(255) DEFAULT NULL,
-  `ven_date1` varchar(255) DEFAULT NULL,
-  `ven_date2` varchar(255) DEFAULT NULL,
-  `ven_com_id` varchar(255) DEFAULT NULL,
-  `ven_com_idb` int(11) NOT NULL,
-  `vn_id` int(11) NOT NULL,
-  `vns_id` int(11) NOT NULL,
-  `ven_id1` int(11) DEFAULT NULL,
-  `ven_id2` int(11) DEFAULT NULL,
-  `ven_id1_old` int(11) DEFAULT NULL,
-  `ven_id2_old` int(11) DEFAULT NULL,
-  `user_id1` int(11) DEFAULT NULL,
-  `user_id2` int(11) DEFAULT NULL,
-  `s_po` int(11) DEFAULT NULL,
-  `s_bb` int(11) DEFAULT NULL,
-  `file` varchar(255) DEFAULT NULL,
-  `status` varchar(255) DEFAULT NULL,
-  `ref1` varchar(255) DEFAULT NULL,
-  `ref2` varchar(255) DEFAULT NULL,
-  `comment` varchar(255) DEFAULT NULL,
-  `create_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `id` int NOT NULL,
+  `s1_id` int NOT NULL COMMENT 'รหัสตารางเวรของผู้ขอ (ven_schedule.id)',
+  `user1_id` int NOT NULL COMMENT 'รหัสผู้ขอแลก',
+  `s2_id` int NOT NULL COMMENT 'รหัสตารางเวรของเพื่อน (ven_schedule.id)',
+  `user2_id` int NOT NULL COMMENT 'รหัสเพื่อนที่ถูกขอแลก',
+  `status` int DEFAULT '0' COMMENT '0=รออนุมัติ, 1=ยอมรับแล้ว, 2=ปฏิเสธ',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -331,26 +317,27 @@ CREATE TABLE `ven_change` (
 --
 
 CREATE TABLE `ven_com` (
-  `id` int(11) NOT NULL,
-  `ven_com_num` varchar(255) DEFAULT NULL,
-  `ven_com_date` varchar(255) DEFAULT NULL,
-  `ven_month` varchar(255) DEFAULT NULL,
-  `status` varchar(255) DEFAULT NULL,
-  `vn_id` int(11) DEFAULT NULL,
-  `comment` varchar(255) DEFAULT NULL,
-  `file` varchar(255) DEFAULT NULL,
-  `ref` varchar(255) DEFAULT NULL,
+  `id` int NOT NULL,
+  `com_num` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `com_date` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `ven_month` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `ven_name_id` int DEFAULT NULL,
+  `ven_com_days` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
+  `comment` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `file` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `ref` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `create_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 --
 -- Dumping data for table `ven_com`
 --
 
-INSERT INTO `ven_com` (`id`, `ven_com_num`, `ven_com_date`, `ven_month`, `status`, `vn_id`, `comment`, `file`, `ref`, `create_at`) VALUES
-(1756793049, '4/2568', '2025-09-02', '2025-12', '1', 24, NULL, NULL, 'dsSjTmgnRw9My4NeQ25A', NULL),
-(1765858095, '4/2568', '2025-12-16', '2025-12', '1', 25, NULL, NULL, '16grxL3Ot4AcQmjaRZPW', NULL),
-(1772680473, '999/9999', '2026-03-05', '2026-03', '1', 25, NULL, NULL, '3AnblhvKL7xjcdugH6kz', NULL);
+INSERT INTO `ven_com` (`id`, `com_num`, `com_date`, `ven_month`, `status`, `ven_name_id`, `ven_com_days`, `comment`, `file`, `ref`, `create_at`) VALUES
+(1765858095, '4/2568', '2025-12-16', '2025-12', '1', 25, '', NULL, NULL, '16grxL3Ot4AcQmjaRZPW', NULL),
+(1772680473, '999/9999', '2026-03-05', '2026-04', '1', 24, '4,5,10,11', NULL, NULL, '3AnblhvKL7xjcdugH6kz', NULL),
+(1772680474, '222', '2026-04-26', '2026-04', '1', 25, '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -359,13 +346,13 @@ INSERT INTO `ven_com` (`id`, `ven_com_num`, `ven_com_date`, `ven_month`, `status
 --
 
 CREATE TABLE `ven_name` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `name` varchar(255) NOT NULL,
-  `name_full` text DEFAULT NULL,
+  `name_full` text,
   `DN` varchar(255) DEFAULT NULL,
   `word` varchar(255) DEFAULT NULL,
-  `srt` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+  `srt` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Dumping data for table `ven_name`
@@ -386,13 +373,13 @@ INSERT INTO `ven_name` (`id`, `name`, `name_full`, `DN`, `word`, `srt`) VALUES
 --
 
 CREATE TABLE `ven_name_sub` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `name` varchar(255) NOT NULL,
-  `ven_name_id` int(11) NOT NULL,
-  `price` int(11) DEFAULT NULL,
+  `ven_name_id` int NOT NULL,
+  `price` int DEFAULT NULL,
   `color` varchar(255) DEFAULT NULL,
-  `srt` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+  `srt` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Dumping data for table `ven_name_sub`
@@ -402,21 +389,77 @@ INSERT INTO `ven_name_sub` (`id`, `name`, `ven_name_id`, `price`, `color`, `srt`
 (109, 'ผู้พิพากษา', 25, 2500, 'Violet', 0),
 (110, 'จนท', 25, 1200, 'Violet', 1),
 (113, 'ผู้พิพากษา', 27, 2000, 'Green', 0),
-(115, 'ผู้พิพากษา', 28, 3000, 'Brown', 0),
+(115, 'ผู้พิพากษา', 28, 3000, 'Brown', 3),
 (116, 'รับฟ้อง+ปชส ', 28, 1500, 'Brown', 1),
 (117, 'งานรับฟ้อง', 24, 1500, 'BlueViolet', 1),
 (118, 'งานหน้าบัลลังก์', 24, 1500, 'BlueViolet', 2),
-(119, 'งานหมาย', 24, 1500, 'BlueViolet', 3),
-(120, 'งานประชาสัมพันธ์', 24, 1500, 'BlueViolet', 4),
-(121, 'งานการเงิน', 24, 1500, 'BlueViolet', 5),
+(119, 'งานหมาย', 24, 1500, 'BlueViolet', 4),
+(120, 'งานประชาสัมพันธ์', 24, 1500, 'BlueViolet', 5),
+(121, 'งานการเงิน', 24, 1500, 'BlueViolet', 6),
 (123, 'รับฟ้อง+ปชส', 27, 1000, 'Green', 1),
 (124, 'การเงิน+ปล่อยตัวชั่วคราว', 27, 1000, 'Green', 2),
 (125, 'หน้าบัลลังก์', 27, 1000, 'Green', 3),
 (128, 'การเงิน+ปล่อยตัวชั่วคราว ', 28, 1500, 'Brown', 2),
-(129, 'หน้าบัลลังก์', 28, 1500, 'Brown', 3),
-(130, 'ผู้พิพากษา', 24, 3000, 'BlueViolet', 0),
+(129, 'หน้าบัลลังก์', 28, 1500, 'Brown', 4),
+(130, 'ผู้พิพากษา', 24, 3000, 'BlueViolet', 3),
 (133, 'ผู้พิพากษาสมทบ', 29, 1000, 'Magenta', 0),
-(134, 'ผู้พิพากษาสมทบ', 30, 1000, 'DarkCyan', 0);
+(134, 'ผู้พิพากษาสมทบ', 30, 1000, 'DarkCyan', 0),
+(135, 'z^hrld', 31, 160, 'Magenta', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ven_schedule`
+--
+
+CREATE TABLE `ven_schedule` (
+  `id` int NOT NULL,
+  `ven_date` date NOT NULL COMMENT 'วันที่ปฏิบัติหน้าที่ (YYYY-MM-DD)',
+  `ven_com_id` int NOT NULL COMMENT 'อ้างอิงรหัสคำสั่งจากตาราง ven_com',
+  `ven_name_sub_id` int NOT NULL COMMENT 'อ้างอิงรหัสหน้าที่ย่อยจากตาราง ven_name_sub',
+  `user_id` int NOT NULL COMMENT 'อ้างอิงรหัสพนักงานจากตาราง user',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `ven_schedule`
+--
+
+INSERT INTO `ven_schedule` (`id`, `ven_date`, `ven_com_id`, `ven_name_sub_id`, `user_id`, `created_at`) VALUES
+(31, '2026-04-04', 1772680473, 117, 1680162056, '2026-04-26 15:28:22'),
+(78, '2026-04-11', 1772680473, 117, 1680162051, '2026-04-26 15:45:56'),
+(82, '2026-04-10', 1772680473, 117, 1680162052, '2026-04-26 15:48:13'),
+(84, '2026-04-10', 1772680473, 117, 1680162054, '2026-04-26 15:49:35'),
+(85, '2026-04-06', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
+(86, '2026-04-02', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
+(87, '2026-04-03', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
+(88, '2026-04-01', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
+(89, '2026-04-04', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
+(90, '2026-04-05', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
+(91, '2026-04-08', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
+(92, '2026-04-11', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
+(93, '2026-04-07', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
+(94, '2026-04-10', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
+(95, '2026-04-12', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
+(96, '2026-04-09', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
+(97, '2026-04-13', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
+(98, '2026-04-16', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
+(99, '2026-04-15', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
+(100, '2026-04-14', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
+(101, '2026-04-18', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
+(102, '2026-04-17', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
+(103, '2026-04-22', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
+(104, '2026-04-20', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
+(105, '2026-04-21', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
+(106, '2026-04-19', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
+(107, '2026-04-27', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
+(108, '2026-04-23', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
+(109, '2026-04-26', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
+(110, '2026-04-25', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
+(111, '2026-04-28', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
+(112, '2026-04-24', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
+(113, '2026-04-29', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
+(114, '2026-04-30', 1772680474, 109, 1680162051, '2026-04-26 17:23:59');
 
 -- --------------------------------------------------------
 
@@ -425,29 +468,36 @@ INSERT INTO `ven_name_sub` (`id`, `name`, `ven_name_id`, `price`, `color`, `srt`
 --
 
 CREATE TABLE `ven_user` (
-  `vu_id` int(11) NOT NULL,
-  `user_id` int(11) DEFAULT NULL,
-  `order` int(2) DEFAULT NULL,
-  `vn_id` int(11) NOT NULL,
-  `vns_id` int(11) DEFAULT NULL,
-  `comment` varchar(255) DEFAULT NULL,
+  `id` int NOT NULL,
+  `user_id` varchar(36) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `order_num` int DEFAULT NULL,
+  `ven_name_sub_id` int DEFAULT NULL,
+  `comment` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `create_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 --
 -- Dumping data for table `ven_user`
 --
 
-INSERT INTO `ven_user` (`vu_id`, `user_id`, `order`, `vn_id`, `vns_id`, `comment`, `create_at`) VALUES
-(719, 1680162049, 1, 24, 130, '', '2025-09-02 01:03:12'),
-(720, 1680162050, 2, 24, 130, '', '2025-09-02 01:03:16'),
-(721, 1680162051, 3, 24, 130, '', '2025-09-02 01:03:20'),
-(722, 1680162049, 0, 27, 113, '', '2025-12-16 11:12:55'),
-(723, 1680162050, 0, 27, 113, '', '2025-12-16 11:12:59'),
-(724, 1680162051, 0, 27, 113, '', '2025-12-16 11:13:03'),
-(725, 1680162049, 0, 25, 109, '', '2025-12-16 11:13:44'),
-(726, 1680162050, 0, 25, 109, '', '2025-12-16 11:13:47'),
-(727, 1680162051, 0, 25, 109, '', '2025-12-16 11:13:50');
+INSERT INTO `ven_user` (`id`, `user_id`, `order_num`, `ven_name_sub_id`, `comment`, `create_at`) VALUES
+(719, '1680162049', 1, 130, '', '2025-09-02 01:03:12'),
+(720, '1680162050', 2, 130, '', '2025-09-02 01:03:16'),
+(721, '1680162051', 3, 130, '', '2025-09-02 01:03:20'),
+(722, '1680162049', 0, 113, '', '2025-12-16 11:12:55'),
+(723, '1680162050', 0, 113, '', '2025-12-16 11:12:59'),
+(724, '1680162051', 0, 113, '', '2025-12-16 11:13:03'),
+(725, '1680162049', 0, 109, '', '2025-12-16 11:13:44'),
+(726, '1680162050', 0, 109, '', '2025-12-16 11:13:47'),
+(727, '1680162051', 0, 109, '', '2025-12-16 11:13:50'),
+(728, '1680162056', 1, 115, NULL, NULL),
+(729, '1680162053', 3, 115, NULL, NULL),
+(730, '1680162055', 2, 115, NULL, NULL),
+(731, '1680162056', NULL, 133, NULL, NULL),
+(732, '1680162056', NULL, 117, NULL, NULL),
+(733, '1680162054', NULL, 117, NULL, NULL),
+(734, '1680162052', NULL, 117, NULL, NULL),
+(735, '1680162051', NULL, 117, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -532,11 +582,20 @@ ALTER TABLE `ven_name_sub`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `ven_schedule`
+--
+ALTER TABLE `ven_schedule`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_ven_date` (`ven_date`),
+  ADD KEY `idx_ven_com` (`ven_com_id`),
+  ADD KEY `idx_ven_sub` (`ven_name_sub_id`),
+  ADD KEY `idx_user` (`user_id`);
+
+--
 -- Indexes for table `ven_user`
 --
 ALTER TABLE `ven_user`
-  ADD PRIMARY KEY (`vu_id`) USING BTREE,
-  ADD KEY `vn_id` (`vn_id`);
+  ADD PRIMARY KEY (`id`) USING BTREE;
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -546,67 +605,79 @@ ALTER TABLE `ven_user`
 -- AUTO_INCREMENT for table `dep`
 --
 ALTER TABLE `dep`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `fname`
 --
 ALTER TABLE `fname`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `group`
 --
 ALTER TABLE `group`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `line`
 --
 ALTER TABLE `line`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- AUTO_INCREMENT for table `sign_name`
 --
 ALTER TABLE `sign_name`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `user`
 --
 ALTER TABLE `user`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1680162057;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1680162057;
 
 --
 -- AUTO_INCREMENT for table `ven`
 --
 ALTER TABLE `ven`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1772680493;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1772680493;
+
+--
+-- AUTO_INCREMENT for table `ven_change`
+--
+ALTER TABLE `ven_change`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `ven_com`
 --
 ALTER TABLE `ven_com`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1772680474;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1772680475;
 
 --
 -- AUTO_INCREMENT for table `ven_name`
 --
 ALTER TABLE `ven_name`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
 -- AUTO_INCREMENT for table `ven_name_sub`
 --
 ALTER TABLE `ven_name_sub`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=135;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=137;
+
+--
+-- AUTO_INCREMENT for table `ven_schedule`
+--
+ALTER TABLE `ven_schedule`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=115;
 
 --
 -- AUTO_INCREMENT for table `ven_user`
 --
 ALTER TABLE `ven_user`
-  MODIFY `vu_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=728;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=736;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

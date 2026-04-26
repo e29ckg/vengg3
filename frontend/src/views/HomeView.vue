@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-light min-vh-100">
+  <div class="bg-light min-vh-100 d-flex flex-column pb-4">
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
       <div class="container-fluid px-4">
         <a class="navbar-brand fw-bold fs-4" href="#"><i class="bi bi-calendar-check me-2"></i>Vengg3</a>
@@ -17,6 +17,7 @@
                 <li><a class="dropdown-item" href="#">พิมพ์คำสั่ง</a></li>
               </ul>
             </li>
+            
             <li class="nav-item dropdown" v-if="userRole === 9 || userRole === 2">
               <a class="nav-link dropdown-toggle fw-bold text-info" 
                  @click.prevent="toggleDirectorMenu" 
@@ -34,15 +35,15 @@
                     <i class="bi bi-card-checklist me-2 text-success"></i>จัดการชื่อเวร/กลุ่มหน้าที่
                   </router-link>
                 </li>
-                </ul>
+              </ul>
             </li>
+            
             <li class="nav-item dropdown" v-if="userRole === 9">
                 <a class="nav-link dropdown-toggle text-warning fw-bold" 
-                    @click.prevent="toggleAdminMenu" 
-                    style="cursor: pointer;">
+                   @click.prevent="toggleAdminMenu" 
+                   style="cursor: pointer;">
                     <i class="bi bi-shield-lock-fill me-1"></i>ผู้ดูแลระบบ
                 </a>
-
                 <ul class="dropdown-menu shadow border-0 mt-2 rounded-3" :class="{ 'show': isAdminMenuOpen }">
                     <li>
                     <router-link class="dropdown-item py-2" to="/admin/users">
@@ -56,8 +57,9 @@
                     </router-link>
                     </li>
                 </ul>
-                </li>
+            </li>
           </ul>
+          
           <div class="d-flex align-items-center">
             <span class="text-light me-3 fw-semibold"><i class="bi bi-person-circle me-1"></i> {{ currentUsername }}</span>
             <button class="btn btn-light btn-sm rounded-pill fw-bold text-danger px-3 shadow-sm" @click="handleLogout">ออกจากระบบ</button>
@@ -66,14 +68,67 @@
       </div>
     </nav>
 
-    <div class="container-fluid py-4 px-4">
-      <div class="card shadow-sm border-0 rounded-4 p-4">
-        <div v-if="isLoading" class="text-center py-5">
-          <div class="spinner-border text-primary" role="status"></div>
-          <p class="mt-2 text-muted fw-semibold">กำลังดึงข้อมูลปฏิทิน...</p>
+    <div class="container-fluid py-4 px-4 flex-grow-1 d-flex flex-column">
+      <div class="card shadow-sm border-0 rounded-4 flex-grow-1 d-flex flex-column overflow-hidden">
+        
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+          <h4 class="fw-bold mb-0 text-primary">
+            <i class="bi bi-calendar3 me-2"></i>ตารางเวรเดือน {{ formatMonthThai(currentMonth) }}
+          </h4>
+          
+          <div class="d-flex gap-2">
+            <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border">
+              <button class="btn btn-light border-end" @click="changeMonth(-1)"><i class="bi bi-chevron-left"></i></button>
+              <select class="form-select border-0 text-center fw-bold bg-white" v-model="selMonth" @change="updateCurrentMonth" style="width: 120px;">
+                <option v-for="(m, idx) in thaiMonths" :key="idx" :value="String(idx + 1).padStart(2, '0')">{{ m }}</option>
+              </select>
+              <select class="form-select border-0 border-start text-center fw-bold bg-white" v-model="selYear" @change="updateCurrentMonth" style="width: 100px;">
+                <option v-for="y in yearList" :key="y" :value="y">{{ y }}</option>
+              </select>
+              <button class="btn btn-light border-start" @click="changeMonth(1)"><i class="bi bi-chevron-right"></i></button>
+            </div>
+            <button class="btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm" @click="goToToday">วันนี้</button>
+          </div>
         </div>
-        <div v-else class="calendar-container">
-          <FullCalendar :options="calendarOptions" />
+
+        <div v-if="isLoading" class="text-center py-5 flex-grow-1 d-flex flex-column justify-content-center">
+          <div class="spinner-border text-primary mx-auto mb-2" role="status"></div>
+          <p class="text-muted fw-semibold">กำลังดึงข้อมูลปฏิทิน...</p>
+        </div>
+
+        <div v-else class="d-flex flex-column flex-grow-1 px-4 pb-4 overflow-hidden">
+          
+          <div class="row g-0 bg-dark text-white fw-bold text-center py-2 shadow-sm rounded-top-3">
+            <div class="col" v-for="day in weekDays" :key="day">{{ day }}</div>
+          </div>
+
+          <div class="calendar-grid bg-light flex-grow-1 overflow-auto p-2 border border-top-0 rounded-bottom-3 custom-scrollbar">
+            <div class="day-cell blank" v-for="b in blankDays" :key="'b'+b"></div>
+
+            <div class="day-cell border rounded-3 d-flex flex-column bg-white shadow-sm transition-hover" 
+                 v-for="day in daysInMonth" :key="day">
+              
+              <div class="day-header fw-bold border-bottom px-2 py-1 text-end"
+                   :class="{ 'bg-primary text-white': isToday(day), 'bg-light text-secondary': !isToday(day) }">
+                {{ day }}
+              </div>
+              
+              <div class="day-body p-1 flex-grow-1 overflow-auto custom-scrollbar">
+                <div v-for="sch in getSchedulesForDay(day)" :key="sch.id" 
+                     class="schedule-item mb-1 p-1 rounded-1 shadow-sm d-flex flex-column"
+                     style="cursor: pointer; border-left: 4px solid rgba(0,0,0,0.2);"
+                     :style="{ backgroundColor: sch.backgroundColor, color: '#fff' }"
+                     @click="openShiftDetail(sch.id)">
+                  
+                  <div class="fw-bold d-flex justify-content-between align-items-center" style="font-size: 0.7rem;">
+                    <span><i class="bi bi-clock me-1"></i>{{ sch.ven_time ? sch.ven_time.substring(0,5) : '' }}</span>
+                  </div>
+                  <div class="text-truncate fw-semibold" style="font-size: 0.75rem;">{{ sch.title }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -100,23 +155,44 @@
 
             <div class="bg-light border rounded-3 p-3 text-start mb-4 shadow-sm">
               <p class="mb-2"><i class="bi bi-calendar-event me-2 text-primary"></i> 
-                <strong>{{ formatDate(selectedVen.ven_date) }}</strong> (เวลา {{ selectedVen.ven_time.substring(0,5) }} น.)
+                <strong>{{ formatDate(selectedVen.ven_date) }}</strong> <span v-if="selectedVen.ven_time">(เวลา {{ selectedVen.ven_time.substring(0,5) }} น.)</span>
               </p>
               <p class="mb-2"><i class="bi bi-moon-stars me-2 text-warning"></i> {{ selectedVen.duty_main }}</p>
               <p class="mb-2"><i class="bi bi-file-earmark-text me-2 text-secondary"></i> คำสั่งที่ {{ selectedVen.command_num }}</p>
               <p class="mb-0 text-success fw-bold fs-5"><i class="bi bi-cash-coin me-2"></i> {{ Number(selectedVen.price).toLocaleString() }} บาท</p>
             </div>
 
-            <div class="d-grid gap-2">
-              <button class="btn btn-primary rounded-pill fw-bold shadow-sm py-2">
+            <div v-if="selectedVen.user_id == currentUserId">
+              <button class="btn btn-primary rounded-pill fw-bold shadow-sm py-2 w-100 mb-2">
                 <i class="bi bi-file-earmark-check me-1"></i> รายงานการปฏิบัติหน้าที่
               </button>
-              <button class="btn btn-warning rounded-pill fw-bold text-dark shadow-sm py-2">
-                <i class="bi bi-arrow-left-right me-1"></i> ขอสลับเวร / ยกเวรให้ผู้อื่น
+              
+              <button v-if="!showRecipientList" class="btn btn-warning rounded-pill fw-bold text-dark shadow-sm py-2 w-100" @click="loadRecipients">
+                <i class="bi bi-arrow-left-right me-1"></i> ยกเวรนี้ให้ผู้อื่น
               </button>
-            </div>
-          </div>
 
+              <div v-if="showRecipientList" class="mt-3 text-start border border-warning rounded-3 p-2 bg-white shadow-sm">
+                <label class="form-label fw-bold small text-primary mb-2 px-1">เลือกผู้ที่ต้องการยกเวรให้:</label>
+                <div class="list-group list-group-flush border rounded-3 overflow-auto custom-scrollbar" style="max-height: 180px;">
+                  <button v-for="user in recipients" :key="user.user_id" 
+                          class="list-group-item list-group-item-action small py-2 d-flex align-items-center"
+                          @click="confirmTransfer(user)">
+                    <i class="bi bi-person-plus-fill me-2 text-success fs-5"></i>
+                    <span class="fw-semibold">{{ user.prefix }}{{ user.name }} {{ user.sname }}</span>
+                  </button>
+                  <div v-if="recipients.length === 0" class="p-3 text-center text-muted small">ไม่พบผู้มีสิทธิ์ท่านอื่นในหน้าที่นี้</div>
+                </div>
+                <div class="text-center mt-2">
+                  <button class="btn btn-link btn-sm text-decoration-none text-muted" @click="showRecipientList = false">ยกเลิก</button>
+                </div>
+              </div>
+            </div>
+            
+            <div v-else class="alert alert-secondary border-0 small text-center mt-3 mb-0">
+              <i class="bi bi-info-circle me-1"></i> การเปลี่ยนเวรหรือยกเวร สามารถทำได้เฉพาะเวรของตนเองเท่านั้น
+            </div>
+
+          </div>
         </div>
       </div>
     </div>
@@ -125,110 +201,107 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
 import Swal from 'sweetalert2'
-import { Modal } from 'bootstrap' // นำเข้าไลบรารี Modal ของ Bootstrap
-
-import FullCalendar from '@fullcalendar/vue3'
-import dayGridPlugin from '@fullcalendar/daygrid'
-import interactionPlugin from '@fullcalendar/interaction'
-import thLocale from '@fullcalendar/core/locales/th'
+import { Modal } from 'bootstrap'
 import api from '../services/api'
 
 const router = useRouter()
 const currentUsername = ref(localStorage.getItem('username') || 'ผู้ใช้งาน')
 const userRole = parseInt(localStorage.getItem('role') || 1)
+const currentUserId = ref(parseInt(localStorage.getItem('user_id')) || 0)
 const isLoading = ref(true)
 
-// ตัวแปรสำหรับเก็บข้อมูลที่จะแสดงใน Modal
-const selectedVen = ref(null)
-let detailModalInstance = null // เก็บตัวแปรควบคุม Modal
-
+// เมนู
 const isAdminMenuOpen = ref(false)
 const toggleAdminMenu = () => { isAdminMenuOpen.value = !isAdminMenuOpen.value }
-
-// 🌟 เพิ่มตัวแปรคุมเมนู "งานอำนวยการ"
 const isDirectorMenuOpen = ref(false)
 const toggleDirectorMenu = () => { isDirectorMenuOpen.value = !isDirectorMenuOpen.value }
 
-const calendarOptions = ref({
-  plugins: [dayGridPlugin, interactionPlugin],
-  initialView: 'dayGridMonth',
-  locales: [thLocale],
-  locale: 'th',
-  height: 'auto',
-  headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth' },
-  events: [],
-  
-  eventContent: (arg) => {
-    const timeStr = arg.event.extendedProps.ven_time ? arg.event.extendedProps.ven_time.substring(0, 5) : '';
-    return {
-      html: `
-        <div class="p-1 rounded shadow-sm text-white w-100 overflow-hidden" 
-             style="background-color: ${arg.event.backgroundColor}; font-size: 0.85em; cursor: pointer; border-left: 4px solid rgba(0,0,0,0.2);">
-          <div class="fw-bold text-truncate"><i class="bi bi-clock me-1"></i>${timeStr}</div>
-          <div class="text-truncate">${arg.event.title}</div>
-        </div>
-      `
-    }
-  },
-  
-  // 🌟 เมื่อคลิกที่ป้ายเวร ให้วิ่งไปดึงข้อมูลแล้วเปิด Modal
-  eventClick: async (info) => {
-    const venId = info.event.id;
-    const token = localStorage.getItem('token')
+// --- 🌟 จัดการเรื่องปฏิทิน Custom ---
+const todayDate = new Date()
+const thaiMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
+const weekDays = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์']
 
-    try {
-      // แสดงตัวโหลดแบบ Pop-up ชั่วคราว
-      Swal.fire({ title: 'กำลังโหลดข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+const selMonth = ref(String(todayDate.getMonth() + 1).padStart(2, '0'))
+const selYear = ref(todayDate.getFullYear() + 543)
+const currentMonth = ref(`${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}`)
 
-      // ดึงข้อมูลรายบุคคลจาก API
-      const response = await api.get(`?route=ven/detail&id=${venId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+const allSchedules = ref([])
 
-      // นำข้อมูลที่ได้ใส่ลงในตัวแปร selectedVen
-      selectedVen.value = response.data;
-      
-      // ปิดตัวโหลด Swal และเปิด Bootstrap Modal
-      Swal.close();
-      detailModalInstance.show();
-
-    } catch (error) {
-      console.error(error);
-      Swal.fire('ข้อผิดพลาด', 'ไม่สามารถดึงรายละเอียดเวรได้', 'error');
-    }
-  }
+const yearList = computed(() => {
+  const curY = todayDate.getFullYear() + 543
+  return [curY - 1, curY, curY + 1, curY + 2]
 })
 
-// ฟังก์ชันจัดรูปแบบวันที่ให้อ่านง่าย (เช่น 7 พฤษภาคม 2569)
-const formatDate = (dateString) => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  return date.toLocaleDateString('th-TH', options);
+const daysInMonth = computed(() => {
+  const [y, m] = currentMonth.value.split('-')
+  return new Date(y, m, 0).getDate()
+})
+
+const blankDays = computed(() => {
+  const [y, m] = currentMonth.value.split('-')
+  const dayOfWeek = new Date(y, m - 1, 1).getDay()
+  return (dayOfWeek + 6) % 7 // ปรับให้เริ่มวันจันทร์
+})
+
+const isToday = (day) => {
+  const dateStr = `${currentMonth.value}-${String(day).padStart(2, '0')}`
+  const todayStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`
+  return dateStr === todayStr
 }
 
-// ฟังก์ชันสร้างรูป Avatar จำลองถ้าไม่มีรูปจริง
-const getProfileImage = (ven) => {
-  if (ven.profile_image && ven.profile_image !== 'default_avatar.jpg') {
-    return `http://localhost/vengg3/backend/public/uploads/profiles/${ven.profile_image}`; // ปรับ Path ตามจริง
-  }
-  // ถ้าไม่มีรูป ให้สร้างรูปภาพที่มีตัวอักษรชื่อแทน
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(ven.full_name)}&background=random&color=fff&size=128`;
+const getSchedulesForDay = (day) => {
+  // 🌟 ป้องกัน Error: ถ้า allSchedules ไม่ใช่ Array ให้คืนค่า [] กลับไปเลย
+  if (!Array.isArray(allSchedules.value)) return [] 
+  
+  const dateStr = `${currentMonth.value}-${String(day).padStart(2, '0')}`
+  return allSchedules.value.filter(s => s.date === dateStr)
 }
 
+const updateCurrentMonth = () => {
+  currentMonth.value = `${selYear.value - 543}-${selMonth.value}`
+  fetchVenData()
+}
+
+const changeMonth = (step) => {
+  let m = parseInt(selMonth.value) + step
+  let y = parseInt(selYear.value)
+  if (m > 12) { m = 1; y++ }
+  else if (m < 1) { m = 12; y-- }
+  selMonth.value = String(m).padStart(2, '0')
+  selYear.value = y
+  updateCurrentMonth()
+}
+
+const goToToday = () => {
+  selMonth.value = String(todayDate.getMonth() + 1).padStart(2, '0')
+  selYear.value = todayDate.getFullYear() + 543
+  updateCurrentMonth()
+}
+
+const formatMonthThai = (ym) => {
+  const [y, m] = ym.split('-')
+  return `${thaiMonths[parseInt(m)-1]} ${parseInt(y)+543}`
+}
+
+// --- 🌟 ดึงข้อมูลเวรจาก Backend ---
 const fetchVenData = async () => {
   isLoading.value = true
   const token = localStorage.getItem('token')
   try {
-    const response = await api.get('?route=ven/list', {
+    const response = await api.get(`?route=ven/list&monthYear=${currentMonth.value}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
-    calendarOptions.value.events = response.data
+    
+    // 🌟 บังคับตรวจสอบ: ถ้าข้อมูลเป็น Array ให้ใส่ค่าไป ถ้าไม่ใช่ให้เป็น Array ว่าง []
+    allSchedules.value = Array.isArray(response.data) ? response.data : []
+    
   } catch (error) {
+    console.error("Error fetching calendar:", error)
+    allSchedules.value = [] // 🌟 ล้างค่าให้เป็น Array ว่างเสมอเมื่อเกิด Error
+    
     if (error.response?.status === 401) {
       Swal.fire('เซสชันหมดอายุ', 'กรุณาเข้าสู่ระบบใหม่อีกครั้ง', 'warning')
       handleLogout()
@@ -238,6 +311,86 @@ const fetchVenData = async () => {
   }
 }
 
+// --- 🌟 การคลิกดูรายละเอียด และ โอนเวร ---
+const selectedVen = ref(null)
+let detailModalInstance = null 
+const recipients = ref([])
+const showRecipientList = ref(false)
+
+const openShiftDetail = async (venId) => {
+  const token = localStorage.getItem('token')
+  try {
+    Swal.fire({ title: 'กำลังโหลดข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    // ดึงข้อมูลรายบุคคลจาก API
+    const response = await api.get(`?route=ven/detail&id=${venId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    selectedVen.value = response.data;
+    showRecipientList.value = false; 
+    
+    Swal.close();
+    detailModalInstance.show();
+  } catch (error) {
+    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถดึงรายละเอียดเวรได้', 'error');
+  }
+}
+
+const loadRecipients = async () => {
+  try {
+    const sub_id = selectedVen.value.sub_id || selectedVen.value.ven_name_sub_id; 
+    if (!sub_id) return Swal.fire('ข้อมูลไม่ครบถ้วน', 'ไม่พบข้อมูลรหัสหน้าที่(sub_id) ของเวรนี้', 'warning');
+
+    const res = await api.get(`?route=admin/ven_user&action=get_by_sub&sub_id=${sub_id}`);
+    recipients.value = res.data.filter(u => u.user_id != currentUserId.value);
+    showRecipientList.value = true;
+  } catch (error) {
+    Swal.fire('ผิดพลาด', 'ไม่สามารถดึงรายชื่อผู้มีสิทธิ์ได้', 'error');
+  }
+};
+
+const confirmTransfer = async (targetUser) => {
+  const result = await Swal.fire({
+    title: 'ยืนยันการโอนเวร?',
+    html: `คุณแน่ใจหรือไม่ที่จะยกเวรให้ <b>${targetUser.name} ${targetUser.sname}</b> ?<br><small class="text-danger">เมื่อยืนยันแล้ว ชื่อในตารางจะถูกเปลี่ยนทันที</small>`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'ยืนยันการโอน',
+    cancelButtonText: 'ยกเลิก'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await api.post('?route=user/transfer&action=perform', {
+        schedule_id: selectedVen.value.ven_id, 
+        new_user_id: targetUser.user_id
+      });
+      
+      detailModalInstance.hide();
+      fetchVenData(); 
+      Swal.fire('สำเร็จ', 'ทำการโอนเวรเรียบร้อยแล้ว', 'success');
+    } catch (error) {
+      Swal.fire('ผิดพลาด', 'ไม่สามารถโอนเวรได้', 'error');
+    }
+  }
+};
+
+// --- Helpers ---
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  return date.toLocaleDateString('th-TH', options);
+}
+
+const getProfileImage = (ven) => {
+  if (ven.profile_image && ven.profile_image !== 'default_avatar.jpg') {
+    return `http://localhost/vengg3/backend/public/uploads/profiles/${ven.profile_image}`;
+  }
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(ven.full_name)}&background=random&color=fff&size=128`;
+}
+
 const handleLogout = () => {
   localStorage.clear()
   router.push('/login')
@@ -245,16 +398,27 @@ const handleLogout = () => {
 
 onMounted(() => {
   fetchVenData()
-  // ผูกตัวแปร Modal กับ HTML element เมื่อหน้าเว็บโหลดเสร็จ
   detailModalInstance = new Modal(document.getElementById('venDetailModal'))
 })
 </script>
 
-<style>
-/* คงสไตล์ของ FullCalendar ไว้เหมือนเดิม */
-.fc .fc-button-primary { background-color: #0d6efd !important; border-color: #0d6efd !important; border-radius: 0.5rem !important; text-transform: capitalize; }
-.fc .fc-button-primary:hover { background-color: #0b5ed7 !important; }
-.fc-event { border: none !important; background-color: transparent !important; margin-bottom: 2px !important; }
-.fc-col-header-cell-cushion { color: #495057; font-weight: bold; text-decoration: none !important; padding: 10px 0 !important; }
-.fc-daygrid-day-number { color: #6c757d; font-weight: 500; text-decoration: none !important; }
+<style scoped>
+/* 🌟 สไตล์สำหรับ Custom Calendar Grid */
+.calendar-grid { 
+  display: grid; 
+  grid-template-columns: repeat(7, 1fr); 
+  grid-auto-rows: minmax(130px, 1fr); 
+  gap: 4px; 
+}
+.day-cell { transition: 0.2s; min-width: 0; }
+.day-cell.blank { border: none !important; background: none !important; box-shadow: none !important; }
+.transition-hover:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+.schedule-item { transition: 0.15s; }
+.schedule-item:hover { filter: brightness(0.9); transform: scale(0.98); }
+
+/* Scrollbar สำหรับกล่องต่างๆ */
+.custom-scrollbar::-webkit-scrollbar { width: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #0d6efd; }
 </style>

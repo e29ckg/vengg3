@@ -275,6 +275,16 @@ class Setting {
         return $stmt->execute([':id' => $id]);
     }
 
+    // อัปเดตสถานะคำสั่งเวร (1=กำลังดำเนินการ, 2=ยืนยันแล้ว)
+    public function updateCommandStatus($id, $status) {
+        $query = "UPDATE ven_com SET status = :status WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute([
+            ':status' => $status,
+            ':id' => $id
+        ]);
+    }
+
     // ==========================================
     // ส่วนจัดการตารางเวร (Ven Schedule)
     // ==========================================
@@ -344,5 +354,65 @@ class Setting {
         }
     }
 
+    // 1. ดึงตารางเวรของตัวเอง (เฉพาะคำสั่งที่ยืนยันแล้ว status=2)
+    public function getMySchedules($user_id) {
+        $query = "SELECT s.*, c.com_num, sub.name as sub_name, sub.color
+                  FROM ven_schedule s
+                  JOIN ven_com c ON s.ven_com_id = c.id
+                  JOIN ven_name_sub sub ON s.ven_name_sub_id = sub.id
+                  WHERE s.user_id = :user_id AND c.status = 2 AND s.ven_date >= CURDATE()
+                  ORDER BY s.ven_date ASC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([':user_id' => $user_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // 2. สร้างคำขอแลกเวร
+    public function createSwapRequest($data) {
+        $query = "INSERT INTO ven_change (s1_id, user1_id, s2_id, user2_id, status) 
+                  VALUES (:s1, :u1, :s2, :u2, 0)";
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute([
+            ':s1' => $data['s1_id'], ':u1' => $data['user1_id'],
+            ':s2' => $data['s2_id'], ':u2' => $data['user2_id']
+        ]);
+    }
+
+    // 3. จัดการสลับเวรเมื่อเพื่อนกดยอมรับ
+    public function approveSwap($change_id) {
+        $this->conn->beginTransaction();
+        try {
+            // ดึงข้อมูลคำขอ
+            $stmt = $this->conn->prepare("SELECT * FROM ven_change WHERE id = ?");
+            $stmt->execute([$change_id]);
+            $req = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // สลับ user_id ในตารางเวรหลัก
+            $upd1 = $this->conn->prepare("UPDATE ven_schedule SET user_id = ? WHERE id = ?");
+            $upd1->execute([$req['user2_id'], $req['s1_id']]); // เอาเพื่อนมาลงเวรเรา
+            
+            $upd2 = $this->conn->prepare("UPDATE ven_schedule SET user_id = ? WHERE id = ?");
+            $upd2->execute([$req['user1_id'], $req['s2_id']]); // เอาเราไปลงเวรเพื่อน
+
+            // อัปเดตสถานะคำขอเป็น 1 (ยอมรับแล้ว)
+            $this->conn->prepare("UPDATE ven_change SET status = 1 WHERE id = ?")->execute([$change_id]);
+            
+            $this->conn->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            return false;
+        }
+    }
+
+// โอนเวรให้ผู้อื่นโดยตรง
+    public function transferShift($schedule_id, $new_user_id) {
+        $query = "UPDATE ven_schedule SET user_id = :new_user WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute([
+            ':new_user' => $new_user_id,
+            ':id' => $schedule_id
+        ]);
+    }
     
 }

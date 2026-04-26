@@ -1,9 +1,48 @@
 <template>
   <div class="bg-light min-vh-100 d-flex flex-column pb-3">
-    <nav class="navbar navbar-dark bg-primary shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
       <div class="container-fluid px-4">
-        <a class="navbar-brand fw-bold fs-4" href="#"><i class="bi bi-calendar3 me-2"></i>จัดตารางเวร (Drag & Drop / Auto)</a>
-        <router-link to="/home" class="btn btn-outline-light btn-sm rounded-pill px-3">กลับหน้าหลัก</router-link>
+        <a class="navbar-brand fw-bold fs-5" href="#">
+          <i class="bi bi-briefcase-fill me-2"></i>กลุ่มงานช่วยอำนวยการ
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#directorMenu">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="directorMenu">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+            
+            <li class="nav-item">
+              <router-link to="/director/ven-settings" class="nav-link" active-class="active fw-bold text-warning">
+                <i class="bi bi-card-checklist me-1"></i> ชื่อเวร / กลุ่มหน้าที่
+              </router-link>
+            </li>
+            
+            <li class="nav-item">
+              <router-link to="/director/commands" class="nav-link" active-class="active fw-bold text-warning">
+                <i class="bi bi-file-earmark-text me-1"></i> จัดการคำสั่งเวร
+              </router-link>
+            </li>
+            
+            <li class="nav-item">
+              <router-link to="/director/schedule" class="nav-link" active-class="active fw-bold text-warning">
+                <i class="bi bi-calendar-week me-1"></i> จัดเวร
+              </router-link>
+            </li>
+            
+          </ul>
+          
+          <div class="d-flex">
+            <button class="btn btn-warning btn-sm rounded-pill px-3 shadow-sm fw-bold" @click="printSchedule">
+              <i class="bi bi-printer-fill me-1"></i>พิมพ์ตาราง
+            </button>
+            <router-link to="/home" class="btn btn-outline-light btn-sm rounded-pill px-3 shadow-sm">
+              <i class="bi bi-house-door-fill me-1"></i>กลับหน้าหลัก
+            </router-link>
+          </div>
+        </div>
+        
       </div>
     </nav>
 
@@ -40,6 +79,20 @@
                 {{ com.com_num }} ({{ com.ven_name_title }})
               </option>
             </select>
+            
+            <div v-if="activeCommand" class="mt-2 p-2 border rounded-3 bg-white shadow-sm d-flex justify-content-between align-items-center">
+              <div>
+                <span v-if="activeCommand.status == 1" class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>กำลังดำเนินการ</span>
+                <span v-else-if="activeCommand.status == 2" class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>ยืนยันแล้ว (เปิดแลก)</span>
+              </div>
+              <button v-if="activeCommand.status == 1" class="btn btn-sm btn-success fw-bold" style="font-size: 0.7rem;" @click="toggleCommandStatus(2)">
+                ยืนยันการจัดเวร
+              </button>
+              <button v-else-if="activeCommand.status == 2" class="btn btn-sm btn-outline-secondary fw-bold" style="font-size: 0.7rem;" @click="toggleCommandStatus(1)">
+                ปลดล็อคแก้ไข
+              </button>
+            </div>
+
             <div v-if="filteredCommands.length === 0" class="text-danger small mt-1" style="font-size: 0.7rem;">
               <i class="bi bi-exclamation-circle me-1"></i>ยังไม่มีคำสั่งของเดือนนี้
             </div>
@@ -52,7 +105,7 @@
               <option v-for="sub in subDuties" :key="sub.id" :value="sub">{{ sub.name }}</option>
             </select>
             
-            <div class="d-flex gap-1" v-if="activeSubDuty">
+            <div class="d-flex gap-1" v-if="activeSubDuty && activeCommand.status == 1">
               <button v-if="eligibleUsers.length > 0" class="btn btn-xs btn-outline-success flex-grow-1 fw-bold" @click="openAutoAssignModal">
                 <i class="bi bi-robot"></i> จัด Auto
               </button>
@@ -60,6 +113,11 @@
                 <i class="bi bi-trash"></i> ล้าง
               </button>
             </div>
+            
+            <div v-if="activeCommand && activeCommand.status == 2" class="alert alert-success py-2 mt-2 mb-0 text-center small fw-bold">
+              <i class="bi bi-lock-fill me-1"></i> คำสั่งนี้ยืนยันแล้ว ไม่สามารถแก้ไขได้
+            </div>
+
           </div>
 
           <div class="user-list-container border rounded-3 p-2 bg-light flex-grow-1 shadow-inner overflow-auto" v-if="activeSubDuty">
@@ -146,7 +204,52 @@
       </div>
     </div>
 
+    <div class="print-area d-none text-black bg-white">
+      <div class="text-center mb-4">
+        <h4 class="fw-bold mb-1">ตารางปฏิบัติงานนอกเวลาราชการ</h4>
+        <h5 class="fw-bold">ประจำเดือน {{ formatMonthThai(currentMonth) }}</h5>
+      </div>
+      
+      <table class="table table-bordered border-dark print-table">
+        <thead>
+          <tr class="text-center" style="background-color: #f8f9fa !important; -webkit-print-color-adjust: exact;">
+            <th style="width: 10%;">วันที่</th>
+            <th style="width: 90%;">รายชื่อผู้ปฏิบัติหน้าที่</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="day in daysInMonth" :key="'print-'+day">
+            <td class="text-center align-middle fw-bold fs-5">{{ day }}</td>
+            <td class="p-2">
+              <div v-if="getSchedulesForDay(day).length === 0" class="text-muted small text-center mt-2">- ไม่มีเวร -</div>
+              <div v-else class="row g-1">
+                <div v-for="schedule in getSchedulesForDay(day)" :key="'p-'+schedule.id" class="col-6 mb-1" style="font-size: 0.9rem;">
+                  <span class="fw-bold me-1">{{ schedule.sub_name }}:</span>
+                  <span>{{ schedule.user_name }}</span>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div class="row mt-5 text-center" style="page-break-inside: avoid;">
+        <div class="col-6">
+          <p class="mb-5">ผู้จัดทำตารางเวร</p>
+          <p>(.......................................................)</p>
+          <p>ตำแหน่ง ...............................................</p>
+        </div>
+        <div class="col-6">
+          <p class="mb-5">ผู้อนุมัติ</p>
+          <p>(.......................................................)</p>
+          <p>ผู้อำนวยการฯ</p>
+        </div>
+      </div>
+    </div>
+
   </div>
+
+  
 </template>
 
 <script setup>
@@ -174,7 +277,8 @@ const updateCurrentMonth = () => {
 }
 
 // --- State อื่นๆ ---
-const weekDays = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์']
+// const weekDays = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์']
+const weekDays = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์']
 const commands = ref([])
 const activeCommand = ref('')
 const subDuties = ref([])
@@ -189,9 +293,16 @@ const daysInMonth = computed(() => {
   const [y, m] = currentMonth.value.split('-')
   return new Date(y, m, 0).getDate()
 })
+// const blankDays = computed(() => {
+//   const [y, m] = currentMonth.value.split('-')
+//   return new Date(y, m - 1, 1).getDay()
+// })
 const blankDays = computed(() => {
   const [y, m] = currentMonth.value.split('-')
-  return new Date(y, m - 1, 1).getDay()
+  // getDay() ปกติ: อาทิตย์=0, จันทร์=1, ... เสาร์=6
+  // ปรับสูตรให้ จันทร์=0, อังคาร=1, ... อาทิตย์=6
+  const dayOfWeek = new Date(y, m - 1, 1).getDay()
+  return (dayOfWeek + 6) % 7
 })
 const filteredCommands = computed(() => commands.value.filter(com => com.ven_month === currentMonth.value))
 const getSchedulesForDay = (day) => allSchedules.value.filter(s => parseInt(s.day) === day)
@@ -242,29 +353,130 @@ const startDragFromCalendar = (e, sch) => {
   e.dataTransfer.setData('source', 'calendar'); e.dataTransfer.setData('scheduleID', sch.id)
 }
 
-const onDrop = async (e, day) => {
-  const source = e.dataTransfer.getData('source')
-  if (!isDayEnabled(day)) return Swal.fire({ title: 'ไม่อนุญาต!', text: 'วันนี้ไม่ได้ระบุไว้ในคำสั่ง', icon: 'error', timer: 1500, showConfirmButton: false })
+// 🌟 ฟังก์ชันอัปเดตสถานะคำสั่ง
+const toggleCommandStatus = async (newStatus) => {
+  const statusText = newStatus === 2 ? 'ยืนยันการจัดเวรและเปิดให้สมาชิกแลกเปลี่ยน?' : 'ปลดล็อคเพื่อกลับมาแก้ไขตารางเวร?';
+  const result = await Swal.fire({
+    title: newStatus === 2 ? 'ยืนยันการจัดเวร?' : 'ปลดล็อคแก้ไข?',
+    text: statusText,
+    icon: newStatus === 2 ? 'info' : 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'ตกลง',
+    cancelButtonText: 'ยกเลิก'
+  });
 
-  if (source === 'sidebar') {
-    const uID = e.dataTransfer.getData('userID'), uName = e.dataTransfer.getData('userName')
-    if (!uID || !activeCommand.value || !activeSubDuty.value) return
-    if (allSchedules.value.some(s => parseInt(s.day) === day && s.com_id === activeCommand.value.id && String(s.user_id) === String(uID))) {
-      return Swal.fire('รายชื่อซ้ำ!', 'บุคคลนี้มีเวรในคำสั่งนี้วันนี้แล้ว', 'warning')
+  if (result.isConfirmed) {
+    try {
+      await api.post('?route=admin/ven_com&action=update_status', {
+        id: activeCommand.value.id,
+        status: newStatus
+      });
+      // อัปเดตข้อมูลใน UI ทันที
+      activeCommand.value.status = newStatus;
+      // โหลดข้อมูลคำสั่งใหม่เพื่อให้ Dropdown อัปเดตด้วย
+      await fetchCommands();
+      
+      // เลือกคำสั่งเดิมกลับมา
+      const updatedCom = commands.value.find(c => c.id === activeCommand.value.id);
+      if(updatedCom) activeCommand.value = updatedCom;
+
+      Swal.fire('สำเร็จ', 'อัปเดตสถานะคำสั่งเรียบร้อยแล้ว', 'success');
+    } catch (error) {
+      Swal.fire('ผิดพลาด', 'ไม่สามารถอัปเดตสถานะได้', 'error');
     }
-    await api.post('?route=admin/ven_schedule&action=add', { date: `${currentMonth.value}-${String(day).padStart(2,'0')}`, com_id: activeCommand.value.id, sub_id: activeSubDuty.value.id, user_id: uID })
-  } else {
-    const sID = e.dataTransfer.getData('scheduleID')
-    const old = allSchedules.value.find(s => String(s.id) === String(sID))
-    if (!old || parseInt(old.day) === day) return
-    if (allSchedules.value.some(s => parseInt(s.day) === day && s.com_id === old.com_id && String(s.user_id) === String(old.user_id))) return Swal.fire('ย้ายไม่ได้!', 'ชื่อซ้ำในวันใหม่', 'warning')
-    await api.post('?route=admin/ven_schedule&action=remove', { id: old.id })
-    await api.post('?route=admin/ven_schedule&action=add', { date: `${currentMonth.value}-${String(day).padStart(2,'0')}`, com_id: old.com_id, sub_id: old.sub_id, user_id: old.user_id })
   }
-  fetchMonthSchedules()
 }
 
-const removeSchedule = async (id) => { if ((await Swal.fire({ title: 'ลบชื่อนี้?', icon: 'warning', showCancelButton: true })).isConfirmed) { await api.post('?route=admin/ven_schedule&action=remove', { id }); fetchMonthSchedules() } }
+// 🌟 แก้ไขฟังก์ชัน onDrop ใหม่ แยกการตรวจสอบซ้ายมือ และ ในปฏิทินให้ชัดเจน
+const onDrop = async (e, day) => {
+  const source = e.dataTransfer.getData('source')
+  
+  // ==========================================
+  // 1. กรณีลากจากรายชื่อด้านซ้ายมือ (Sidebar)
+  // ==========================================
+  if (source === 'sidebar') {
+    // ⛔ เช็คว่าคำสั่งที่เลือกอยู่ ถูกล็อคหรือไม่
+    if (activeCommand.value && activeCommand.value.status == 2) {
+      return Swal.fire('ถูกล็อค!', 'คำสั่งนี้ได้รับการยืนยันแล้ว โปรดปลดล็อคก่อนแก้ไข', 'warning');
+    }
+    // ⛔ เช็ควันที่อนุญาตของคำสั่งที่เลือกอยู่
+    if (!isDayEnabled(day)) {
+      return Swal.fire({ title: 'ไม่อนุญาต!', text: 'วันนี้ไม่ได้ระบุไว้ในเงื่อนไขของคำสั่งนี้', icon: 'error', timer: 2000, showConfirmButton: false })
+    }
+
+    const uID = e.dataTransfer.getData('userID')
+    if (!uID || !activeCommand.value || !activeSubDuty.value) return
+
+    // ⛔ เช็คชื่อซ้ำ
+    if (allSchedules.value.some(s => parseInt(s.day) === day && s.com_id === activeCommand.value.id && String(s.user_id) === String(uID))) {
+      return Swal.fire('รายชื่อซ้ำ!', 'บุคคลนี้มีเวรในคำสั่งนี้ของวันนี้แล้ว', 'warning')
+    }
+
+    // บันทึก
+    await api.post('?route=admin/ven_schedule&action=add', { date: `${currentMonth.value}-${String(day).padStart(2,'0')}`, com_id: activeCommand.value.id, sub_id: activeSubDuty.value.id, user_id: uID })
+    fetchMonthSchedules()
+  } 
+  
+  // ==========================================
+  // 2. กรณีลากย้ายภายในปฏิทิน (Calendar)
+  // ==========================================
+  else if (source === 'calendar') {
+    const sID = e.dataTransfer.getData('scheduleID')
+    const old = allSchedules.value.find(s => String(s.id) === String(sID))
+
+    if (!old || parseInt(old.day) === day) return
+
+    // 🌟 ค้นหาข้อมูลคำสั่งของเวรที่เรากำลังลาก
+    const scheduleCommand = commands.value.find(c => c.id === old.com_id)
+
+    // ⛔ เช็คสถานะ: คำสั่งของเวรนี้ถูกล็อคอยู่หรือไม่?
+    if (scheduleCommand && scheduleCommand.status == 2) {
+      return Swal.fire('ถูกล็อค!', `คำสั่งเลขที่ ${scheduleCommand.com_num} ถูกยืนยันแล้ว ไม่สามารถย้ายได้`, 'warning');
+    }
+
+    // ⛔ เช็ควันที่: คำสั่งของเวรนี้ อนุญาตให้ไปลงวันใหม่ (day) ได้หรือไม่?
+    if (scheduleCommand && scheduleCommand.ven_com_days) {
+      const allowedDays = scheduleCommand.ven_com_days.split(',').map(Number)
+      if (!allowedDays.includes(parseInt(day))) {
+         return Swal.fire({ 
+           title: 'ย้ายไม่ได้!', 
+           text: `คำสั่งเลขที่ ${scheduleCommand.com_num} อนุญาตให้จัดเวรเฉพาะวันที่ ${scheduleCommand.ven_com_days} เท่านั้น`, 
+           icon: 'error', 
+           timer: 3000, 
+           showConfirmButton: false 
+         })
+      }
+    }
+
+    // ⛔ เช็คชื่อซ้ำในวันใหม่
+    if (allSchedules.value.some(s => parseInt(s.day) === day && s.com_id === old.com_id && String(s.user_id) === String(old.user_id))) {
+      return Swal.fire('ย้ายไม่ได้!', 'มีชื่อบุคคลนี้ในวันนั้นอยู่แล้ว', 'warning')
+    }
+
+    // ทำการลบของเก่า แล้วเพิ่มของใหม่ (เสมือนการย้าย)
+    await api.post('?route=admin/ven_schedule&action=remove', { id: old.id })
+    await api.post('?route=admin/ven_schedule&action=add', { date: `${currentMonth.value}-${String(day).padStart(2,'0')}`, com_id: old.com_id, sub_id: old.sub_id, user_id: old.user_id })
+    fetchMonthSchedules()
+  }
+}
+
+// 🌟 แก้ไขฟังก์ชันลบ เพื่อป้องกันการลบข้อมูลของคำสั่งที่ถูกล็อคไปแล้ว
+const removeSchedule = async (id) => {
+  const schedule = allSchedules.value.find(s => s.id === id);
+  if (schedule) {
+    const scheduleCommand = commands.value.find(c => c.id === schedule.com_id);
+    if (scheduleCommand && scheduleCommand.status == 2) {
+      return Swal.fire('ถูกล็อค!', `คำสั่งเลขที่ ${scheduleCommand.com_num} ถูกยืนยันแล้ว ไม่สามารถลบได้`, 'warning');
+    }
+  }
+
+  if ((await Swal.fire({ title: 'ลบชื่อนี้?', icon: 'warning', showCancelButton: true })).isConfirmed) { 
+    await api.post('?route=admin/ven_schedule&action=remove', { id }); 
+    fetchMonthSchedules();
+  } 
+}
+
+// const removeSchedule = async (id) => { if ((await Swal.fire({ title: 'ลบชื่อนี้?', icon: 'warning', showCancelButton: true })).isConfirmed) { await api.post('?route=admin/ven_schedule&action=remove', { id }); fetchMonthSchedules() } }
 
 const clearAllCommandSchedules = async () => {
   if ((await Swal.fire({ title: 'ลบเวรทั้งหมด?', text: 'ล้างชื่อทั้งหมดในคำสั่งนี้', icon: 'warning', showCancelButton: true })).isConfirmed) {
@@ -299,6 +511,11 @@ const isClashing = (sch) => {
   return false
 }
 
+// 🌟 ฟังก์ชันเรียกคำสั่งพิมพ์ของบราวเซอร์
+const printSchedule = () => {
+  window.print()
+}
+
 onMounted(() => { fetchCommands(); fetchMonthSchedules(); autoAssignModalInstance = new Modal(document.getElementById('autoAssignModal')) })
 </script>
 
@@ -323,4 +540,44 @@ onMounted(() => { fetchCommands(); fetchMonthSchedules(); autoAssignModalInstanc
 .clash-warning { border: 2px solid #ffc107 !important; }
 .blink { animation: blinker 2s linear infinite; }
 @keyframes blinker { 50% { opacity: 0.5; background-color: #dc3545 !important; color: white !important; } }
+
+/* ==========================================
+   🌟 CSS สำหรับการพิมพ์ (Print Mode)
+   ========================================== */
+@media print {
+  /* 1. ซ่อน UI ฝั่งระบบจัดการทั้งหมด */
+  nav, .container-fluid.flex-grow-1, .modal, .swal2-container {
+    display: none !important;
+  }
+  
+  /* 2. แสดงพื้นที่พิมพ์ */
+  .print-area {
+    display: block !important;
+    padding: 20px;
+  }
+  .print-area.d-none {
+    display: block !important;
+  }
+
+  /* 3. ปรับแต่งตารางให้ขอบดำชัดเจน */
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .print-table th, .print-table td {
+    border: 1px solid #000 !important;
+    padding: 6px 8px !important;
+  }
+
+  /* 4. ตั้งค่าหน้ากระดาษ A4 แนวตั้ง (Portrait) */
+  @page {
+    size: A4 portrait;
+    margin: 1cm;
+  }
+  
+  /* ลบพื้นหลังสีเทาของ body */
+  body {
+    background-color: #fff !important;
+  }
+}
 </style>

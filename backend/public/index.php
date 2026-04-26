@@ -133,6 +133,13 @@ switch ($route) {
             echo json_encode(["success" => $settingModel->toggleVenCommandStatus($data['id'], $data['status'])]);
         } elseif ($action === 'delete') {
             echo json_encode(["success" => $settingModel->deleteVenCommand($data['id'])]);
+        }elseif ($action === 'update_status') {
+            if ($settingModel->updateCommandStatus($data['id'], $data['status'])) {
+                echo json_encode(["success" => true, "message" => "อัปเดตสถานะสำเร็จ"]);
+            } else {
+                http_response_code(500); 
+                echo json_encode(["error" => "ไม่สามารถอัปเดตสถานะได้"]);
+            }
         }
         break;
 
@@ -165,6 +172,8 @@ switch ($route) {
         } 
             
         break;
+
+    
     // ------------------------------------------------
 
     case 'ven/list':
@@ -187,7 +196,26 @@ switch ($route) {
         $controller->getDetail($id);
         break;
 
-    
+    case 'user/swap':
+        if ($action === 'my_shifts') {
+            echo json_encode($settingModel->getMySchedules($_GET['user_id']));
+        } elseif ($action === 'request') {
+            echo json_encode(["success" => $settingModel->createSwapRequest($data)]);
+        } elseif ($action === 'approve') {
+            echo json_encode(["success" => $settingModel->approveSwap($data['change_id'])]);
+        }
+        break;
+
+    case 'user/transfer':
+        if ($action === 'perform') {
+            if ($settingModel->transferShift($data['schedule_id'], $data['new_user_id'])) {
+                echo json_encode(["success" => true, "message" => "โอนเวรเรียบร้อย"]);
+            } else {
+                http_response_code(500);
+                echo json_encode(["error" => "ไม่สามารถโอนเวรได้"]);
+            }
+        }
+        break;
 
     default:
         http_response_code(404);
