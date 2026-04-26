@@ -324,5 +324,25 @@ class Setting {
         return $stmt->execute([':id' => $id]);
     }
 
+    // อัปเดตลำดับ (srt) ของหน้าที่ย่อย
+    public function updateSubDutyOrder($items) {
+        $this->conn->beginTransaction();
+        try {
+            $query = "UPDATE ven_name_sub SET srt = :srt WHERE id = :id";
+            $stmt = $this->conn->prepare($query);
+            foreach ($items as $item) {
+                $stmt->execute([
+                    ':srt' => $item['srt'],
+                    ':id' => $item['id']
+                ]);
+            }
+            $this->conn->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            return false;
+        }
+    }
+
     
 }
