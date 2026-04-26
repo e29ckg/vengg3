@@ -34,11 +34,7 @@ const router = createRouter({
       name: 'ven-settings', 
       component: () => import('../views/VenSettingView.vue') 
     },
-    { 
-      path: '/director/prepare-users', 
-      name: 'prepare-users', 
-      component: () => import('../views/PrepareVenUserView.vue') 
-    },
+    
     { 
       path: '/director/commands', 
       name: 'commands', 
@@ -48,7 +44,12 @@ const router = createRouter({
       path: '/director/schedule', 
       name: 'schedule', 
       component: () => import('../views/VenScheduleView.vue') 
-    }
+    },
+   {
+        path: '/staff/swap',
+        name: 'staff-swap',
+        component: () => import('../views/VenSwapView.vue')
+      },
 
   ]
 })

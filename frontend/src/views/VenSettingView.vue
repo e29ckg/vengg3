@@ -2,8 +2,44 @@
   <div class="bg-light min-vh-100">
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
       <div class="container-fluid px-4">
-        <a class="navbar-brand fw-bold fs-4" href="#"><i class="bi bi-briefcase-fill me-2"></i>งานอำนวยการ</a>
-        <router-link to="/home" class="btn btn-outline-light btn-sm rounded-pill px-3">กลับหน้าหลัก</router-link>
+        <a class="navbar-brand fw-bold fs-5" href="#">
+          <i class="bi bi-briefcase-fill me-2"></i>กลุ่มงานช่วยอำนวยการ
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#directorMenu">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="directorMenu">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+            
+            <li class="nav-item">
+              <router-link to="/director/ven-settings" class="nav-link" active-class="active fw-bold text-warning">
+                <i class="bi bi-card-checklist me-1"></i> ชื่อเวร / กลุ่มหน้าที่
+              </router-link>
+            </li>
+            
+            <li class="nav-item">
+              <router-link to="/director/commands" class="nav-link" active-class="active fw-bold text-warning">
+                <i class="bi bi-file-earmark-text me-1"></i> จัดการคำสั่งเวร
+              </router-link>
+            </li>
+            
+            <li class="nav-item">
+              <router-link to="/director/schedule" class="nav-link" active-class="active fw-bold text-warning">
+                <i class="bi bi-calendar-week me-1"></i> จัดเวร
+              </router-link>
+            </li>
+            
+          </ul>
+          
+          <div class="d-flex">
+            <router-link to="/home" class="btn btn-outline-light btn-sm rounded-pill px-3 shadow-sm">
+              <i class="bi bi-house-door-fill me-1"></i>กลับหน้าหลัก
+            </router-link>
+          </div>
+        </div>
+        
       </div>
     </nav>
 
