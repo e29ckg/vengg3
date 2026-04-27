@@ -189,14 +189,19 @@
                   <label class="form-label fw-semibold text-muted small">ชื่อเวร (แบบย่อ)</label>
                   <input type="text" class="form-control" v-model="mainForm.name" required>
                 </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold text-muted small">กลางวัน/กลางคืน</label>
+                
+                <div class="col-md-4 mb-3">
+                  <label class="form-label small fw-bold">กลางวัน/กลางคืน</label>
+                  
                   <select class="form-select" v-model="mainForm.dn" required>
-                    <option value="กลางวัน(08.30-16.30)">กลางวัน(08.30-16.30)</option>
-                    <option value="กลางคืน(16.30-08.30)">กลางคืน(16.30-08.30)</option>
-                    <option value="nightCourt(16.30-20.00)">nightCourt(16.30-20.00)</option>
+                    <option value="" disabled>-- เลือกช่วงเวลา --</option>
+                    
+                    <option v-for="t in timeOptions" :key="t.id" :value="t.name_th + '(' + t.time_period + ')'">
+                      {{ t.name_th }}({{ t.time_period }})
+                    </option>
                   </select>
                 </div>
+
               </div>
               <div class="mb-3">
                 <label class="form-label fw-semibold text-muted small">ชื่อเวรเต็ม (แสดงในคำสั่ง)</label>
@@ -277,6 +282,7 @@ import { Modal } from 'bootstrap'
 // ==========================================
 // 🌟 1. ส่วนจัดการข้อมูลหลัก (Ven Full Data)
 // ==========================================
+const timeOptions = ref([])
 const venData = ref([])
 
 const fetchVenFullData = async () => {
@@ -496,12 +502,24 @@ const moveUserDown = async (index) => {
   }
 }
 
+
+
+// 🌟 เพิ่มฟังก์ชันดึงข้อมูลเวลาจากฐานข้อมูล
+const fetchTimeOptions = async () => {
+  try {
+    const response = await api.get('?route=admin/ven_time')
+    timeOptions.value = response.data
+  } catch (error) {
+    console.error('ไม่สามารถดึงข้อมูลเวลาเวรได้', error)
+  }
+}
 // ==========================================
 // 🌟 Initialize เมื่อหน้าเว็บโหลดเสร็จ
 // ==========================================
 onMounted(() => {
   fetchVenFullData()
   fetchAllUsers() 
+  fetchTimeOptions()
   subModalInstance = new Modal(document.getElementById('subVenModal'))
   mainModalInstance = new Modal(document.getElementById('mainVenModal'))
   manageUsersModalInstance = new Modal(document.getElementById('manageVenUsersModal'))

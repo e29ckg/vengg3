@@ -113,6 +113,7 @@ switch ($route) {
         $action = $_GET['action'] ?? '';
         $data = json_decode(file_get_contents("php://input"), true);
 
+        
         if ($action === 'get_by_sub') {
             echo json_encode($settingModel->getUsersBySubId($_GET['sub_id']));
         } elseif ($action === 'add') {
@@ -180,9 +181,86 @@ switch ($route) {
         } 
             
         break;
+    
+    case 'admin/ven_time':
+        // ถ้าต้องการทำระบบเพิ่มลบแก้ในอนาคต ก็มาเขียนเงื่อนไขเพิ่มตรงนี้ได้
+        // แต่ตอนนี้ใช้ดึงข้อมูล (List) อย่างเดียวไปก่อนครับ
+        AuthMiddleware::checkAdmin($connection);
+        require_once '../src/Models/Setting.php';
+        $settingModel = new Setting($connection);
+        echo json_encode($settingModel->getVenTimes());
+        break;
 
+    case 'admin/agency_config':
+        AuthMiddleware::checkAdmin($connection);
+        require_once '../src/Models/Setting.php';
+        $settingModel = new Setting($connection);
+        $action = $_GET['action'] ?? '';
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        if ($action === 'get') {
+            echo json_encode($settingModel->getAgencyConfig());
+        } elseif ($action === 'update') {
+            if ($settingModel->updateAgencyConfig($data)) {
+                echo json_encode(["success" => true]);
+            } else {
+                http_response_code(500);
+                echo json_encode(["error" => "Update failed"]);
+            }
+        }
+        break;
+        
+    
+    case 'settings/update':
+        // 🌟 ด่านตรวจ: ถ้าไม่ใช่ Admin ระบบจะส่ง 403 Forbidden กลับไปทันที
+        AuthMiddleware::checkAdmin($connection); 
+
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        if (isset($data['setting_key']) && isset($data['setting_value'])) {
+            $stmt = $connection->prepare("UPDATE app_settings SET setting_value = :val WHERE setting_key = :key");
+            $success = $stmt->execute([
+                ':val' => $data['setting_value'],
+                ':key' => $data['setting_key']
+            ]);
+            
+            echo json_encode(["success" => $success]);
+        }
+        break;
+
+    case 'settings/app':
+        AuthMiddleware::checkToken($connection); // ต้องล็อกอินก่อน
+        
+        // ดึงการตั้งค่าทั้งหมดออกมาเป็น Array อัตโนมัติ
+        $stmt = $connection->query("SELECT setting_key, setting_value FROM app_settings");
+        $settings = [];
+        while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
+            $settings[$row['setting_key']] = $row['setting_value'];
+        }
+        
+        http_response_code(200);
+        echo json_encode($settings);
+        break;
     
     // ------------------------------------------------
+    case 'ven/eligible_users':        
+        require_once '../src/Controllers/SettingController.php';
+        $settingController = new SettingController($connection);
+        
+        $action = $_GET['action'] ?? '';
+        if ($action === 'get_by_sub') {
+            // ดึงคนที่มีหน้าที่ตรงกัน โดยไม่ต้องเช็คสิทธิ์ Admin
+            AuthMiddleware::checkToken($connection); // เช็คแค่ล็อกอินแล้วพอ
+            
+            $sub_id = $_GET['sub_id'] ?? null;
+            if ($sub_id) {
+                $settingController->getUsersBySubId($sub_id);
+            } else {
+                http_response_code(400);
+                echo json_encode(["error" => "Missing sub_id"]);
+            }
+        }
+        break;
 
     case 'ven/list':
         // ตรวจสอบ Token ก่อนเข้าถึง API
@@ -204,6 +282,29 @@ switch ($route) {
         $controller->getDetail($id);
         break;
 
+    // 🌟 เพิ่มเคสใหม่ สำหรับยกเลิกใบเปลี่ยนเวร
+        case 'ven/cancel_change':
+            $data = json_decode(file_get_contents("php://input"), true);
+            
+            if (isset($data['change_id'])) {
+                $ven = new Ven($connection); // ปรับชื่อ Class ให้ตรงกับที่คุณใช้เก็บฟังก์ชัน
+                $success = $ven->cancelShiftChange($data['change_id']);
+                
+                if ($success) {
+                    echo json_encode(["success" => true]);
+                } else {
+                    http_response_code(400);
+                    echo json_encode(["error" => "ไม่สามารถยกเลิกได้ (ใบเปลี่ยนนี้อาจถูกอนุมัติไปแล้ว)"]);
+                }
+            }
+            break;
+
+    case 'auth/me':
+        require_once '../src/Controllers/AuthController.php';
+        $authController = new AuthController($connection);
+        $authController->getMe();
+        break;
+        
     case 'user/swap':
         if ($action === 'my_shifts') {
             echo json_encode($settingModel->getMySchedules($_GET['user_id']));
@@ -215,15 +316,37 @@ switch ($route) {
         break;
 
     case 'user/transfer':
+        // 1. ตรวจสอบสิทธิ์ (ต้องล็อกอินถึงจะโอนเวรได้)
+        AuthMiddleware::checkToken($connection);
+
+        // 2. รับข้อมูล JSON ที่ Frontend ส่งมาด้วย axios/api.post
+        $data = json_decode(file_get_contents("php://input"), true);
+        $action = $_GET['action'] ?? '';
+
         if ($action === 'perform') {
+            // 3. ตรวจสอบว่าส่ง id มาครบหรือไม่
+            if (empty($data['schedule_id']) || empty($data['new_user_id'])) {
+                http_response_code(400);
+                echo json_encode(["error" => "ข้อมูลไม่ครบถ้วน (ต้องการ schedule_id และ new_user_id)"]);
+                exit;
+            }
+
+            // 4. เรียกใช้ Model (สมมติว่าคุณใช้ Setting Model หรือเปลี่ยนเป็น Model ที่คุณใช้จัดการเวร)
+            require_once '../src/Models/Setting.php'; 
+            $settingModel = new Setting($connection);
+
+            // 5. ทำการอัปเดตข้อมูล
             if ($settingModel->transferShift($data['schedule_id'], $data['new_user_id'])) {
+                http_response_code(200);
                 echo json_encode(["success" => true, "message" => "โอนเวรเรียบร้อย"]);
             } else {
                 http_response_code(500);
-                echo json_encode(["error" => "ไม่สามารถโอนเวรได้"]);
+                echo json_encode(["error" => "ไม่สามารถโอนเวรได้ เกิดข้อผิดพลาดที่ฐานข้อมูล"]);
             }
         }
         break;
+
+    
 
     default:
         http_response_code(404);

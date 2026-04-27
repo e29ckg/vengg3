@@ -23,6 +23,7 @@ class VenController {
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $events[] = [
                 'id' => $row['id'],
+                'user_id' => $row['user_id'], // 🌟 เพิ่ม user_id เข้าไปในข้อมูลที่ส่งกลับ
                 'title' => $row['title'],
                 'date' => $row['date'],
                 'backgroundColor' => $row['backgroundColor'],
@@ -54,20 +55,30 @@ class VenController {
         if ($stmt->rowCount() > 0) {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             
+            $history = $ven->getChangeHistory($id);
             // จัดรูปแบบ Data ให้ส่งกลับไปแบบคลีนๆ
             $ven_detail = array(
                 "ven_id" => $row['ven_id'],
                 "user_id" => $row['user_id'],
-                "full_name" => $row['full_name'] ? $row['full_name'] : 'ไม่มีชื่อ', // กรณีชื่อไม่ครบ ให้แสดงข้อความแทน
+                
+                "full_name" => $row['full_name'] ? $row['full_name'] : 'ไม่มีชื่อ',
                 "profile_image" => $row['profile_image'] ? $row['profile_image'] : 'default_avatar.jpg',
                 "ven_date" => $row['ven_date'],
+                "com_status" => $row['com_status'],
                 "ven_time" => $row['ven_time'],
                 "duty_main" => $row['duty_main'],
                 "duty_role" => $row['duty_role'],
+                "sub_id" => $row['sub_id'],
                 "price" => $row['price'],
                 "command_num" => $row['command_num'] ? $row['command_num'] : 'ไม่มีคำสั่ง',
                 "color" => $row['color'],
-                "status" => $row['status']
+                "status" => $row['status'],
+                "history" => $history,
+
+                // 🌟 เพิ่ม 3 บรรทัดนี้ เพื่อส่งข้อมูลประวัติการเปลี่ยนเวรไปให้ Vue.js
+                "change_id" => $row['change_id'] ?? null,
+                "user1_name" => $row['user1_name'] ?? null,
+                "user2_name" => $row['user2_name'] ?? null
             );
 
             http_response_code(200);

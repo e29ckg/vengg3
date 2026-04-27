@@ -20,20 +20,33 @@ class Setting {
     }
 
     // ฟังก์ชันพิเศษสำหรับดึงข้อมูลหน่วยงาน (ดึงแค่แถวแรก)
+    // 1. ดึงข้อมูลตั้งค่าหน่วยงาน
     public function getAgencyConfig() {
-        $query = "SELECT * FROM `agency_config` LIMIT 1";
+        $query = "SELECT * FROM agency_config WHERE id = 1 LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function updateAgencyConfig($name, $address) {
-        $query = "UPDATE `agency_config` SET label = :label, val = :val WHERE id = 1"; // ปรับตามโครงสร้างตารางจริงของคุณ
-        // หากตารางของคุณใช้ชื่อฟิลด์อื่น เช่น name ให้ปรับที่นี่ครับ
+    // 2. อัปเดตข้อมูลหน่วยงาน
+    public function updateAgencyConfig($data) {
+        $query = "UPDATE agency_config SET 
+                    agency_name = :agency_name,
+                    agency_short_name = :agency_short_name,
+                    director_name = :director_name,
+                    director_position = :director_position,
+                    admin_name = :admin_name,
+                    admin_position = :admin_position
+                  WHERE id = 1";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':label', $name);
-        $stmt->bindParam(':val', $address);
-        return $stmt->execute();
+        return $stmt->execute([
+            ':agency_name' => $data['agency_name'],
+            ':agency_short_name' => $data['agency_short_name'],
+            ':director_name' => $data['director_name'],
+            ':director_position' => $data['director_position'],
+            ':admin_name' => $data['admin_name'],
+            ':admin_position' => $data['admin_position']
+        ]);
     }
 
     // เพิ่มข้อมูลใหม่
@@ -118,7 +131,7 @@ class Setting {
     }
 
     public function updateVenName($data) {
-        $query = "UPDATE `ven_name` SET srt = :srt, name = :name, DN = :dn, name_full = :name_full WHERE id = :id";
+        $query = "UPDATE `ven_name` SET srt = :srt, name = :name, dn = :dn, name_full = :name_full WHERE id = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':srt', $data['srt']);
         $stmt->bindParam(':name', $data['name']);
@@ -187,17 +200,20 @@ class Setting {
     }
 
     public function getUsersBySubId($sub_id) {
-        $query = "SELECT vu.id as vu_id, vu.order_num, u.id as user_id, p.prefix_name, p.first_name, p.last_name, CONCAT(p.prefix_name, p.first_name, ' ', p.last_name) as full_name
+        $query = "SELECT vu.id as vu_id, vu.order_num, u.id as user_id, p.prefix_name, p.first_name, p.last_name, CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, ''), ' ', IFNULL(p.last_name, '')) AS full_name
                   FROM ven_user vu
                   JOIN user u ON vu.user_id = u.id
                   JOIN profile p ON u.id = p.user_id
                   WHERE vu.ven_name_sub_id = :sub_id
+                    AND u.status = 10     /* เช็คว่ารหัสยังไม่ถูกล็อค */
+                    AND u.is_deleted = 0  /* เช็ค Soft Delete (ยังไม่โดนลบ) */
                   ORDER BY vu.order_num ASC, vu.id ASC"; // 🌟 สั่งให้เรียงตาม order_num
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':sub_id', $sub_id);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    
 
     // อัปเดตลำดับเรียงคนในหน้าที่ย่อย
     public function updateVenUserOrder($ordered_ids) {
@@ -232,7 +248,7 @@ class Setting {
     // เพิ่มคำสั่งใหม่
     public function createVenCommand($data) {
         $query = "INSERT INTO ven_com (com_num, com_date, ven_month, ven_name_id, status, ven_com_days) 
-                  VALUES (:com_num, :com_date, :ven_month, :ven_name_id, 1, :ven_com_days)";
+                  VALUES (:com_num, :com_date, :ven_month, :ven_name_id, 0, :ven_com_days)";
         $stmt = $this->conn->prepare($query);
         return $stmt->execute([
             ':com_num' => $data['com_num'],
@@ -406,13 +422,108 @@ class Setting {
     }
 
 // โอนเวรให้ผู้อื่นโดยตรง
+    
+    // โอนเวรให้ผู้อื่นโดยตรง พร้อมบันทึกประวัติ
+    // โอนเวรให้ผู้อื่นโดยตรง พร้อมรันเลขที่เอกสาร
     public function transferShift($schedule_id, $new_user_id) {
-        $query = "UPDATE ven_schedule SET user_id = :new_user WHERE id = :id";
+        try {
+
+
+            // 🌟 1. ดึงข้อมูลเวรเพื่อตรวจสอบวันที่ก่อน
+            $stmtCheck = $this->conn->prepare("SELECT user_id, ven_date FROM ven_schedule WHERE id = :id");
+            $stmtCheck->execute([':id' => $schedule_id]);
+            $shift = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+            if (!$shift) {
+                error_log("Transfer Error: ไม่พบเวรที่ต้องการเปลี่ยน");
+                return false;
+            }
+
+            // 🌟 2. ดึงการตั้งค่าจากฐานข้อมูลว่า "อนุญาตให้เปลี่ยนย้อนหลังหรือไม่"
+            $stmtSetting = $this->conn->prepare("SELECT setting_value FROM app_settings WHERE setting_key = 'allow_retro_transfer'");
+            $stmtSetting->execute();
+            $settingRow = $stmtSetting->fetch(PDO::FETCH_ASSOC);
+            $allow_retro_transfer = ($settingRow && $settingRow['setting_value'] === '1'); // ถ้าเป็น '1' คือ true
+            
+
+            // 🌟 3. ตรวจสอบเวรย้อนหลัง (ทำงานก็ต่อเมื่อแอดมิน "ปิด" สวิตช์อนุญาตย้อนหลังเอาไว้)
+            if (!$allow_retro_transfer) {
+                // ถ้าวันที่เวร น้อยกว่า วันที่ปัจจุบัน แปลว่าผ่านมาแล้ว
+                if (strtotime($shift['ven_date']) < strtotime(date('Y-m-d'))) {
+                    error_log("Transfer Error: พยายามเปลี่ยนเวรย้อนหลัง ID: " . $schedule_id . " (ระบบไม่อนุญาต)");
+                    return false; 
+                }
+            }
+
+
+
+            $this->conn->beginTransaction();
+
+            // 1. ดึง ID ของเจ้าของเวรคนเดิม
+            $stmtOld = $this->conn->prepare("SELECT user_id FROM ven_schedule WHERE id = :id");
+            $stmtOld->execute([':id' => $schedule_id]);
+            $old_user = $stmtOld->fetch(PDO::FETCH_ASSOC);
+            $old_user_id = $old_user ? $old_user['user_id'] : null;
+
+            // 2. อัปเดตตารางหลัก (ถ้าตกลงกันว่าต้องรออนุมัติก่อนถึงจะเปลี่ยนชื่อ อาจจะต้องข้ามขั้นตอนนี้ไปทำตอนอนุมัติ แต่ถ้าให้เปลี่ยนชื่อเลยก็ใช้โค้ดนี้ได้ครับ)
+            $queryUpdate = "UPDATE ven_schedule SET user_id = :new_user_id WHERE id = :schedule_id";
+            $stmtUpdate = $this->conn->prepare($queryUpdate);
+            $stmtUpdate->execute([
+                ':new_user_id' => $new_user_id,
+                ':schedule_id' => $schedule_id
+            ]);
+
+            // 3. รันเลขที่เอกสารใบเปลี่ยนเวร (Running Number)
+            $yearMonth = date("ym"); // จะได้ปีเดือน เช่น 2404 (ปี 2024 เดือน 4)
+            $prefix = "VC-" . $yearMonth . "-";
+
+            $sqlLast = "SELECT change_no FROM ven_change WHERE change_no LIKE :prefix ORDER BY id DESC LIMIT 1";
+            $stmtLast = $this->conn->prepare($sqlLast);
+            $stmtLast->execute([':prefix' => $prefix . '%']);
+            $lastRow = $stmtLast->fetch(PDO::FETCH_ASSOC);
+
+            $nextNumber = 1;
+            if ($lastRow && !empty($lastRow['change_no'])) {
+                $parts = explode("-", $lastRow['change_no']);
+                $lastNumber = (int) end($parts);
+                $nextNumber = $lastNumber + 1;
+            }
+            // นำมาประกอบกัน จะได้รูปแบบ VC-2404-001
+            $new_change_no = $prefix . str_pad($nextNumber, 3, "0", STR_PAD_LEFT);
+
+            // 4. บันทึกลงตาราง ven_change (กำหนดสถานะ = 0 คือ รออนุมัติ)
+            if ($old_user_id) {
+                // หากตาราง ven_change ไม่มีคอลัมน์ created_at ให้ลบ created_at และ NOW() ออกนะครับ
+                $queryLog = "INSERT INTO ven_change (change_no, s1_id, user1_id, user2_id, status, created_at) 
+                             VALUES (:change_no, :s1_id, :user1_id, :user2_id, 0, NOW())";
+                $stmtLog = $this->conn->prepare($queryLog);
+                $stmtLog->execute([
+                    ':change_no' => $new_change_no,
+                    ':s1_id' => $schedule_id,
+                    ':user1_id' => $old_user_id,
+                    ':user2_id' => $new_user_id
+                ]);
+            }
+
+            $this->conn->commit();
+            return true;
+
+        } catch(PDOException $e) {
+            $this->conn->rollBack();
+            error_log("Transfer Shift Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // เพิ่มฟังก์ชันนี้ใน Model เพื่อดึงประวัติการเปลี่ยนทั้งหมด
+
+
+    // ดึงข้อมูลช่วงเวลาเวรทั้งหมด
+    public function getVenTimes() {
+        $query = "SELECT * FROM ven_time ORDER BY srt ASC";
         $stmt = $this->conn->prepare($query);
-        return $stmt->execute([
-            ':new_user' => $new_user_id,
-            ':id' => $schedule_id
-        ]);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
 }

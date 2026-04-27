@@ -44,7 +44,7 @@ class SettingController {
                     http_response_code(500); echo json_encode(["error" => "ไม่สามารถเพิ่มข้อมูลได้"]);
                 }
                 break;
-                
+
             case 'update_venname':
                 if ($settingModel->updateVenName($data)) {
                     echo json_encode(["message" => "แก้ไขข้อมูลเวรสำเร็จ"]);
@@ -80,6 +80,23 @@ class SettingController {
                 $result = $settingModel->getById($table, $id);
                 echo json_encode($result);
                 break;
+
+            case 'get_agency_config':            
+                $result = $settingModel->getAgencyConfig();
+                echo json_encode($result);
+                break;
+
+            
         }
+    }
+    public function getUsersBySubId($sub_id) {
+        require_once '../src/Models/Setting.php';
+        $settingModel = new Setting($this->db);
+        $users = $settingModel->getUsersBySubId($sub_id);
+        
+        // ส่งกลับไปเป็น JSON
+        http_response_code(200);
+        echo json_encode($users); 
+        exit;
     }
 }
