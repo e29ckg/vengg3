@@ -1,89 +1,70 @@
 <template>
-  <div class="bg-light min-vh-100">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-      <div class="container-fluid px-4">
-        <a class="navbar-brand fw-bold fs-4" href="#"><i class="bi bi-gear me-2"></i>Admin Panel</a>
-        <div class="d-flex align-items-center">
-          <router-link to="/home" class="btn btn-outline-light btn-sm rounded-pill px-3 me-3">
-            <i class="bi bi-arrow-left me-1"></i>กลับหน้าปฏิทิน
-          </router-link>
-        </div>
+  <div class="bg-light min-vh-100 pb-5">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4">
+      <div class="container">
+        <router-link class="navbar-brand fw-bold" to="/home">
+          <i class="bi bi-arrow-left me-2"></i>กลับหน้าหลัก
+        </router-link>
+        <span class="navbar-text text-white fw-bold">
+          <i class="bi bi-gear-fill me-1"></i> ระบบจัดการการตั้งค่า (Admin Only)
+        </span>
       </div>
     </nav>
-    <div class="container py-5">
-      <div class="row">
-        <div class="col-md-3 mb-4">
-          <div class="list-group shadow-sm border-0 rounded-4 overflow-hidden">
-            <button @click="currentTab = 'dep'" :class="['list-group-item list-group-item-action border-0 p-3', currentTab === 'dep' ? 'active' : '']">
-              <i class="bi bi-briefcase me-2"></i>จัดการตำแหน่ง
-            </button>
-            <button @click="currentTab = 'group'" :class="['list-group-item list-group-item-action border-0 p-3', currentTab === 'group' ? 'active' : '']">
-              <i class="bi bi-collection me-2"></i>จัดการกลุ่มงาน
-            </button>
-            <button @click="currentTab = 'fname'" :class="['list-group-item list-group-item-action border-0 p-3', currentTab === 'fname' ? 'active' : '']">
-              <i class="bi bi-person-badge me-2"></i>คำนำหน้าชื่อ
-            </button>
-            <button @click="currentTab = 'ven_name'" :class="['list-group-item list-group-item-action border-0 p-3', currentTab === 'ven_name' ? 'active' : '']">
-              <i class="bi bi-calendar-event me-2"></i>ประเภทเวร (หลัก)
-            </button>
-            <button @click="currentTab = 'sign_name'" :class="['list-group-item list-group-item-action border-0 p-3', currentTab === 'sign_name' ? 'active' : '']">
-              <i class="bi bi-pen me-2"></i>ผู้มีอำนาจลงนาม
-            </button>
-            <button @click="currentTab = 'agency'" :class="['list-group-item list-group-item-action border-0 p-3', currentTab === 'agency' ? 'active' : '']">
-              <i class="bi bi-building me-2"></i>ข้อมูลหน่วยงาน
-            </button>
-          </div>
-        </div>
 
-        <div class="col-md-9">
-          <div class="card shadow-sm border-0 rounded-4 p-4" v-if="currentTab !== 'agency'">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-              <h4 class="fw-bold mb-0">จัดการ{{ getTabTitle() }}</h4>
-              <button class="btn btn-primary rounded-pill px-4" @click="openAddModal">
-                <i class="bi bi-plus-circle me-2"></i>เพิ่มใหม่
-              </button>
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-8">
+          <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-white py-3 border-bottom">
+              <h5 class="mb-0 fw-bold text-primary">
+                <i class="bi bi-sliders me-2"></i>เปิด-ปิด ฟังก์ชันการใช้งาน
+              </h5>
             </div>
-
-            <table class="table table-hover align-middle">
-              <thead class="table-light">
-                <tr>
-                  <th width="10%">ID</th>
-                  <th>ชื่อรายการ</th>
-                  <th width="20%" class="text-center">จัดการ</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="item in items" :key="item.id">
-                  <td>{{ item.id }}</td>
-                  <td class="fw-semibold">{{ item.name }}</td>
-                  <td class="text-center">
-                    <button class="btn btn-sm btn-outline-primary rounded-circle me-2" @click="openEditModal(item)"><i class="bi bi-pencil"></i></button>
-                    <button class="btn btn-sm btn-outline-danger rounded-circle" @click="deleteItem(item.id)"><i class="bi bi-trash"></i></button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="card shadow-sm border-0 rounded-4 p-4" v-else>
-            <h4 class="fw-bold mb-4">ตั้งค่าข้อมูลหน่วยงาน</h4>
-            <div class="row g-3">
-              <div class="col-12">
-                <label class="form-label fw-bold">ชื่อหน่วยงาน (สำหรับแสดงหัวรายงาน)</label>
-                <input type="text" class="form-control" v-model="agencyInfo.name" placeholder="เช่น ศาลจังหวัด...">
+            
+            <div class="card-body p-4">
+              <div v-if="isLoading" class="text-center py-4">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">กำลังโหลดการตั้งค่า...</p>
               </div>
-              <div class="col-12">
-                <label class="form-label fw-bold">ที่อยู่ / รายละเอียดเพิ่มเติม</label>
-                <textarea class="form-control" v-model="agencyInfo.address" rows="3"></textarea>
-              </div>
-              <div class="col-12 mt-4 text-end">
-                <button class="btn btn-success rounded-pill px-5 fw-bold" @click="saveAgencyInfo">
-                  บันทึกข้อมูลหน่วยงาน
-                </button>
+
+              <div v-else>
+                <div class="setting-item d-flex justify-content-between align-items-center p-3 mb-3 border rounded-3 bg-white transition-hover">
+                  <div>
+                    <h6 class="fw-bold mb-1">อนุญาตให้เปลี่ยนเวรย้อนหลัง</h6>
+                    <p class="text-muted small mb-0">หากปิด: จะไม่สามารถโอนหรือเปลี่ยนเวรที่วันที่ผ่านมาแล้วได้</p>
+                  </div>
+                  <div class="form-check form-switch">
+                    <input 
+                      class="form-check-input custom-switch" 
+                      type="checkbox" 
+                      v-model="settings.allow_retro_transfer" 
+                      @change="handleToggle('allow_retro_transfer', settings.allow_retro_transfer)"
+                    >
+                  </div>
+                </div>
+
+                <div class="setting-item d-flex justify-content-between align-items-center p-3 mb-3 border rounded-3 bg-white transition-hover">
+                  <div>
+                    <h6 class="fw-bold mb-1">แจ้งเตือนการเข้าเวรติดต่อกัน 24 ชม.</h6>
+                    <p class="text-muted small mb-0">หากเปิด: ระบบจะแจ้งเตือนเมื่อพบการอยู่เวรเช้า-ดึกติดกัน</p>
+                  </div>
+                  <div class="form-check form-switch">
+                    <input 
+                      class="form-check-input custom-switch" 
+                      type="checkbox" 
+                      v-model="settings.enable_24h_check" 
+                      @change="handleToggle('enable_24h_check', settings.enable_24h_check)"
+                    >
+                  </div>
+                </div>
+
+                <div class="alert alert-info border-0 rounded-3 mt-4">
+                  <i class="bi bi-info-circle-fill me-2"></i>
+                  การเปลี่ยนแปลงการตั้งค่าจะมีผลกับผู้ใช้งานทุกคนในระบบทันที
+                </div>
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -91,84 +72,107 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import api from '../services/api'
-import Swal from 'sweetalert2'
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import api from '../services/api';
+import Swal from 'sweetalert2';
 
-const currentTab = ref('dep')
-const items = ref([])
-const agencyInfo = ref({ name: '', address: '' })
+const router = useRouter();
+const isLoading = ref(true);
+const userRole = parseInt(localStorage.getItem('role') || 1);
 
-const getTabTitle = () => {
-  const titles = { dep: 'ตำแหน่ง', group: 'กลุ่มงาน', fname: 'คำนำหน้าชื่อ', ven_name: 'ประเภทเวร', sign_name: 'ผู้ลงนาม' }
-  return titles[currentTab.value] || ''
-}
+// สถานะการตั้งค่า
+const settings = ref({
+  allow_retro_transfer: false,
+  enable_24h_check: false
+});
 
-const fetchItems = async () => {
-  if (currentTab.value === 'agency') {
-    // ดึงข้อมูลหน่วยงาน
-    const res = await api.get('?route=admin/setting&table=agency_config&action=list')
-    // สมมติโครงสร้าง: id=1 คือชื่อหน่วยงาน, id=2 คือที่อยู่ (หรือปรับตาม db คุณ)
-    agencyInfo.value.name = res.data.find(i => i.name === 'agency_name')?.val || ''
-    agencyInfo.value.address = res.data.find(i => i.name === 'agency_address')?.val || ''
-  } else {
-    const response = await api.get(`?route=admin/setting&table=${currentTab.value}&action=list`)
-    items.value = response.data
+// ตรวจสอบสิทธิ์ (ถ้าไม่ใช่ Admin ให้เด้งออก)
+const checkPermission = () => {
+  if (userRole !== 9) {
+    Swal.fire('ปฏิเสธการเข้าถึง', 'หน้านี้สำหรับผู้ดูแลระบบเท่านั้น', 'error');
+    router.push('/home');
   }
-}
+};
 
-watch(currentTab, () => fetchItems())
-
-// ฟังก์ชัน saveAgencyInfo สำหรับปุ่มบันทึกหน่วยงาน
-const saveAgencyInfo = async () => {
+// ดึงข้อมูลการตั้งค่าจาก Backend
+const fetchSettings = async () => {
+  isLoading.value = true;
   try {
-    // ส่งข้อมูลไปอัปเดตที่ API (สร้าง route รองรับใน index.php ด้วยนะครับ)
-    await api.post('?route=admin/setting&table=agency_config&action=update_agency', agencyInfo.value)
-    Swal.fire('สำเร็จ', 'อัปเดตข้อมูลหน่วยงานเรียบร้อย', 'success')
+    const res = await api.get('?route=settings/app');
+    // แปลงค่า '1' เป็น true, '0' เป็น false
+    settings.value.allow_retro_transfer = res.data.allow_retro_transfer === '1';
+    settings.value.enable_24h_check = res.data.enable_24h_check === '1';
   } catch (error) {
-    Swal.fire('ผิดพลาด', 'ไม่สามารถบันทึกได้', 'error')
+    console.error("Fetch settings error:", error);
+    Swal.fire('ผิดพลาด', 'ไม่สามารถโหลดข้อมูลการตั้งค่าได้', 'error');
+  } finally {
+    isLoading.value = false;
   }
-}
+};
 
-const openAddModal = async () => {
-  const { value: name } = await Swal.fire({
-    title: 'เพิ่มข้อมูลใหม่',
-    input: 'text',
-    inputLabel: 'กรุณากรอกชื่อ',
-    showCancelButton: true
-  })
-  if (name) {
-    await api.post(`?route=admin/setting&table=${currentTab.value}&action=create`, { name })
-    fetchItems()
+// อัปเดตการตั้งค่าเมื่อมีการเลื่อนสวิตช์
+const handleToggle = async (key, value) => {
+  const valString = value ? '1' : '0';
+  const label = key === 'allow_retro_transfer' ? 'การเปลี่ยนเวรย้อนหลัง' : 'การแจ้งเตือน 24 ชม.';
+  
+  try {
+    const res = await api.post('?route=settings/update', {
+      setting_key: key,
+      setting_value: valString
+    });
+
+    if (res.data.success) {
+      const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true
+      });
+      Toast.fire({
+        icon: 'success',
+        title: `อัปเดต ${label} เป็น ${value ? 'เปิด' : 'ปิด'} เรียบร้อยแล้ว`
+      });
+    }
+  } catch (error) {
+    console.error("Update setting error:", error);
+    Swal.fire('ผิดพลาด', 'ไม่สามารถบันทึกค่าได้ (อาจไม่มีสิทธิ์ Admin)', 'error');
+    // ถ้าพลาด ให้เปลี่ยนสวิตช์กลับเป็นค่าเดิม
+    settings.value[key] = !value;
   }
-}
+};
 
-const openEditModal = async (item) => {
-  const { value: name } = await Swal.fire({
-    title: 'แก้ไขข้อมูล',
-    input: 'text',
-    inputValue: item.name,
-    showCancelButton: true
-  })
-  if (name) {
-    await api.post(`?route=admin/setting&table=${currentTab.value}&action=update`, { id: item.id, name })
-    fetchItems()
-  }
-}
-
-const deleteItem = async (id) => {
-  const result = await Swal.fire({
-    title: 'ยืนยันการลบ?',
-    text: "หากลบแล้วข้อมูลที่เกี่ยวข้องอาจมีปัญหา",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33'
-  })
-  if (result.isConfirmed) {
-    await api.post(`?route=admin/setting&table=${currentTab.value}&action=delete`, { id })
-    fetchItems()
-  }
-}
-
-onMounted(() => fetchItems())
+onMounted(() => {
+  checkPermission();
+  fetchSettings();
+});
 </script>
+
+<style scoped>
+.custom-switch {
+  width: 3.5rem;
+  height: 1.75rem;
+  cursor: pointer;
+}
+
+.setting-item {
+  transition: all 0.2s ease;
+}
+
+.transition-hover:hover {
+  background-color: #f8f9fa !important;
+  border-color: #0d6efd !important;
+  transform: translateY(-2px);
+}
+
+.card {
+  border-radius: 1rem;
+}
+
+/* ปรับแต่งสีสวิตช์ตอนเปิด */
+.form-check-input:checked {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+</style>

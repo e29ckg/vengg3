@@ -30,6 +30,11 @@ const router = createRouter({
       component: () => import('../views/SystemSettingsView.vue') 
     },
     { 
+      path: '/admin/agency-config', 
+      name: 'agency-config', 
+      component: () => import('../views/AgencyConfigView.vue') 
+    },
+    { 
       path: '/director/ven-settings', 
       name: 'ven-settings', 
       component: () => import('../views/VenSettingView.vue') 

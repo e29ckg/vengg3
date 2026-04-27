@@ -82,13 +82,13 @@
             
             <div v-if="activeCommand" class="mt-2 p-2 border rounded-3 bg-white shadow-sm d-flex justify-content-between align-items-center">
               <div>
-                <span v-if="activeCommand.status == 1" class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>กำลังดำเนินการ</span>
-                <span v-else-if="activeCommand.status == 2" class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>ยืนยันแล้ว (เปิดแลก)</span>
+                <span v-if="activeCommand.status == 0" class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>กำลังดำเนินการ</span>
+                <span v-else-if="activeCommand.status == 1" class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>ยืนยันแล้ว (เปิดแลก)</span>
               </div>
-              <button v-if="activeCommand.status == 1" class="btn btn-sm btn-success fw-bold" style="font-size: 0.7rem;" @click="toggleCommandStatus(2)">
+              <button v-if="activeCommand.status == 0" class="btn btn-sm btn-success fw-bold" style="font-size: 0.7rem;" @click="toggleCommandStatus(1)">
                 ยืนยันการจัดเวร
               </button>
-              <button v-else-if="activeCommand.status == 2" class="btn btn-sm btn-outline-secondary fw-bold" style="font-size: 0.7rem;" @click="toggleCommandStatus(1)">
+              <button v-else-if="activeCommand.status == 1" class="btn btn-sm btn-outline-secondary fw-bold" style="font-size: 0.7rem;" @click="toggleCommandStatus(0)">
                 ปลดล็อคแก้ไข
               </button>
             </div>
@@ -114,7 +114,7 @@
               </button>
             </div>
             
-            <div v-if="activeCommand && activeCommand.status == 2" class="alert alert-success py-2 mt-2 mb-0 text-center small fw-bold">
+            <div v-if="activeCommand && activeCommand.status == 1" class="alert alert-success py-2 mt-2 mb-0 text-center small fw-bold">
               <i class="bi bi-lock-fill me-1"></i> คำสั่งนี้ยืนยันแล้ว ไม่สามารถแก้ไขได้
             </div>
 

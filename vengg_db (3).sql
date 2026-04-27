@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.3
+-- version 5.2.2
 -- https://www.phpmyadmin.net/
 --
 -- Host: db
--- Generation Time: Apr 27, 2026 at 08:45 AM
--- Server version: 8.0.43
--- PHP Version: 8.3.26
+-- Generation Time: Apr 27, 2026 at 07:28 PM
+-- Server version: 8.0.42
+-- PHP Version: 8.2.27
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -20,6 +20,51 @@ SET time_zone = "+00:00";
 --
 -- Database: `vengg_db`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `agency_config`
+--
+
+CREATE TABLE `agency_config` (
+  `id` int NOT NULL,
+  `agency_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ชื่อหน่วยงานเต็ม (เช่น ศาลจังหวัดเพชรบุรี)',
+  `agency_short_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ชื่อหน่วยงานย่อ',
+  `director_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ชื่อหัวหน้าหน่วยงาน/ผู้บริหาร',
+  `director_position` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ตำแหน่งหัวหน้าหน่วยงาน',
+  `admin_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ชื่อผู้จัดทำตารางเวร/ผู้อำนวยการ',
+  `admin_position` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ตำแหน่งผู้จัดทำตารางเวร',
+  `logo_image` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT 'default_logo.png' COMMENT 'ชื่อไฟล์โลโก้หน่วยงาน',
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'อัปเดตล่าสุดเมื่อไหร่'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `agency_config`
+--
+
+INSERT INTO `agency_config` (`id`, `agency_name`, `agency_short_name`, `director_name`, `director_position`, `admin_name`, `admin_position`, `logo_image`, `updated_at`) VALUES
+(1, 'ศาลจังหวัดทดสอบjjje', 'ศาลจังหวัดฯ', '(นายสมชาย รักยุติธรรม)', 'ผู้พิพากษาหัวหน้าศาลจังหวัดทดสอบ', '(นางสาวสมมติ ขยันทำงาน)', 'ผู้อำนวยการสำนักอำนวยการประจำศาลฯ', 'default_logo.png', '2026-04-27 12:42:16');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `app_settings`
+--
+
+CREATE TABLE `app_settings` (
+  `setting_key` varchar(50) NOT NULL,
+  `setting_value` varchar(255) NOT NULL,
+  `description` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `app_settings`
+--
+
+INSERT INTO `app_settings` (`setting_key`, `setting_value`, `description`) VALUES
+('allow_retro_transfer', '0', 'อนุญาตให้เปลี่ยนเวรย้อนหลังได้ (1=อนุญาต, 0=ไม่อนุญาต)'),
+('enable_24h_check', '1', 'เปิดใช้งานระบบแจ้งเตือนการเข้าเวรติดต่อกัน 24 ชม.');
 
 -- --------------------------------------------------------
 
@@ -181,18 +226,18 @@ CREATE TABLE `profile` (
 
 INSERT INTO `profile` (`user_id`, `id_card`, `prefix_name`, `fname_id`, `first_name`, `last_name`, `srt`, `img`, `birthday`, `bloodtype`, `dep`, `dep_id`, `workgroup`, `group_id`, `address`, `phone`, `bank_account`, `bank_comment`, `status`, `created_at`, `updated_at`, `st`) VALUES
 ('1', NULL, 'นาย', 1, 'ผู้ดูแลระบบ', 'ทดสอบ', 1, NULL, NULL, NULL, 'พนักงานสถานที่', 6, 'กลุ่มช่วยอำนวยการ', 2, NULL, '1', '', '', 10, '2023-12-14 09:54:13', '2024-05-16 06:58:08', 1),
-('1680162049', NULL, 'นาง', 2, 'just1', 'just1', 12, NULL, NULL, NULL, 'ผู้พิพากษา', 18, 'ผู้พิพากษา', 8, NULL, '1111', NULL, NULL, 10, '2025-09-02 11:14:34', '2025-09-02 11:14:34', 1),
+('1680162049', NULL, 'นาง', 2, 'just1', 'just1', 999, NULL, NULL, NULL, 'ผู้พิพากษา', 18, 'ผู้พิพากษา', 8, NULL, '1111', NULL, NULL, 10, '2025-09-02 11:14:34', '2025-09-02 11:14:34', 1),
 ('1680162050', NULL, 'นาง', 2, 'just2', 'just2', 999, NULL, NULL, NULL, 'ผู้พิพากษา', 18, 'ผู้พิพากษา', 8, NULL, '2222', '', '', 10, '2025-09-02 11:15:07', '2025-09-02 11:15:07', 2),
 ('1680162051', NULL, 'นางสาว', 3, 'just3', 'just3', 999, NULL, NULL, NULL, 'ผู้พิพากษา', 18, 'ผู้พิพากษา', 8, NULL, '3333', '', '', 10, '2025-09-02 11:15:44', '2025-09-02 11:15:44', 3),
 ('1680162052', NULL, 'นาย', 1, 'user1', 'user1', 999, NULL, NULL, NULL, 'เจ้าพนักงานศาลยุติธรรมชำนาญการพิเศษ', 13, 'ผู้อำนวยการฯ', 1, NULL, '0001', '', '', 10, '2025-09-02 11:17:28', '2025-09-02 11:28:48', 201),
 ('1680162053', NULL, 'นาย', 1, 'user2', 'user2', 999, NULL, NULL, NULL, 'เจ้าพนักงานศาลยุติธรรม', 22, 'กลุ่มช่วยอำนวยการ', 2, NULL, '0002', '', '', 10, '2025-09-02 11:25:08', '2025-09-02 11:28:38', 202),
 ('1680162054', NULL, 'นาย', 1, 'user3', 'user3', 999, NULL, NULL, NULL, 'เจ้าหน้าที่ศาลยุติธรรม', 8, 'กลุ่มงานคดี', 4, NULL, '0003', '', '', 10, '2025-09-02 11:27:09', '2025-09-02 11:28:15', 203),
-('1680162055', NULL, 'นางสาว', 3, 'user4', 'user4', 999, NULL, NULL, NULL, 'เจ้าพนักงานศาลยุติธรรมปฏิบัติการ', 9, 'กลุ่มงานคดี', 4, NULL, '0004', '', '', 10, '2025-09-02 11:29:32', '2025-09-02 11:29:32', 204),
-('1680162056', NULL, 'นางสาว', 3, 'user5', 'user5', 999, NULL, NULL, NULL, 'นักวิชาการคอมพิวเตอร์', 2, 'ส่วนเทคโนโลยีสารสนเทศ', 12, NULL, '0005', NULL, NULL, 0, '2025-09-02 11:30:11', '2025-09-02 11:30:11', 1),
+('1680162055', NULL, 'นางสาว', 3, 'user4', 'user4', 999, NULL, NULL, NULL, 'เจ้าพนักงานศาลยุติธรรมปฏิบัติการ', 9, 'กลุ่มงานคดี', 4, NULL, '0004', NULL, NULL, 10, '2025-09-02 11:29:32', '2025-09-02 11:29:32', 204),
+('1680162056', NULL, 'นางสาว', 3, 'user5', 'user5', 999, NULL, NULL, NULL, 'นักวิชาการคอมพิวเตอร์', 2, 'ส่วนเทคโนโลยีสารสนเทศ', 12, NULL, '0005', NULL, NULL, 10, '2025-09-02 11:30:11', '2025-09-02 11:30:11', 1),
 ('865368c8-440a-409d-bce9-1ffa28f072b0', NULL, 'ฟฟฟ', 2, 'sss', 'sss', 999, NULL, NULL, NULL, NULL, 1, NULL, 1, NULL, 'ss', '', '', 10, NULL, NULL, 0),
 ('e9d85622-0fcc-43c3-996a-865d6cf73f16', NULL, 'นาย', 1, 'ss', 'aa', 999, NULL, NULL, NULL, 'นักวิชาการคอมพิวเตอร์', 1, 'ผู้พิพากษาสมทบ', 1, NULL, '', '', '', 10, NULL, NULL, 0),
 ('0fe42647-50be-422a-b75b-25a792a9e79a', NULL, 'สิบตำรวจเอก', NULL, 'd', 'f', 999, NULL, NULL, NULL, NULL, 1, NULL, 1, NULL, NULL, NULL, NULL, 10, NULL, NULL, 0),
-('4dcc6854-a3b2-4fae-9617-bc8fd9158255', NULL, 'นาย', NULL, 'dd', NULL, 999, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'dd', NULL, NULL, 0, NULL, NULL, 0);
+('4dcc6854-a3b2-4fae-9617-bc8fd9158255', NULL, 'นาย', NULL, 'dd', NULL, 999, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'dd', NULL, NULL, 10, NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -226,7 +271,7 @@ INSERT INTO `sign_name` (`id`, `name`, `dep`, `dep2`, `dep3`, `role`, `st`) VALU
 --
 
 CREATE TABLE `user` (
-  `id` varchar(36) COLLATE utf8mb3_unicode_ci NOT NULL,
+  `id` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `username` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `auth_key` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `password_hash` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
@@ -244,17 +289,17 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`id`, `username`, `auth_key`, `password_hash`, `password_reset_token`, `email`, `role`, `status`, `is_deleted`, `created_at`, `updated_at`) VALUES
-('0fe42647-50be-422a-b75b-25a792a9e79a', 'f', NULL, '$2y$10$40wGPYZjmKf2hp.ZoK73c.6DKL7fVRJjjCN0s9ugXsAlRwM1bOVZy', NULL, NULL, 1, 0, 0, '2026-04-27 03:40:31', NULL),
-('1', 'admin', 'c7e8e2154fa0bafca19c511e4c96efd3', '$2y$10$SjrUtSxJ8dcOU2cnkltWbOFNzXpCKhd0.5McR3qskS0nIVsOLZrT2', NULL, NULL, 9, 10, 0, '2023-12-14 09:54:13', '2024-04-27 18:13:27'),
+('0fe42647-50be-422a-b75b-25a792a9e79a', 'f', NULL, '$2y$10$40wGPYZjmKf2hp.ZoK73c.6DKL7fVRJjjCN0s9ugXsAlRwM1bOVZy', NULL, NULL, 1, 10, 0, '2026-04-27 03:40:31', NULL),
+('1', 'admin', 'e514e3a0f4b3ee16b4a5e4187f19606c', '$2y$10$SjrUtSxJ8dcOU2cnkltWbOFNzXpCKhd0.5McR3qskS0nIVsOLZrT2', NULL, NULL, 9, 10, 0, '2023-12-14 09:54:13', '2024-04-27 18:13:27'),
 ('1680162049', 'j1', NULL, '$2y$10$ZYsif1LMin6gCWhKLZZ4hObuMqc8CtHBfPQ2jf/BL4ayNDvCO4hjq', NULL, NULL, 1, 10, 0, '2025-09-02 11:14:34', '2025-09-02 11:14:34'),
 ('1680162050', 'j2', NULL, '$2y$10$EWjmeA.i7d1ZaEZAOv3zouA3r0fBsJUu6VUaJ5WYF8WKgOLi5p8wK', NULL, NULL, 1, 10, 0, '2025-09-02 11:15:07', '2025-09-02 11:15:07'),
 ('1680162051', 'j3', NULL, '$2y$10$p8jIYxzYWdvsMupgq063w.hnOR0HX4bMixbUX8U0KkDd5zoZ2Mdiq', NULL, NULL, 1, 10, 0, '2025-09-02 11:15:44', '2025-09-02 11:15:44'),
 ('1680162052', 'user1', NULL, '$2y$10$6.xneoVTL6DkcC23fNucUe3BD5aLvD6bpjVAD/NNzeHHj4sSAuyfi', NULL, NULL, 1, 10, 0, '2025-09-02 11:17:28', '2025-09-02 11:17:28'),
 ('1680162053', 'user2', NULL, '$2y$10$bEU30/NLOPUPlcT9R9HYWuT1VhtwuE.EIpwUvvG5sfDCCRqaWfBPK', NULL, NULL, 1, 10, 0, '2025-09-02 11:25:08', '2025-09-02 11:25:08'),
-('1680162054', 'user3', NULL, '$2y$10$olBspSbuGrdMlyZSNy913.CgRPvexRCp212MQw651mVbliSdRcNtS', NULL, NULL, 1, 10, 0, '2025-09-02 11:27:09', '2025-09-02 11:27:09'),
-('1680162055', 'user4', NULL, '$2y$10$o5CL0z0xoGLx1wkVWmKyLOxAV7LrxyJxSYEot/FyI8rEgh4h2NhO.', NULL, NULL, 1, 0, 0, '2025-09-02 11:29:32', '2025-09-02 11:29:32'),
-('1680162056', 'user5', NULL, '$2y$10$gUsJavBCJMAk.JW10JTLmeQD5b.rSsmOj0j27T8rPhh865xZPZxp.', NULL, NULL, 1, 0, 0, '2025-09-02 11:30:11', '2025-09-02 11:30:11'),
-('4dcc6854-a3b2-4fae-9617-bc8fd9158255', 'dd', NULL, '$2y$10$uI8iTmktzPpAtI4pRAz2lu3P5bc67MLjnKR9KyjyREUfR29zwkyZq', NULL, NULL, 1, 0, 0, '2026-04-27 04:04:41', NULL),
+('1680162054', 'user3', 'da34c2c4a8c1fda3e7cf5ec445ac78fd', '$2y$10$olBspSbuGrdMlyZSNy913.CgRPvexRCp212MQw651mVbliSdRcNtS', NULL, NULL, 1, 10, 0, '2025-09-02 11:27:09', '2025-09-02 11:27:09'),
+('1680162055', 'user4', NULL, '$2y$10$o5CL0z0xoGLx1wkVWmKyLOxAV7LrxyJxSYEot/FyI8rEgh4h2NhO.', NULL, NULL, 1, 10, 0, '2025-09-02 11:29:32', '2025-09-02 11:29:32'),
+('1680162056', 'user5', 'ca2bcace20d7cdbd623192db3515eaaa', '$2y$10$gUsJavBCJMAk.JW10JTLmeQD5b.rSsmOj0j27T8rPhh865xZPZxp.', NULL, NULL, 1, 10, 0, '2025-09-02 11:30:11', '2025-09-02 11:30:11'),
+('4dcc6854-a3b2-4fae-9617-bc8fd9158255', 'dd', NULL, '$2y$10$uI8iTmktzPpAtI4pRAz2lu3P5bc67MLjnKR9KyjyREUfR29zwkyZq', NULL, NULL, 1, 10, 0, '2026-04-27 04:04:41', NULL),
 ('865368c8-440a-409d-bce9-1ffa28f072b0', 'sss', NULL, '$2y$10$gpc2ohIJbV2E2LEC8Fa4j.ZGIIM0MgRCafBPjFRrIXsvMxRTMLOia', NULL, NULL, 1, 10, 1, '2026-04-27 03:23:49', NULL),
 ('e9d85622-0fcc-43c3-996a-865d6cf73f16', 'aa', NULL, '$2y$10$3srR9S5I078l6rhkBtFm9OWdNIbh01hBTHw5IcdN9lnn0X5zM0lgG', NULL, NULL, 1, 0, 1, '2026-04-27 03:29:59', NULL);
 
@@ -311,13 +356,24 @@ INSERT INTO `ven` (`id`, `user_id`, `ven_com_id`, `ven_com_idb`, `ven_date`, `ve
 
 CREATE TABLE `ven_change` (
   `id` int NOT NULL,
+  `change_no` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `s1_id` int NOT NULL COMMENT 'รหัสตารางเวรของผู้ขอ (ven_schedule.id)',
-  `user1_id` int NOT NULL COMMENT 'รหัสผู้ขอแลก',
-  `s2_id` int NOT NULL COMMENT 'รหัสตารางเวรของเพื่อน (ven_schedule.id)',
-  `user2_id` int NOT NULL COMMENT 'รหัสเพื่อนที่ถูกขอแลก',
+  `user1_id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'รหัสผู้ขอแลก',
+  `s2_id` int DEFAULT NULL COMMENT 'รหัสตารางเวรของเพื่อน (ven_schedule.id)',
+  `user2_id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'รหัสเพื่อนที่ถูกขอแลก',
   `status` int DEFAULT '0' COMMENT '0=รออนุมัติ, 1=ยอมรับแล้ว, 2=ปฏิเสธ',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `ven_change`
+--
+
+INSERT INTO `ven_change` (`id`, `change_no`, `s1_id`, `user1_id`, `s2_id`, `user2_id`, `status`, `created_at`) VALUES
+(1, NULL, 531, '1', NULL, '1680162056', 1, '2026-04-27 16:01:31'),
+(3, 'VC-2604-001', 533, '1', NULL, '1680162050', 0, '2026-04-27 19:01:26'),
+(5, 'VC-2604-003', 516, '1', NULL, '1680162051', 0, '2026-04-27 19:10:14'),
+(6, 'VC-2604-004', 535, '1680162054', NULL, '1680162056', 0, '2026-04-27 19:26:31');
 
 -- --------------------------------------------------------
 
@@ -345,8 +401,9 @@ CREATE TABLE `ven_com` (
 
 INSERT INTO `ven_com` (`id`, `com_num`, `com_date`, `ven_month`, `status`, `ven_name_id`, `ven_com_days`, `comment`, `file`, `ref`, `create_at`) VALUES
 (1765858095, '4/2568', '2025-12-16', '2025-12', '1', 25, '', NULL, NULL, '16grxL3Ot4AcQmjaRZPW', NULL),
-(1772680473, '1111', '2026-03-05', '2026-04', '1', 24, '4,5,11,12,18,19,25,26', NULL, NULL, '3AnblhvKL7xjcdugH6kz', NULL),
-(1772680474, '2222', '2026-04-26', '2026-04', '1', 25, '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30', NULL, NULL, NULL, NULL);
+(1772680473, '1111', '2026-03-05', '2026-04', '0', 24, '4,5,11,12,18,19,25,26', NULL, NULL, '3AnblhvKL7xjcdugH6kz', NULL),
+(1772680474, '2222', '2026-04-26', '2026-04', '1', 25, '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30', NULL, NULL, NULL, NULL),
+(1772680475, '111', '2026-04-28', '2026-04', '0', 24, '1', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -358,7 +415,7 @@ CREATE TABLE `ven_name` (
   `id` int NOT NULL,
   `name` varchar(255) NOT NULL,
   `name_full` text,
-  `DN` varchar(255) DEFAULT NULL,
+  `dn` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
   `word` varchar(255) DEFAULT NULL,
   `srt` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
@@ -367,11 +424,11 @@ CREATE TABLE `ven_name` (
 -- Dumping data for table `ven_name`
 --
 
-INSERT INTO `ven_name` (`id`, `name`, `name_full`, `DN`, `word`, `srt`) VALUES
-(24, 'เวรเปิดทำการศาลนอกเวลาราชการ (เวรตรวจสอบการจับ)', 'ให้ข้าราชการฝ่ายตุลาการศาลยุติธรรม พนักงานราชการศาลยุติธรรม และลูกจ้างในศาลเยาวชนและครอบครัวกลาง อยู่ปฏิบัติหน้าที่โดยเปิดทำการศาลนอกเวลาราชการในวันหยุดราชการ', 'กลางวัน', 'ven_report_24_1756973949.docx', 0),
-(25, 'เวรปฏิบัติหน้าที่ออกหมายจับและหมายค้นนอกเวลาราชการ (เวรกลางคืน)', 'ให้ข้าราชการฝ่ายตุลาการศาลยุติธรรม พนักงานราชการศาลยุติธรรม และลูกจ้างในศาลเยาวชนและครอบครัวกลางอยู่ปฏิบัติหน้าที่ออกหมายจับและหมายค้นนอกเวลาราชการ (เวรกลางคืน) ', 'กลางคืน', NULL, 5),
+INSERT INTO `ven_name` (`id`, `name`, `name_full`, `dn`, `word`, `srt`) VALUES
+(24, 'เวรเปิดทำการศาลนอกเวลาราชการ (เวรตรวจสอบการจับ)', 'ให้ข้าราชการฝ่ายตุลาการศาลยุติธรรม พนักงานราชการศาลยุติธรรม และลูกจ้างในศาลเยาวชนและครอบครัวกลาง อยู่ปฏิบัติหน้าที่โดยเปิดทำการศาลนอกเวลาราชการในวันหยุดราชการ', 'กลางวัน(08.30-16.30)', 'ven_report_24_1756973949.docx', 0),
+(25, 'เวรปฏิบัติหน้าที่ออกหมายจับและหมายค้นนอกเวลาราชการ (เวรกลางคืน)', 'ให้ข้าราชการฝ่ายตุลาการศาลยุติธรรม พนักงานราชการศาลยุติธรรม และลูกจ้างในศาลเยาวชนและครอบครัวกลางอยู่ปฏิบัติหน้าที่ออกหมายจับและหมายค้นนอกเวลาราชการ (เวรกลางคืน) ', 'กลางคืน(16.30-08.30)', NULL, 5),
 (27, 'เวรปฏิบัติงานนอกเวลาราชการในวันทำการปกติตามโครงการเปิดทำการศาลนอกเวลาราชการฯ 16.30-20.30 น.', 'ให้ข้าราชการตุลาการ ข้าราชการศาลยุติธรรม ลูกจ้าง และพนักงานราชการ ปฏิบัติงานในวันหยุดราชการ เวลา 16.30 – 20.30 นาฬิกา ตามโครงการเปิดทำการศาลนอกเวลาราชการเพื่อเร่งรัดการพิจารณาพิพากษาคดี หรือเพื่ออำนวยความสะดวกแก่ประชาชน ประจำปีงบประมาณ พ.ศ. ๒๕๖๗ ', 'nightCourt', NULL, 3),
-(28, 'เวรปฏิบัติงานในวันหยุดราชการตามโครงการเปิดทำการศาลนอกเวลาราชการฯ 8.30-16.30 น.', 'ให้ข้าราชการตุลาการ ข้าราชการศาลยุติธรรม ลูกจ้าง และพนักงานราชการ ปฏิบัติงานในวันหยุดราชการ เวลา 08.30 – 16.30 นาฬิกา ตามโครงการเปิดทำการศาลนอกเวลาราชการเพื่อเร่งรัดการพิจารณาพิพากษาคดี หรือเพื่ออำนวยความสะดวกแก่ประชาชน ประจำปีงบประมาณ พ.ศ. ๒๕๖๗ ', 'กลางวัน', NULL, 1),
+(28, 'เวรปฏิบัติงานในวันหยุดราชการตามโครงการเปิดทำการศาลนอกเวลาราชการฯ 8.30-16.30 น.', 'ให้ข้าราชการตุลาการ ข้าราชการศาลยุติธรรม ลูกจ้าง และพนักงานราชการ ปฏิบัติงานในวันหยุดราชการ เวลา 08.30 – 16.30 นาฬิกา ตามโครงการเปิดทำการศาลนอกเวลาราชการเพื่อเร่งรัดการพิจารณาพิพากษาคดี หรือเพื่ออำนวยความสะดวกแก่ประชาชน ประจำปีงบประมาณ พ.ศ. ๒๕๖๗ ', 'กลางวัน(08.30-16.30)', NULL, 1),
 (29, 'เวรปฏิบัติงานนอกเวลาราชการในวันทำการปกติตามโครงการเปิดทำการศาลนอกเวลาราชการฯ 16.30-20.30 น. ( ผู้พิพากษาสมทบ)', NULL, 'nightCourt', NULL, 4),
 (30, 'เวรปฏิบัติงานในวันหยุดราชการตามโครงการเปิดทำการศาลนอกเวลาราชการฯ 8.30-16.30 น. (ผู้พิพากษาสมทบ)', NULL, 'กลางวัน', NULL, 6);
 
@@ -426,7 +483,7 @@ CREATE TABLE `ven_schedule` (
   `ven_date` date NOT NULL COMMENT 'วันที่ปฏิบัติหน้าที่ (YYYY-MM-DD)',
   `ven_com_id` int NOT NULL COMMENT 'อ้างอิงรหัสคำสั่งจากตาราง ven_com',
   `ven_name_sub_id` int NOT NULL COMMENT 'อ้างอิงรหัสหน้าที่ย่อยจากตาราง ven_name_sub',
-  `user_id` int NOT NULL COMMENT 'อ้างอิงรหัสพนักงานจากตาราง user',
+  `user_id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'อ้างอิงรหัสพนักงานจากตาราง user',
   `status` int NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -436,44 +493,67 @@ CREATE TABLE `ven_schedule` (
 --
 
 INSERT INTO `ven_schedule` (`id`, `ven_date`, `ven_com_id`, `ven_name_sub_id`, `user_id`, `status`, `created_at`) VALUES
-(322, '2026-04-04', 1772680473, 130, 1680162049, 0, '2026-04-27 08:24:13'),
-(323, '2026-04-05', 1772680473, 130, 1680162050, 0, '2026-04-27 08:24:13'),
-(324, '2026-04-11', 1772680473, 130, 1680162051, 0, '2026-04-27 08:24:13'),
-(325, '2026-04-12', 1772680473, 130, 1680162049, 0, '2026-04-27 08:24:13'),
-(326, '2026-04-18', 1772680473, 130, 1680162050, 0, '2026-04-27 08:24:13'),
-(327, '2026-04-19', 1772680473, 130, 1680162051, 0, '2026-04-27 08:24:13'),
-(328, '2026-04-25', 1772680473, 130, 1680162049, 0, '2026-04-27 08:24:13'),
-(329, '2026-04-26', 1772680473, 130, 1680162050, 0, '2026-04-27 08:24:13'),
-(330, '2026-04-01', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
-(331, '2026-04-02', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
-(332, '2026-04-03', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
-(333, '2026-04-04', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
-(334, '2026-04-05', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
-(335, '2026-04-06', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
-(336, '2026-04-07', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
-(337, '2026-04-08', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
-(338, '2026-04-09', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
-(339, '2026-04-10', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
-(340, '2026-04-11', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
-(341, '2026-04-12', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
-(342, '2026-04-13', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
-(343, '2026-04-14', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
-(344, '2026-04-15', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
-(345, '2026-04-16', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
-(346, '2026-04-17', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
-(347, '2026-04-18', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
-(348, '2026-04-19', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
-(349, '2026-04-20', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
-(350, '2026-04-21', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
-(351, '2026-04-22', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
-(352, '2026-04-23', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
-(353, '2026-04-24', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
-(354, '2026-04-25', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
-(355, '2026-04-26', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
-(356, '2026-04-27', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
-(357, '2026-04-28', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:49'),
-(358, '2026-04-29', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:49'),
-(359, '2026-04-30', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:49');
+(322, '2026-04-04', 1772680473, 130, '1680162049', 0, '2026-04-27 08:24:13'),
+(323, '2026-04-05', 1772680473, 130, '1680162050', 0, '2026-04-27 08:24:13'),
+(324, '2026-04-11', 1772680473, 130, '1680162051', 0, '2026-04-27 08:24:13'),
+(325, '2026-04-12', 1772680473, 130, '1680162049', 0, '2026-04-27 08:24:13'),
+(326, '2026-04-18', 1772680473, 130, '1680162050', 0, '2026-04-27 08:24:13'),
+(327, '2026-04-19', 1772680473, 130, '1680162051', 0, '2026-04-27 08:24:13'),
+(328, '2026-04-25', 1772680473, 130, '1680162049', 0, '2026-04-27 08:24:13'),
+(329, '2026-04-26', 1772680473, 130, '1680162050', 0, '2026-04-27 08:24:13'),
+(506, '2026-04-01', 1772680474, 110, '1680162055', 1, '2026-04-27 11:04:27'),
+(507, '2026-04-02', 1772680474, 110, '0fe42647-50be-422a-b75b-25a792a9e79a', 1, '2026-04-27 11:04:27'),
+(508, '2026-04-03', 1772680474, 110, '1680162052', 1, '2026-04-27 11:04:27'),
+(509, '2026-04-04', 1772680474, 110, '1680162053', 1, '2026-04-27 11:04:27'),
+(510, '2026-04-05', 1772680474, 110, '1680162054', 1, '2026-04-27 11:04:27'),
+(511, '2026-04-06', 1772680474, 110, '1', 1, '2026-04-27 11:04:27'),
+(512, '2026-04-07', 1772680474, 110, '0fe42647-50be-422a-b75b-25a792a9e79a', 1, '2026-04-27 11:04:27'),
+(513, '2026-04-08', 1772680474, 110, '1680162052', 1, '2026-04-27 11:04:27'),
+(514, '2026-04-09', 1772680474, 110, '1680162053', 1, '2026-04-27 11:04:27'),
+(515, '2026-04-10', 1772680474, 110, '1680162054', 1, '2026-04-27 11:04:27'),
+(516, '2026-04-11', 1772680474, 110, '1680162051', 1, '2026-04-27 11:04:27'),
+(517, '2026-04-12', 1772680474, 110, '0fe42647-50be-422a-b75b-25a792a9e79a', 1, '2026-04-27 11:04:27'),
+(518, '2026-04-13', 1772680474, 110, '1680162052', 1, '2026-04-27 11:04:27'),
+(519, '2026-04-14', 1772680474, 110, '1680162053', 1, '2026-04-27 11:04:28'),
+(520, '2026-04-15', 1772680474, 110, '1680162054', 1, '2026-04-27 11:04:28'),
+(521, '2026-04-16', 1772680474, 110, '1', 1, '2026-04-27 11:04:28'),
+(522, '2026-04-17', 1772680474, 110, '0fe42647-50be-422a-b75b-25a792a9e79a', 1, '2026-04-27 11:04:28'),
+(523, '2026-04-18', 1772680474, 110, '1680162052', 1, '2026-04-27 11:04:28'),
+(524, '2026-04-19', 1772680474, 110, '1680162053', 1, '2026-04-27 11:04:28'),
+(525, '2026-04-20', 1772680474, 110, '1680162054', 1, '2026-04-27 11:04:28'),
+(526, '2026-04-21', 1772680474, 110, '1680162050', 1, '2026-04-27 11:04:28'),
+(527, '2026-04-22', 1772680474, 110, '0fe42647-50be-422a-b75b-25a792a9e79a', 1, '2026-04-27 11:04:28'),
+(528, '2026-04-23', 1772680474, 110, '1680162052', 1, '2026-04-27 11:04:28'),
+(529, '2026-04-24', 1772680474, 110, '1680162053', 1, '2026-04-27 11:04:28'),
+(530, '2026-04-25', 1772680474, 110, '1680162054', 1, '2026-04-27 11:04:28'),
+(531, '2026-04-26', 1772680474, 110, '1680162056', 1, '2026-04-27 11:04:28'),
+(532, '2026-04-27', 1772680474, 110, '0fe42647-50be-422a-b75b-25a792a9e79a', 1, '2026-04-27 11:04:28'),
+(533, '2026-04-28', 1772680474, 110, '1680162050', 1, '2026-04-27 11:04:28'),
+(534, '2026-04-29', 1772680474, 110, '1680162053', 1, '2026-04-27 11:04:28'),
+(535, '2026-04-30', 1772680474, 110, '1680162056', 1, '2026-04-27 11:04:28'),
+(537, '2026-04-11', 1772680473, 117, '1680162054', 1, '2026-04-27 18:17:32');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ven_time`
+--
+
+CREATE TABLE `ven_time` (
+  `id` int NOT NULL,
+  `name_th` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ชื่อเรียก เช่น กลางวัน',
+  `time_period` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ช่วงเวลา เช่น 08.30-16.30',
+  `srt` int NOT NULL DEFAULT '99' COMMENT 'ลำดับการแสดงผล'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `ven_time`
+--
+
+INSERT INTO `ven_time` (`id`, `name_th`, `time_period`, `srt`) VALUES
+(1, 'กลางวัน', '08.30-16.30', 1),
+(2, 'กลางคืน', '16.30-08.30', 2),
+(3, 'nightCourt', '16.30-20.00', 3);
 
 -- --------------------------------------------------------
 
@@ -511,11 +591,28 @@ INSERT INTO `ven_user` (`id`, `user_id`, `order_num`, `ven_name_sub_id`, `commen
 (732, '1680162056', NULL, 117, NULL, NULL),
 (733, '1680162054', NULL, 117, NULL, NULL),
 (734, '1680162052', NULL, 117, NULL, NULL),
-(735, '1680162051', NULL, 117, NULL, NULL);
+(735, '1680162051', NULL, 117, NULL, NULL),
+(742, '1680162051', 2, 110, NULL, NULL),
+(743, '1680162050', 1, 110, NULL, NULL),
+(745, '1680162056', 4, 110, NULL, NULL),
+(746, '1680162055', 5, 110, NULL, NULL),
+(747, '1', 6, 110, NULL, NULL);
 
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `agency_config`
+--
+ALTER TABLE `agency_config`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `app_settings`
+--
+ALTER TABLE `app_settings`
+  ADD PRIMARY KEY (`setting_key`);
 
 --
 -- Indexes for table `dep`
@@ -605,6 +702,12 @@ ALTER TABLE `ven_schedule`
   ADD KEY `idx_user` (`user_id`);
 
 --
+-- Indexes for table `ven_time`
+--
+ALTER TABLE `ven_time`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `ven_user`
 --
 ALTER TABLE `ven_user`
@@ -613,6 +716,12 @@ ALTER TABLE `ven_user`
 --
 -- AUTO_INCREMENT for dumped tables
 --
+
+--
+-- AUTO_INCREMENT for table `agency_config`
+--
+ALTER TABLE `agency_config`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `dep`
@@ -654,13 +763,13 @@ ALTER TABLE `ven`
 -- AUTO_INCREMENT for table `ven_change`
 --
 ALTER TABLE `ven_change`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `ven_com`
 --
 ALTER TABLE `ven_com`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1772680475;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1772680476;
 
 --
 -- AUTO_INCREMENT for table `ven_name`
@@ -678,13 +787,19 @@ ALTER TABLE `ven_name_sub`
 -- AUTO_INCREMENT for table `ven_schedule`
 --
 ALTER TABLE `ven_schedule`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=360;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=538;
+
+--
+-- AUTO_INCREMENT for table `ven_time`
+--
+ALTER TABLE `ven_time`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `ven_user`
 --
 ALTER TABLE `ven_user`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=736;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=753;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
