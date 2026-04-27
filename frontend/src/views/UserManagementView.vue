@@ -91,9 +91,9 @@
                 <div class="row g-3">
                   <div class="col-md-3">
                     <label class="form-label fw-semibold text-muted small mb-1">คำนำหน้าชื่อ</label>
-                    <select class="form-select" v-model="newUser.fname_id">
+                    <select class="form-select" v-model="newUser.prefix_name">
                       <option value="">เลือก</option>
-                      <option v-for="f in options.fnames" :key="f.id" :value="f.id">{{ f.name }}</option>
+                      <option v-for="f in options.fnames" :key="f.id" :value="f.name">{{ f.name }}</option>
                     </select>
                   </div>
                   <div class="col-md-4">
@@ -107,21 +107,21 @@
 
                   <div class="col-md-4">
                     <label class="form-label fw-semibold text-muted small mb-1">ตำแหน่ง</label>
-                    <select class="form-select" v-model="newUser.dep_id">
+                    <select class="form-select" v-model="newUser.dep_id" required>
                       <option value="">เลือก</option>
-                      <option v-for="d in options.deps" :key="d.id" :value="d.id">{{ d.name }}</option>
+                      <option v-for="d in options.deps" :key="d.id" :value="d.name">{{ d.name }}</option>
                     </select>
                   </div>
                   <div class="col-md-5">
                     <label class="form-label fw-semibold text-muted small mb-1">กลุ่มงาน</label>
-                    <select class="form-select" v-model="newUser.group_id">
+                    <select class="form-select" v-model="newUser.group_id" required>
                       <option value="">เลือก</option>
-                      <option v-for="g in options.groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+                      <option v-for="g in options.groups" :key="g.id" :value="g.name">{{ g.name }}</option>
                     </select>
                   </div>
                   <div class="col-md-3">
                     <label class="form-label fw-semibold text-muted small mb-1">โทรศัพท์</label>
-                    <input type="text" class="form-control" v-model="newUser.phone">
+                    <input type="text" class="form-control" v-model="newUser.phone"  required>
                   </div>
 
                   <div class="col-md-4">
@@ -186,9 +186,9 @@
                 <div class="row g-3">
                   <div class="col-md-3">
                     <label class="form-label fw-semibold text-muted small mb-1">คำนำหน้าชื่อ</label>
-                    <select class="form-select" v-model="editingUser.fname_id">
+                    <select class="form-select" v-model="editingUser.prefix_name">
                       <option value="">เลือก</option>
-                      <option v-for="f in options.fnames" :key="f.id" :value="f.id">{{ f.name }}</option>
+                      <option v-for="f in options.fnames" :key="f.id" :value="f.name">{{ f.name }}</option>
                     </select>
                   </div>
                   <div class="col-md-4">
@@ -202,16 +202,16 @@
 
                   <div class="col-md-4">
                     <label class="form-label fw-semibold text-muted small mb-1">ตำแหน่ง</label>
-                    <select class="form-select" v-model="editingUser.dep_id">
+                    <select class="form-select" v-model="editingUser.dep">
                       <option value="">เลือก</option>
-                      <option v-for="d in options.deps" :key="d.id" :value="d.id">{{ d.name }}</option>
+                      <option v-for="d in options.deps" :key="d.id" :value="d.name">{{ d.name }}</option>
                     </select>
                   </div>
                   <div class="col-md-5">
                     <label class="form-label fw-semibold text-muted small mb-1">กลุ่มงาน</label>
-                    <select class="form-select" v-model="editingUser.group_id">
+                    <select class="form-select" v-model="editingUser.workgroup">
                       <option value="">เลือก</option>
-                      <option v-for="g in options.groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+                      <option v-for="g in options.groups" :key="g.id" :value="g.name">{{ g.name }}</option>
                     </select>
                   </div>
                   <div class="col-md-3">
@@ -309,16 +309,16 @@ const options = ref({ fnames: [], deps: [], groups: [] })
 // ข้อมูลสร้างใหม่
 const newUser = ref({
   username: '', password: '', role: 1,
-  fname_id: '', first_name: '', last_name: '',
-  dep_id: '', group_id: '', phone: '',
+  prefix_name: '', first_name: '', last_name: '',
+  dep: '', workgroup: '', phone: '',
   bank_account: '', bank_comment: '', st: 0
 })
 
 // ข้อมูลสำหรับแก้ไข
 const editingUser = ref({
   id: '', username: '', role: 1, password: '',
-  fname_id: '', first_name: '', last_name: '',
-  dep_id: '', group_id: '', phone: '',
+  prefix_name: '', first_name: '', last_name: '',
+  dep: '', workgroup: '', phone: '',
   bank_account: '', bank_comment: '', st: 0
 })
 
@@ -389,11 +389,11 @@ const submitCreateUser = async () => {
     const response = await api.post('?route=admin/user/create', newUser.value)
     document.getElementById('closeCreateModal').click()
     
-    // เคลียร์ค่า
+    // เคลียร์ค่าหลังจากบันทึกสำเร็จ
     newUser.value = {
       username: '', password: '', role: 1,
-      fname_id: '', first_name: '', last_name: '',
-      dep_id: '', group_id: '', phone: '',
+      prefix_name: '', first_name: '', last_name: '',
+      dep: '', workgroup: '', phone: '', // 🌟 แก้เป็น dep และ workgroup แล้ว
       bank_account: '', bank_comment: '', st: 0
     }
     
@@ -407,17 +407,17 @@ const submitCreateUser = async () => {
 }
 
 const openEditModal = (user) => {
-  // ดึงข้อมูลเดิมมาแสดงในฟอร์ม (ถ้าระบบ Backend อัปเดต API listUsers แล้ว ข้อมูลพวกนี้จะมาครบครับ)
+  // ดึงข้อมูลเดิมมาแสดงในฟอร์ม
   editingUser.value = {
     id: user.id,
     username: user.username,
     role: user.role,
     password: '', // ปล่อยว่างเสมอ
-    fname_id: user.fname_id || '',
+    prefix_name: user.prefix_name || '',
     first_name: user.first_name || '',
     last_name: user.last_name || '',
-    dep_id: user.dep_id || '',
-    group_id: user.group_id || '',
+    dep: user.dep || '',             // 🌟 รับและส่งต่อเป็น dep
+    workgroup: user.workgroup || '', // 🌟 รับและส่งต่อเป็น workgroup
     phone: user.phone || '',
     bank_account: user.bank_account || '',
     bank_comment: user.bank_comment || '',

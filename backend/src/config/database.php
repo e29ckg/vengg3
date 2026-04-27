@@ -1,5 +1,5 @@
 <?php
-// backend/config/database.php
+// backend/src/config/database.php
 
 class Database {
     private $host = "db"; 

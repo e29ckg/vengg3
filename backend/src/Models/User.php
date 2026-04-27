@@ -85,11 +85,11 @@ class User {
                     u.role, 
                     u.status,
                     p.fname_id,
-                    f.name AS prefix_name,
-                    p.name AS first_name, 
-                    p.sname AS last_name,
-                    p.dep_id,
-                    p.group_id,
+                    p.prefix_name AS prefix_name,
+                    p.first_name AS first_name, 
+                    p.last_name AS last_name,
+                    p.dep AS dep,
+                    p.workgroup AS workgroup,
                     p.phone,
                     p.bank_account,
                     p.bank_comment,
@@ -140,15 +140,15 @@ class User {
             $stmt->bindParam(':role', $data['role']);
             $stmt->execute();
             // 3. บันทึกลงตาราง profile
-            $queryProfile = "INSERT INTO profile (user_id, fname_id, name, sname, dep_id, group_id, phone, bank_account, bank_comment, st) 
-                             VALUES (:user_id, :fname_id, :name, :sname, :dep_id, :group_id, :phone, :bank_account, :bank_comment, :st)";   
+            $queryProfile = "INSERT INTO profile (user_id, prefix_name, first_name, last_name, dep, workgroup, phone, bank_account, bank_comment, st) 
+                             VALUES (:user_id, :prefix_name, :first_name, :last_name, :dep, :workgroup, :phone, :bank_account, :bank_comment, :st)";   
             $stmtProfile = $this->conn->prepare($queryProfile);
             $stmtProfile->bindParam(':user_id', $newUserId);
-            $stmtProfile->bindParam(':fname_id', $data['fname_id']);
-            $stmtProfile->bindParam(':name', $data['first_name']);
-            $stmtProfile->bindParam(':sname', $data['last_name']);
-            $stmtProfile->bindParam(':dep_id', $data['dep_id']);
-            $stmtProfile->bindParam(':group_id', $data['group_id']);
+            $stmtProfile->bindParam(':prefix_name', $data['prefix_name']);
+            $stmtProfile->bindParam(':first_name', $data['first_name']);
+            $stmtProfile->bindParam(':last_name', $data['last_name']);
+            $stmtProfile->bindParam(':dep', $data['dep']);
+            $stmtProfile->bindParam(':workgroup', $data['workgroup']);
             $stmtProfile->bindParam(':phone', $data['phone']);
             $stmtProfile->bindParam(':bank_account', $data['bank_account']);
             $stmtProfile->bindParam(':bank_comment', $data['bank_comment']);
@@ -189,29 +189,29 @@ class User {
             $stmtUser->execute();
 
             // จัดการค่าว่างให้เป็น NULL
-            $fname_id = !empty($data['fname_id']) ? $data['fname_id'] : null;
-            $dep_id = !empty($data['dep_id']) ? $data['dep_id'] : null;
-            $group_id = !empty($data['group_id']) ? $data['group_id'] : null;
+            $prefix_name = !empty($data['prefix_name']) ? $data['prefix_name'] : null;
+            $dep = !empty($data['dep']) ? $data['dep'] : null;
+            $workgroup = !empty($data['workgroup']) ? $data['workgroup'] : null;
             $st = !empty($data['st']) ? $data['st'] : 0;
 
             // 2. อัปเดตตาราง profile
             $queryProfile = "UPDATE profile SET 
-                                fname_id = :fname_id, 
-                                name = :name, 
-                                sname = :sname, 
-                                dep_id = :dep_id, 
-                                group_id = :group_id, 
+                                prefix_name = :prefix_name, 
+                                first_name = :first_name, 
+                                last_name = :last_name, 
+                                dep = :dep, 
+                                workgroup = :workgroup, 
                                 phone = :phone, 
                                 bank_account = :bank_account, 
                                 bank_comment = :bank_comment, 
                                 st = :st 
                              WHERE user_id = :user_id";
             $stmtProfile = $this->conn->prepare($queryProfile);
-            $stmtProfile->bindParam(':fname_id', $fname_id);
-            $stmtProfile->bindParam(':name', $data['first_name']);
-            $stmtProfile->bindParam(':sname', $data['last_name']);
-            $stmtProfile->bindParam(':dep_id', $dep_id);
-            $stmtProfile->bindParam(':group_id', $group_id);
+            $stmtProfile->bindParam(':prefix_name', $prefix_name);
+            $stmtProfile->bindParam(':first_name', $data['first_name']);
+            $stmtProfile->bindParam(':last_name', $data['last_name']);
+            $stmtProfile->bindParam(':dep', $dep);
+            $stmtProfile->bindParam(':workgroup', $workgroup);
             $stmtProfile->bindParam(':phone', $data['phone']);
             $stmtProfile->bindParam(':bank_account', $data['bank_account']);
             $stmtProfile->bindParam(':bank_comment', $data['bank_comment']);
