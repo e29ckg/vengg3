@@ -89,6 +89,7 @@ class User {
                     p.first_name AS first_name, 
                     p.last_name AS last_name,
                     p.dep AS dep,
+                    p.srt AS srt,
                     p.workgroup AS workgroup,
                     p.phone,
                     p.bank_account,
@@ -97,7 +98,8 @@ class User {
                   FROM " . $this->table_name . " u
                   LEFT JOIN profile p ON u.id = p.user_id
                   LEFT JOIN fname f ON p.fname_id = f.id
-                  ORDER BY u.id DESC";
+                  WHERE u.is_deleted = 0
+                  ORDER BY p.srt ASC";
                   
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
@@ -140,13 +142,14 @@ class User {
             $stmt->bindParam(':role', $data['role']);
             $stmt->execute();
             // 3. บันทึกลงตาราง profile
-            $queryProfile = "INSERT INTO profile (user_id, prefix_name, first_name, last_name, dep, workgroup, phone, bank_account, bank_comment, st) 
-                             VALUES (:user_id, :prefix_name, :first_name, :last_name, :dep, :workgroup, :phone, :bank_account, :bank_comment, :st)";   
+            $queryProfile = "INSERT INTO profile (user_id, prefix_name, first_name, last_name, srt, dep, workgroup, phone, bank_account, bank_comment, st) 
+                             VALUES (:user_id, :prefix_name, :first_name, :last_name, :srt, :dep, :workgroup, :phone, :bank_account, :bank_comment, :st)";   
             $stmtProfile = $this->conn->prepare($queryProfile);
             $stmtProfile->bindParam(':user_id', $newUserId);
             $stmtProfile->bindParam(':prefix_name', $data['prefix_name']);
             $stmtProfile->bindParam(':first_name', $data['first_name']);
             $stmtProfile->bindParam(':last_name', $data['last_name']);
+            $stmtProfile->bindParam(':srt', $data['srt']);
             $stmtProfile->bindParam(':dep', $data['dep']);
             $stmtProfile->bindParam(':workgroup', $data['workgroup']);
             $stmtProfile->bindParam(':phone', $data['phone']);
@@ -168,70 +171,92 @@ class User {
 
     // ฟังก์ชันอัปเดตข้อมูลผู้ใช้ (อัปเดตให้รองรับฟิลด์ใหม่)
     public function updateUser($data) {
-        try {
-            $this->conn->beginTransaction();
+    try {
+        $this->conn->beginTransaction();
 
-            // 1. อัปเดตตาราง user
-            $queryUser = "UPDATE " . $this->table_name . " SET role = :role";
-            if (!empty($data['password'])) {
-                $queryUser .= ", password_hash = :password_hash";
-            }
-            $queryUser .= " WHERE id = :id";
+        // --- 1. เตรียมค่าพื้นฐาน ---
+        $userId = $data['id'];
+        // ใช้ isset เพื่อรองรับค่า 0 (ระงับ/ย้าย)
+        $status = isset($data['status']) ? (int)$data['status'] : 1; 
+        $role = isset($data['role']) ? (int)$data['role'] : 1;
+        $srt = isset($data['srt']) ? (int)$data['srt'] : 999;
 
-            $stmtUser = $this->conn->prepare($queryUser);
-            $stmtUser->bindParam(':role', $data['role']);
-            $stmtUser->bindParam(':id', $data['id']);
-            
-            if (!empty($data['password'])) {
-                $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
-                $stmtUser->bindParam(':password_hash', $hashedPassword);
-            }
-            $stmtUser->execute();
-
-            // จัดการค่าว่างให้เป็น NULL
-            $prefix_name = !empty($data['prefix_name']) ? $data['prefix_name'] : null;
-            $dep = !empty($data['dep']) ? $data['dep'] : null;
-            $workgroup = !empty($data['workgroup']) ? $data['workgroup'] : null;
-            $st = !empty($data['st']) ? $data['st'] : 0;
-
-            // 2. อัปเดตตาราง profile
-            $queryProfile = "UPDATE profile SET 
-                                prefix_name = :prefix_name, 
-                                first_name = :first_name, 
-                                last_name = :last_name, 
-                                dep = :dep, 
-                                workgroup = :workgroup, 
-                                phone = :phone, 
-                                bank_account = :bank_account, 
-                                bank_comment = :bank_comment, 
-                                st = :st 
-                             WHERE user_id = :user_id";
-            $stmtProfile = $this->conn->prepare($queryProfile);
-            $stmtProfile->bindParam(':prefix_name', $prefix_name);
-            $stmtProfile->bindParam(':first_name', $data['first_name']);
-            $stmtProfile->bindParam(':last_name', $data['last_name']);
-            $stmtProfile->bindParam(':dep', $dep);
-            $stmtProfile->bindParam(':workgroup', $workgroup);
-            $stmtProfile->bindParam(':phone', $data['phone']);
-            $stmtProfile->bindParam(':bank_account', $data['bank_account']);
-            $stmtProfile->bindParam(':bank_comment', $data['bank_comment']);
-            $stmtProfile->bindParam(':st', $st);
-            $stmtProfile->bindParam(':user_id', $data['id']);
-            $stmtProfile->execute();
-
-            $this->conn->commit();
-            return ["success" => true, "message" => "อัปเดตข้อมูลสำเร็จ"];
-
-        } catch (Exception $e) {
-            $this->conn->rollBack();
-            return ["success" => false, "message" => "เกิดข้อผิดพลาด: " . $e->getMessage()];
+        // 🌟 กฎเหล็ก: ถ้า status เป็น 0 (ระงับ/ย้าย) ให้ srt เป็น 999 เสมอ
+        if ($status === 0) {
+            $srt = 999;
         }
+
+        // --- 2. อัปเดตตาราง user ---
+        $queryUser = "UPDATE " . $this->table_name . " SET role = :role, status = :status";
+        if (!empty($data['password'])) {
+            $queryUser .= ", password_hash = :password_hash";
+        }
+        $queryUser .= " WHERE id = :id";
+
+        $stmtUser = $this->conn->prepare($queryUser);
+        $stmtUser->bindParam(':role', $role);
+        $stmtUser->bindParam(':status', $status);
+        $stmtUser->bindParam(':id', $userId);
+        
+        if (!empty($data['password'])) {
+            $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+            $stmtUser->bindParam(':password_hash', $hashedPassword);
+        }
+        $stmtUser->execute();
+
+        // --- 3. เตรียมข้อมูลสำหรับตาราง profile ---
+        $prefix_name = !empty($data['prefix_name']) ? $data['prefix_name'] : null;
+        $first_name  = !empty($data['first_name']) ? $data['first_name'] : null;
+        $last_name   = !empty($data['last_name']) ? $data['last_name'] : null;
+        $dep         = !empty($data['dep']) ? $data['dep'] : null;
+        $workgroup   = !empty($data['workgroup']) ? $data['workgroup'] : null;
+        $phone       = !empty($data['phone']) ? $data['phone'] : null;
+        $bank_acc    = !empty($data['bank_account']) ? $data['bank_account'] : null;
+        $bank_com    = !empty($data['bank_comment']) ? $data['bank_comment'] : null;
+
+        // --- 4. อัปเดตตาราง profile ---
+        // หมายเหตุ: ใช้ status = :status เพื่อให้สถานะตรงกันทั้ง 2 ตาราง
+        $queryProfile = "UPDATE profile SET 
+                            prefix_name = :prefix_name, 
+                            first_name = :first_name, 
+                            last_name = :last_name, 
+                            srt = :srt, 
+                            dep = :dep,                                 
+                            workgroup = :workgroup, 
+                            phone = :phone, 
+                            bank_account = :bank_account, 
+                            bank_comment = :bank_comment, 
+                            status = :status 
+                         WHERE user_id = :user_id";
+                             
+        $stmtProfile = $this->conn->prepare($queryProfile);
+        $stmtProfile->bindParam(':prefix_name', $prefix_name);
+        $stmtProfile->bindParam(':first_name', $first_name);
+        $stmtProfile->bindParam(':last_name', $last_name);
+        $stmtProfile->bindParam(':srt', $srt);
+        $stmtProfile->bindParam(':dep', $dep);
+        $stmtProfile->bindParam(':workgroup', $workgroup);
+        $stmtProfile->bindParam(':phone', $phone);
+        $stmtProfile->bindParam(':bank_account', $bank_acc);
+        $stmtProfile->bindParam(':bank_comment', $bank_com);
+        $stmtProfile->bindParam(':status', $status);
+        $stmtProfile->bindParam(':user_id', $userId);
+        $stmtProfile->execute();
+
+        $this->conn->commit();
+        return ["success" => true, "message" => "อัปเดตข้อมูลสำเร็จ"];
+
+    } catch (Exception $e) {
+        $this->conn->rollBack();
+        return ["success" => false, "message" => "เกิดข้อผิดพลาด: " . $e->getMessage()];
     }
+}
     
     // ฟังก์ชันเปลี่ยนสถานะผู้ใช้งาน (เปิด/ปิด)
-    public function toggleStatus($userId, $newStatus) {
+    public function toggleStatus($userId, $newStatus) {        
         $query = "UPDATE " . $this->table_name . " SET status = :status WHERE id = :id";
         $stmt = $this->conn->prepare($query);
+
         
         $stmt->bindParam(':status', $newStatus);
         $stmt->bindParam(':id', $userId);
@@ -263,6 +288,22 @@ class User {
         $options['groups'] = $stmtGroup->fetchAll(PDO::FETCH_ASSOC);
 
         return $options;
+    }
+
+    public function deleteUser($id) {
+        // 🌟 เปลี่ยนเป็นการอัปเดตสถานะ is_deleted = 1 แทนการลบข้อมูลจริง
+        $query = "UPDATE user SET is_deleted = 1 WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute([':id' => $id]);
+    }
+
+    // ปรับลำดับอาวุโสไปอยู่ท้ายสุด (ใช้เมื่อถูกระงับ/โอนย้าย)
+    public function setLowestSeniority($user_id) {
+        $query = "UPDATE profile SET srt = 999 WHERE user_id = :user_id";
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute([
+            ':user_id' => $user_id
+        ]);
     }
 }
 ?>

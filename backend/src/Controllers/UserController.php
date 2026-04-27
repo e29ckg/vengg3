@@ -32,6 +32,7 @@ class UserController {
                 "first_name" => $row['first_name'],
                 "last_name" => $row['last_name'],
                 "dep" => $row['dep'],
+                "srt" => $row['srt'],
                 "workgroup" => $row['workgroup'],
                 "phone" => $row['phone'],
                 "bank_account" => $row['bank_account'],
@@ -67,7 +68,7 @@ class UserController {
         }
     }
 
-    // รับคำสั่งเปลี่ยนสถานะ
+   // รับคำสั่งเปลี่ยนสถานะ
     public function changeStatus() {
         $data = json_decode(file_get_contents("php://input"), true);
         
@@ -79,7 +80,15 @@ class UserController {
         }
 
         $userModel = new User($this->db);
+        
+        // 1. ทำการเปลี่ยนสถานะการเข้าใช้งาน
         if ($userModel->toggleStatus($data['id'], $data['status'])) {
+            
+            // 🌟 2. ถ้าสถานะถูกปรับเป็น 0 (ระงับ) ให้สั่งปรับ srt = 999 ด้วย
+            if ($data['status'] == 0) {
+                $userModel->setLowestSeniority($data['id']);
+            }
+            
             http_response_code(200);
             echo json_encode(["message" => "อัปเดตสถานะสำเร็จ"]);
         } else {
@@ -117,5 +126,24 @@ class UserController {
         http_response_code(200);
         echo json_encode($options);
     }
+
+    public function deleteUser() {
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        if (empty($data['id'])) {
+            http_response_code(400);
+            echo json_encode(["error" => "กรุณาระบุ ID ของผู้ใช้ที่ต้องการลบ"]);
+            return;
+        }
+
+        $userModel = new User($this->db);
+        if ($userModel->deleteUser($data['id'])) {
+            http_response_code(200);
+            echo json_encode(["message" => "ลบผู้ใช้สำเร็จ"]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["error" => "เกิดข้อผิดพลาด ไม่สามารถลบผู้ใช้ได้"]);
+        }
+    }   
 }
 ?>

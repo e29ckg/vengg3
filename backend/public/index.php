@@ -78,6 +78,14 @@ switch ($route) {
             $controller->updateUser();
         }
         break;
+    
+    case 'admin/user/delete':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            AuthMiddleware::checkAdmin($connection); // 🔒 ยาม VIP
+            $controller = new UserController($connection);
+            $controller->deleteUser();
+        }
+        break;
 
     case 'admin/user/options':
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {

@@ -31,11 +31,11 @@
             <table class="table table-hover align-middle mb-0">
               <thead class="table-light">
                 <tr>
-                  <th class="ps-4">ID</th>
+                  <th class="ps-4">#</th>
                   <th>ชื่อผู้ใช้งาน</th>
                   <th>ชื่อ-นามสกุล</th>
                   <th>สิทธิ์การใช้งาน</th>
-                  <th>สถานะ</th>
+                  <th>สถานะระบบ</th>
                   <th class="text-center pe-4">จัดการ</th>
                 </tr>
               </thead>
@@ -44,9 +44,12 @@
                   <td colspan="6" class="text-center py-4"><div class="spinner-border text-primary"></div></td>
                 </tr>
                 <tr v-for="user in filteredUsers" :key="user.id" v-else>
-                  <td class="ps-4 text-muted">{{ user.id }}</td>
+                  <td class="ps-4 text-muted">{{ user.srt }}</td>
                   <td class="fw-bold">{{ user.username }}</td>
-                  <td>{{ user.full_name !== 'null null' ? user.full_name : '-' }}</td>
+                  <td>
+                    {{ user.full_name !== 'null null' ? user.full_name : '-' }}
+                    <span v-if="user.status == 0" class="badge bg-secondary ms-1" style="font-size: 0.65rem;">ย้าย/ระงับเวร</span>
+                  </td>
                   <td>
                     <span class="badge rounded-pill" :class="getRoleColor(user.role)">
                       {{ getRoleName(user.role) }}
@@ -54,19 +57,23 @@
                   </td>
                   <td>
                     <span class="badge rounded-pill" :class="user.status === 10 ? 'bg-success' : 'bg-danger'">
-                      {{ user.status === 10 ? 'ใช้งาน' : 'ระงับ' }}
+                      {{ user.status === 10 ? 'ใช้งาน' : 'ล็อคระบบ' }}
                     </span>
                   </td>
                   <td class="text-center pe-4">
-                    <button class="btn btn-sm btn-outline-primary rounded-circle me-2" title="แก้ไข" 
+                    <button class="btn btn-sm btn-outline-primary rounded-circle me-1" title="แก้ไข" 
                             data-bs-toggle="modal" data-bs-target="#editUserModal" @click="openEditModal(user)">
                       <i class="bi bi-pencil"></i>
                     </button>
-                    <button class="btn btn-sm rounded-circle" 
-                            :class="user.status === 10 ? 'btn-outline-danger' : 'btn-outline-success'"
-                            :title="user.status === 10 ? 'ระงับการใช้งาน' : 'เปิดใช้งาน'"
+                    <button class="btn btn-sm rounded-circle me-1" 
+                            :class="user.status === 10 ? 'btn-outline-warning' : 'btn-outline-success'"
+                            :title="user.status === 10 ? 'ระงับการเข้าสู่ระบบ' : 'เปิดให้เข้าสู่ระบบ'"
                             @click="toggleUserStatus(user.id, user.status)">
                       <i class="bi" :class="user.status === 10 ? 'bi-lock-fill' : 'bi-unlock-fill'"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger rounded-circle" title="ลบผู้ใช้งาน" 
+                            @click="deleteUser(user.id)">
+                      <i class="bi bi-trash-fill"></i>
                     </button>
                   </td>
                 </tr>
@@ -107,34 +114,41 @@
 
                   <div class="col-md-4">
                     <label class="form-label fw-semibold text-muted small mb-1">ตำแหน่ง</label>
-                    <select class="form-select" v-model="newUser.dep_id" required>
+                    <select class="form-select" v-model="newUser.dep" required>
                       <option value="">เลือก</option>
                       <option v-for="d in options.deps" :key="d.id" :value="d.name">{{ d.name }}</option>
                     </select>
                   </div>
                   <div class="col-md-5">
                     <label class="form-label fw-semibold text-muted small mb-1">กลุ่มงาน</label>
-                    <select class="form-select" v-model="newUser.group_id" required>
+                    <select class="form-select" v-model="newUser.workgroup" required>
                       <option value="">เลือก</option>
                       <option v-for="g in options.groups" :key="g.id" :value="g.name">{{ g.name }}</option>
                     </select>
                   </div>
                   <div class="col-md-3">
                     <label class="form-label fw-semibold text-muted small mb-1">โทรศัพท์</label>
-                    <input type="text" class="form-control" v-model="newUser.phone"  required>
+                    <input type="text" class="form-control" v-model="newUser.phone" required>
                   </div>
 
-                  <div class="col-md-4">
+                  <div class="col-md-3">
                     <label class="form-label fw-semibold text-muted small mb-1">เลขที่บัญชี</label>
                     <input type="text" class="form-control" v-model="newUser.bank_account">
                   </div>
-                  <div class="col-md-5">
+                  <div class="col-md-4">
                     <label class="form-label fw-semibold text-muted small mb-1">ธนาคาร/สาขา</label>
                     <input type="text" class="form-control" v-model="newUser.bank_comment">
                   </div>
                   <div class="col-md-3">
-                    <label class="form-label fw-semibold text-muted small mb-1">ลำดับที่</label>
-                    <input type="number" class="form-control" v-model="newUser.st">
+                    <label class="form-label fw-semibold text-muted small mb-1">สถานะ</label>
+                    <select class="form-select border-primary" v-model="newUser.status">
+                      <option :value="10">ปฏิบัติงานปกติ</option>
+                      <option :value="0">ย้าย/ระงับ</option>
+                    </select>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label fw-semibold text-muted small mb-1">ลำดับอาวุโส</label>
+                    <input type="number" min="1" class="form-control border-primary" v-model="newUser.srt" placeholder="เช่น 1">
                   </div>
                 </div>
               </div>
@@ -219,17 +233,24 @@
                     <input type="text" class="form-control" v-model="editingUser.phone">
                   </div>
 
-                  <div class="col-md-4">
+                  <div class="col-md-3">
                     <label class="form-label fw-semibold text-muted small mb-1">เลขที่บัญชี</label>
                     <input type="text" class="form-control" v-model="editingUser.bank_account">
                   </div>
-                  <div class="col-md-5">
+                  <div class="col-md-4">
                     <label class="form-label fw-semibold text-muted small mb-1">ธนาคาร/สาขา</label>
                     <input type="text" class="form-control" v-model="editingUser.bank_comment">
                   </div>
                   <div class="col-md-3">
-                    <label class="form-label fw-semibold text-muted small mb-1">ลำดับที่</label>
-                    <input type="number" class="form-control" v-model="editingUser.st">
+                    <label class="form-label fw-semibold text-muted small mb-1">สถานะ</label>
+                    <select class="form-select border-primary" v-model="editingUser.status">
+                      <option :value="10">ปฏิบัติงานปกติ</option>
+                      <option :value="0">ย้าย/ระงับ</option>
+                    </select>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label fw-semibold text-muted small mb-1">ลำดับอาวุโส</label>
+                    <input type="number" min="1" class="form-control border-primary" v-model="editingUser.srt">
                   </div>
                 </div>
               </div>
@@ -274,14 +295,14 @@
 import { ref, onMounted, computed } from 'vue' 
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
-import api from '../services/api' // ใช้ api กลางที่ดึง URL จาก .env
+import api from '../services/api' 
 
 const router = useRouter()
 const users = ref([])
 const isLoading = ref(true)
 const isSubmitting = ref(false)
 
-// 🌟 เพิ่มตัวแปรสำหรับช่องค้นหา
+// 🌟 ตัวแปรสำหรับช่องค้นหา
 const searchQuery = ref('')
 
 // 🌟 สร้างฟังก์ชันกรองข้อมูลแบบ Real-time
@@ -291,7 +312,7 @@ const filteredUsers = computed(() => {
     return users.value;
   }
   
-  // แปลงคำค้นหาเป็นตัวพิมพ์เล็กทั้งหมดเพื่อไม่ให้สนใจตัวพิมพ์เล็ก/ใหญ่ (สำหรับ Username ภาษาอังกฤษ)
+  // แปลงคำค้นหาเป็นตัวพิมพ์เล็กทั้งหมด
   const lowerCaseQuery = searchQuery.value.toLowerCase();
   
   // กรองข้อมูล (ค้นหาได้ทั้ง full_name และ username)
@@ -306,20 +327,20 @@ const filteredUsers = computed(() => {
 // ตัวเลือก Dropdown
 const options = ref({ fnames: [], deps: [], groups: [] })
 
-// ข้อมูลสร้างใหม่
+// 🌟 ข้อมูลสร้างใหม่ (ปรับค่าเริ่มต้น st=1, srt=999 ให้ตรงกับตอนเคลียร์ค่า)
 const newUser = ref({
   username: '', password: '', role: 1,
   prefix_name: '', first_name: '', last_name: '',
-  dep: '', workgroup: '', phone: '',
-  bank_account: '', bank_comment: '', st: 0
+  dep: '', workgroup: '', phone: '', status: 10,
+  bank_account: '', bank_comment: '', st: 1, srt: 999
 })
 
 // ข้อมูลสำหรับแก้ไข
 const editingUser = ref({
   id: '', username: '', role: 1, password: '',
   prefix_name: '', first_name: '', last_name: '',
-  dep: '', workgroup: '', phone: '',
-  bank_account: '', bank_comment: '', st: 0
+  dep: '', workgroup: '', phone: '', status: '',
+  bank_account: '', bank_comment: '', st: 1, srt: 999
 })
 
 // --- ดึงข้อมูลตอนเริ่ม ---
@@ -352,6 +373,7 @@ const getRoleName = (role) => {
   if (role === 2) return 'อำนวยการ'
   return 'ผู้ใช้ทั่วไป'
 }
+
 const getRoleColor = (role) => {
   if (role === 9) return 'bg-dark'
   if (role === 3) return 'bg-info text-dark'
@@ -393,8 +415,8 @@ const submitCreateUser = async () => {
     newUser.value = {
       username: '', password: '', role: 1,
       prefix_name: '', first_name: '', last_name: '',
-      dep: '', workgroup: '', phone: '', // 🌟 แก้เป็น dep และ workgroup แล้ว
-      bank_account: '', bank_comment: '', st: 0
+      dep: '', workgroup: '', phone: '',
+      bank_account: '', bank_comment: '', st: 1, srt: 999 
     }
     
     Swal.fire('สำเร็จ', response.data.message, 'success')
@@ -407,21 +429,22 @@ const submitCreateUser = async () => {
 }
 
 const openEditModal = (user) => {
-  // ดึงข้อมูลเดิมมาแสดงในฟอร์ม
   editingUser.value = {
     id: user.id,
     username: user.username,
     role: user.role,
-    password: '', // ปล่อยว่างเสมอ
+    password: '', 
     prefix_name: user.prefix_name || '',
     first_name: user.first_name || '',
     last_name: user.last_name || '',
-    dep: user.dep || '',             // 🌟 รับและส่งต่อเป็น dep
-    workgroup: user.workgroup || '', // 🌟 รับและส่งต่อเป็น workgroup
+    dep: user.dep || '',             
+    workgroup: user.workgroup || '', 
     phone: user.phone || '',
     bank_account: user.bank_account || '',
     bank_comment: user.bank_comment || '',
-    st: user.st || 0
+    status: user.status !== undefined ? user.status : 10, // สถานะ 10=ใช้งาน, 0=ย้าย/ระงับ
+    st: user.st !== undefined ? user.st : 1, // สถานะ 1=ปกติ, 0=โอน/ระงับ
+    srt: user.srt || 999 // ดึงข้อมูลลำดับอาวุโสมาแสดง
   }
 }
 
@@ -436,6 +459,28 @@ const submitEditUser = async () => {
     Swal.fire('ข้อผิดพลาด', error.response?.data?.error || 'ไม่สามารถแก้ไขข้อมูลได้', 'error')
   } finally {
     isSubmitting.value = false
+  }
+}
+
+// 🌟 ฟังก์ชันลบ (Soft Delete)
+const deleteUser = async (id) => {
+  const result = await Swal.fire({
+    title: 'ยืนยันการลบ?',
+    text: "ข้อมูลผู้ใช้นี้จะถูกซ่อนจากระบบ (Soft Delete)",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    confirmButtonText: 'ใช่, ลบเลย'
+  })
+
+  if (result.isConfirmed) {
+    try {
+      await api.post('?route=admin/user/delete', { id })
+      Swal.fire('ลบสำเร็จ!', 'ลบข้อมูลเรียบร้อยแล้ว', 'success')
+      fetchUsers()
+    } catch (error) {
+      Swal.fire('ผิดพลาด', 'ไม่สามารถลบข้อมูลได้', 'error')
+    }
   }
 }
 
