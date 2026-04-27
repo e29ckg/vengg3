@@ -17,12 +17,11 @@ class Ven {
         $query = "SELECT 
                     v.id, 
                     v.ven_date AS date, 
-                    CONCAT(f.name, p.name, ' ', p.sname) AS title,
+                    CONCAT(p.prefix_name, p.first_name, ' ', p.last_name) AS title,
                     vns.color AS backgroundColor,
                     IF(vn.dn LIKE '%กลางคืน%', '16:30:00', '08:30:00') AS ven_time
                   FROM " . $this->table_name . " v
                   LEFT JOIN profile p ON v.user_id = p.user_id
-                  LEFT JOIN fname f ON p.fname_id = f.id
                   LEFT JOIN ven_name_sub vns ON v.ven_name_sub_id = vns.id
                   LEFT JOIN ven_com vc ON v.ven_com_id = vc.id
                   LEFT JOIN ven_name vn ON vc.ven_name_id = vn.id";
@@ -32,7 +31,7 @@ class Ven {
             $query .= " WHERE DATE_FORMAT(v.ven_date, '%Y-%m') = :monthYear";
         }
 
-        $query .= " ORDER BY v.ven_date ASC";
+        $query .= " ORDER BY v.ven_date ASC, vn.srt ASC, vns.srt ASC, v.id ASC"; // เรียงตามวันที่ และเวลาของเวร (เช้า-กลางคืน)
 
         $stmt = $this->conn->prepare($query);
 
@@ -52,10 +51,11 @@ class Ven {
         $query = "SELECT 
                     v.id AS ven_id,
                     v.ven_date,
+                    v.status,
                     IF(vn.dn LIKE '%กลางคืน%', '16:30:00', '08:30:00') AS ven_time,
-                    p.user_id,
-                    CONCAT(f.name, p.name, ' ', p.sname) AS full_name,
-                    '' AS profile_image,
+                    p.user_id,                    
+                    CONCAT(p.prefix_name, p.first_name, ' ', p.last_name) AS full_name,
+                    p.img  AS profile_image,
                     vns.id AS sub_id,
                     vns.name AS duty_role,
                     vns.price,
@@ -64,7 +64,6 @@ class Ven {
                     vc.com_num AS command_num
                   FROM " . $this->table_name . " v
                   LEFT JOIN profile p ON v.user_id = p.user_id
-                  LEFT JOIN fname f ON p.fname_id = f.id
                   LEFT JOIN ven_name_sub vns ON v.ven_name_sub_id = vns.id
                   LEFT JOIN ven_com vc ON v.ven_com_id = vc.id
                   LEFT JOIN ven_name vn ON vc.ven_name_id = vn.id
