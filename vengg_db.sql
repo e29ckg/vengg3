@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.2
+-- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
 -- Host: db
--- Generation Time: Apr 26, 2026 at 05:32 PM
--- Server version: 8.0.42
--- PHP Version: 8.2.27
+-- Generation Time: Apr 27, 2026 at 08:45 AM
+-- Server version: 8.0.43
+-- PHP Version: 8.3.26
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -29,7 +29,7 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `dep` (
   `id` int NOT NULL,
-  `name` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `created_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
@@ -72,7 +72,7 @@ INSERT INTO `dep` (`id`, `name`, `created_at`) VALUES
 
 CREATE TABLE `fname` (
   `id` int NOT NULL,
-  `name` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `created_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
@@ -99,7 +99,7 @@ INSERT INTO `fname` (`id`, `name`, `created_at`) VALUES
 
 CREATE TABLE `group` (
   `id` int NOT NULL,
-  `name` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `created_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
@@ -130,8 +130,8 @@ INSERT INTO `group` (`id`, `name`, `created_at`) VALUES
 
 CREATE TABLE `line` (
   `id` int NOT NULL,
-  `name` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
-  `token` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
+  `token` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `status` smallint DEFAULT '1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
@@ -151,24 +151,24 @@ INSERT INTO `line` (`id`, `name`, `token`, `status`) VALUES
 --
 
 CREATE TABLE `profile` (
-  `id` int NOT NULL,
-  `user_id` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `id_card` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `fname` varchar(25) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `user_id` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `id_card` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `prefix_name` varchar(25) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `fname_id` int DEFAULT NULL,
-  `name` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `sname` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `img` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `first_name` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `last_name` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `srt` int NOT NULL DEFAULT '999',
+  `img` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `birthday` date DEFAULT NULL,
-  `bloodtype` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `dep` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `bloodtype` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `dep` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `dep_id` int DEFAULT NULL,
-  `workgroup` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `workgroup` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `group_id` int DEFAULT NULL,
-  `address` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `phone` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `bank_account` varchar(100) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `bank_comment` varchar(200) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `address` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `phone` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `bank_account` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `bank_comment` varchar(200) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `status` smallint DEFAULT '10',
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
@@ -179,16 +179,20 @@ CREATE TABLE `profile` (
 -- Dumping data for table `profile`
 --
 
-INSERT INTO `profile` (`id`, `user_id`, `id_card`, `fname`, `fname_id`, `name`, `sname`, `img`, `birthday`, `bloodtype`, `dep`, `dep_id`, `workgroup`, `group_id`, `address`, `phone`, `bank_account`, `bank_comment`, `status`, `created_at`, `updated_at`, `st`) VALUES
-(1, '1', NULL, 'นาย', 1, 'ผู้ดูแลระบบ', 'ทดสอบ', NULL, NULL, NULL, 'พนักงานสถานที่', 6, 'กลุ่มช่วยอำนวยการ', 2, NULL, '9999', '', '', 10, '2023-12-14 09:54:13', '2024-05-16 06:58:08', 0),
-(1680162049, '1680162049', NULL, 'นาง', 2, 'just1', 'just1', NULL, NULL, NULL, 'ผู้พิพากษา', 18, 'ผู้พิพากษา', 8, NULL, '1111', '', '', 10, '2025-09-02 11:14:34', '2025-09-02 11:14:34', 1),
-(1680162050, '1680162050', NULL, 'นาง', 2, 'just2', 'just2', NULL, NULL, NULL, 'ผู้พิพากษา', 18, 'ผู้พิพากษา', 8, NULL, '2222', '', '', 10, '2025-09-02 11:15:07', '2025-09-02 11:15:07', 2),
-(1680162051, '1680162051', NULL, 'นางสาว', 3, 'just3', 'just3', NULL, NULL, NULL, 'ผู้พิพากษา', 18, 'ผู้พิพากษา', 8, NULL, '3333', '', '', 10, '2025-09-02 11:15:44', '2025-09-02 11:15:44', 3),
-(1680162052, '1680162052', NULL, 'นาย', 1, 'user1', 'user1', NULL, NULL, NULL, 'เจ้าพนักงานศาลยุติธรรมชำนาญการพิเศษ', 13, 'ผู้อำนวยการฯ', 1, NULL, '0001', '', '', 10, '2025-09-02 11:17:28', '2025-09-02 11:28:48', 201),
-(1680162053, '1680162053', NULL, 'นาย', 1, 'user2', 'user2', NULL, NULL, NULL, 'เจ้าพนักงานศาลยุติธรรม', 22, 'กลุ่มช่วยอำนวยการ', 2, NULL, '0002', '', '', 10, '2025-09-02 11:25:08', '2025-09-02 11:28:38', 202),
-(1680162054, '1680162054', NULL, 'นาย', 1, 'user3', 'user3', NULL, NULL, NULL, 'เจ้าหน้าที่ศาลยุติธรรม', 8, 'กลุ่มงานคดี', 4, NULL, '0003', '', '', 10, '2025-09-02 11:27:09', '2025-09-02 11:28:15', 203),
-(1680162055, '1680162055', NULL, 'นางสาว', 3, 'user4', 'user4', NULL, NULL, NULL, 'เจ้าพนักงานศาลยุติธรรมปฏิบัติการ', 9, 'กลุ่มงานคดี', 4, NULL, '0004', '', '', 10, '2025-09-02 11:29:32', '2025-09-02 11:29:32', 204),
-(1680162056, '1680162056', NULL, 'นางสาว', 3, 'user5', 'user5', NULL, NULL, NULL, 'นักวิชาการคอมพิวเตอร์', 2, 'ส่วนเทคโนโลยีสารสนเทศ', 12, NULL, '0005', '', '', 10, '2025-09-02 11:30:11', '2025-09-02 11:30:11', 205);
+INSERT INTO `profile` (`user_id`, `id_card`, `prefix_name`, `fname_id`, `first_name`, `last_name`, `srt`, `img`, `birthday`, `bloodtype`, `dep`, `dep_id`, `workgroup`, `group_id`, `address`, `phone`, `bank_account`, `bank_comment`, `status`, `created_at`, `updated_at`, `st`) VALUES
+('1', NULL, 'นาย', 1, 'ผู้ดูแลระบบ', 'ทดสอบ', 1, NULL, NULL, NULL, 'พนักงานสถานที่', 6, 'กลุ่มช่วยอำนวยการ', 2, NULL, '1', '', '', 10, '2023-12-14 09:54:13', '2024-05-16 06:58:08', 1),
+('1680162049', NULL, 'นาง', 2, 'just1', 'just1', 12, NULL, NULL, NULL, 'ผู้พิพากษา', 18, 'ผู้พิพากษา', 8, NULL, '1111', NULL, NULL, 10, '2025-09-02 11:14:34', '2025-09-02 11:14:34', 1),
+('1680162050', NULL, 'นาง', 2, 'just2', 'just2', 999, NULL, NULL, NULL, 'ผู้พิพากษา', 18, 'ผู้พิพากษา', 8, NULL, '2222', '', '', 10, '2025-09-02 11:15:07', '2025-09-02 11:15:07', 2),
+('1680162051', NULL, 'นางสาว', 3, 'just3', 'just3', 999, NULL, NULL, NULL, 'ผู้พิพากษา', 18, 'ผู้พิพากษา', 8, NULL, '3333', '', '', 10, '2025-09-02 11:15:44', '2025-09-02 11:15:44', 3),
+('1680162052', NULL, 'นาย', 1, 'user1', 'user1', 999, NULL, NULL, NULL, 'เจ้าพนักงานศาลยุติธรรมชำนาญการพิเศษ', 13, 'ผู้อำนวยการฯ', 1, NULL, '0001', '', '', 10, '2025-09-02 11:17:28', '2025-09-02 11:28:48', 201),
+('1680162053', NULL, 'นาย', 1, 'user2', 'user2', 999, NULL, NULL, NULL, 'เจ้าพนักงานศาลยุติธรรม', 22, 'กลุ่มช่วยอำนวยการ', 2, NULL, '0002', '', '', 10, '2025-09-02 11:25:08', '2025-09-02 11:28:38', 202),
+('1680162054', NULL, 'นาย', 1, 'user3', 'user3', 999, NULL, NULL, NULL, 'เจ้าหน้าที่ศาลยุติธรรม', 8, 'กลุ่มงานคดี', 4, NULL, '0003', '', '', 10, '2025-09-02 11:27:09', '2025-09-02 11:28:15', 203),
+('1680162055', NULL, 'นางสาว', 3, 'user4', 'user4', 999, NULL, NULL, NULL, 'เจ้าพนักงานศาลยุติธรรมปฏิบัติการ', 9, 'กลุ่มงานคดี', 4, NULL, '0004', '', '', 10, '2025-09-02 11:29:32', '2025-09-02 11:29:32', 204),
+('1680162056', NULL, 'นางสาว', 3, 'user5', 'user5', 999, NULL, NULL, NULL, 'นักวิชาการคอมพิวเตอร์', 2, 'ส่วนเทคโนโลยีสารสนเทศ', 12, NULL, '0005', NULL, NULL, 0, '2025-09-02 11:30:11', '2025-09-02 11:30:11', 1),
+('865368c8-440a-409d-bce9-1ffa28f072b0', NULL, 'ฟฟฟ', 2, 'sss', 'sss', 999, NULL, NULL, NULL, NULL, 1, NULL, 1, NULL, 'ss', '', '', 10, NULL, NULL, 0),
+('e9d85622-0fcc-43c3-996a-865d6cf73f16', NULL, 'นาย', 1, 'ss', 'aa', 999, NULL, NULL, NULL, 'นักวิชาการคอมพิวเตอร์', 1, 'ผู้พิพากษาสมทบ', 1, NULL, '', '', '', 10, NULL, NULL, 0),
+('0fe42647-50be-422a-b75b-25a792a9e79a', NULL, 'สิบตำรวจเอก', NULL, 'd', 'f', 999, NULL, NULL, NULL, NULL, 1, NULL, 1, NULL, NULL, NULL, NULL, 10, NULL, NULL, 0),
+('4dcc6854-a3b2-4fae-9617-bc8fd9158255', NULL, 'นาย', NULL, 'dd', NULL, 999, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'dd', NULL, NULL, 0, NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -198,11 +202,11 @@ INSERT INTO `profile` (`id`, `user_id`, `id_card`, `fname`, `fname_id`, `name`, 
 
 CREATE TABLE `sign_name` (
   `id` int NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `dep` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `dep2` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `dep3` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `role` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `dep` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `dep2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `dep3` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `role` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `st` int DEFAULT '1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -222,14 +226,15 @@ INSERT INTO `sign_name` (`id`, `name`, `dep`, `dep2`, `dep3`, `role`, `st`) VALU
 --
 
 CREATE TABLE `user` (
-  `id` int NOT NULL,
-  `username` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
-  `auth_key` varchar(32) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `password_hash` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
-  `password_reset_token` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `email` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `id` varchar(36) COLLATE utf8mb3_unicode_ci NOT NULL,
+  `username` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
+  `auth_key` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `password_hash` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
+  `password_reset_token` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `email` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `role` smallint NOT NULL DEFAULT '1',
   `status` smallint NOT NULL DEFAULT '10',
+  `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
@@ -238,16 +243,20 @@ CREATE TABLE `user` (
 -- Dumping data for table `user`
 --
 
-INSERT INTO `user` (`id`, `username`, `auth_key`, `password_hash`, `password_reset_token`, `email`, `role`, `status`, `created_at`, `updated_at`) VALUES
-(1, 'admin', 'c06e8012eb737091e547b4fc269de59b', '$2y$10$SjrUtSxJ8dcOU2cnkltWbOFNzXpCKhd0.5McR3qskS0nIVsOLZrT2', NULL, NULL, 9, 10, '2023-12-14 09:54:13', '2024-04-27 18:13:27'),
-(1680162049, 'j1', NULL, '$2y$10$ZYsif1LMin6gCWhKLZZ4hObuMqc8CtHBfPQ2jf/BL4ayNDvCO4hjq', NULL, NULL, 1, 10, '2025-09-02 11:14:34', '2025-09-02 11:14:34'),
-(1680162050, 'j2', NULL, '$2y$10$EWjmeA.i7d1ZaEZAOv3zouA3r0fBsJUu6VUaJ5WYF8WKgOLi5p8wK', NULL, NULL, 1, 10, '2025-09-02 11:15:07', '2025-09-02 11:15:07'),
-(1680162051, 'j3', NULL, '$2y$10$p8jIYxzYWdvsMupgq063w.hnOR0HX4bMixbUX8U0KkDd5zoZ2Mdiq', NULL, NULL, 1, 10, '2025-09-02 11:15:44', '2025-09-02 11:15:44'),
-(1680162052, 'user1', NULL, '$2y$10$6.xneoVTL6DkcC23fNucUe3BD5aLvD6bpjVAD/NNzeHHj4sSAuyfi', NULL, NULL, 1, 10, '2025-09-02 11:17:28', '2025-09-02 11:17:28'),
-(1680162053, 'user2', NULL, '$2y$10$bEU30/NLOPUPlcT9R9HYWuT1VhtwuE.EIpwUvvG5sfDCCRqaWfBPK', NULL, NULL, 1, 10, '2025-09-02 11:25:08', '2025-09-02 11:25:08'),
-(1680162054, 'user3', NULL, '$2y$10$olBspSbuGrdMlyZSNy913.CgRPvexRCp212MQw651mVbliSdRcNtS', NULL, NULL, 1, 10, '2025-09-02 11:27:09', '2025-09-02 11:27:09'),
-(1680162055, 'user4', NULL, '$2y$10$o5CL0z0xoGLx1wkVWmKyLOxAV7LrxyJxSYEot/FyI8rEgh4h2NhO.', NULL, NULL, 1, 10, '2025-09-02 11:29:32', '2025-09-02 11:29:32'),
-(1680162056, 'user5', NULL, '$2y$10$gUsJavBCJMAk.JW10JTLmeQD5b.rSsmOj0j27T8rPhh865xZPZxp.', NULL, NULL, 1, 10, '2025-09-02 11:30:11', '2025-09-02 11:30:11');
+INSERT INTO `user` (`id`, `username`, `auth_key`, `password_hash`, `password_reset_token`, `email`, `role`, `status`, `is_deleted`, `created_at`, `updated_at`) VALUES
+('0fe42647-50be-422a-b75b-25a792a9e79a', 'f', NULL, '$2y$10$40wGPYZjmKf2hp.ZoK73c.6DKL7fVRJjjCN0s9ugXsAlRwM1bOVZy', NULL, NULL, 1, 0, 0, '2026-04-27 03:40:31', NULL),
+('1', 'admin', 'c7e8e2154fa0bafca19c511e4c96efd3', '$2y$10$SjrUtSxJ8dcOU2cnkltWbOFNzXpCKhd0.5McR3qskS0nIVsOLZrT2', NULL, NULL, 9, 10, 0, '2023-12-14 09:54:13', '2024-04-27 18:13:27'),
+('1680162049', 'j1', NULL, '$2y$10$ZYsif1LMin6gCWhKLZZ4hObuMqc8CtHBfPQ2jf/BL4ayNDvCO4hjq', NULL, NULL, 1, 10, 0, '2025-09-02 11:14:34', '2025-09-02 11:14:34'),
+('1680162050', 'j2', NULL, '$2y$10$EWjmeA.i7d1ZaEZAOv3zouA3r0fBsJUu6VUaJ5WYF8WKgOLi5p8wK', NULL, NULL, 1, 10, 0, '2025-09-02 11:15:07', '2025-09-02 11:15:07'),
+('1680162051', 'j3', NULL, '$2y$10$p8jIYxzYWdvsMupgq063w.hnOR0HX4bMixbUX8U0KkDd5zoZ2Mdiq', NULL, NULL, 1, 10, 0, '2025-09-02 11:15:44', '2025-09-02 11:15:44'),
+('1680162052', 'user1', NULL, '$2y$10$6.xneoVTL6DkcC23fNucUe3BD5aLvD6bpjVAD/NNzeHHj4sSAuyfi', NULL, NULL, 1, 10, 0, '2025-09-02 11:17:28', '2025-09-02 11:17:28'),
+('1680162053', 'user2', NULL, '$2y$10$bEU30/NLOPUPlcT9R9HYWuT1VhtwuE.EIpwUvvG5sfDCCRqaWfBPK', NULL, NULL, 1, 10, 0, '2025-09-02 11:25:08', '2025-09-02 11:25:08'),
+('1680162054', 'user3', NULL, '$2y$10$olBspSbuGrdMlyZSNy913.CgRPvexRCp212MQw651mVbliSdRcNtS', NULL, NULL, 1, 10, 0, '2025-09-02 11:27:09', '2025-09-02 11:27:09'),
+('1680162055', 'user4', NULL, '$2y$10$o5CL0z0xoGLx1wkVWmKyLOxAV7LrxyJxSYEot/FyI8rEgh4h2NhO.', NULL, NULL, 1, 0, 0, '2025-09-02 11:29:32', '2025-09-02 11:29:32'),
+('1680162056', 'user5', NULL, '$2y$10$gUsJavBCJMAk.JW10JTLmeQD5b.rSsmOj0j27T8rPhh865xZPZxp.', NULL, NULL, 1, 0, 0, '2025-09-02 11:30:11', '2025-09-02 11:30:11'),
+('4dcc6854-a3b2-4fae-9617-bc8fd9158255', 'dd', NULL, '$2y$10$uI8iTmktzPpAtI4pRAz2lu3P5bc67MLjnKR9KyjyREUfR29zwkyZq', NULL, NULL, 1, 0, 0, '2026-04-27 04:04:41', NULL),
+('865368c8-440a-409d-bce9-1ffa28f072b0', 'sss', NULL, '$2y$10$gpc2ohIJbV2E2LEC8Fa4j.ZGIIM0MgRCafBPjFRrIXsvMxRTMLOia', NULL, NULL, 1, 10, 1, '2026-04-27 03:23:49', NULL),
+('e9d85622-0fcc-43c3-996a-865d6cf73f16', 'aa', NULL, '$2y$10$3srR9S5I078l6rhkBtFm9OWdNIbh01hBTHw5IcdN9lnn0X5zM0lgG', NULL, NULL, 1, 0, 1, '2026-04-27 03:29:59', NULL);
 
 -- --------------------------------------------------------
 
@@ -259,16 +268,16 @@ CREATE TABLE `ven` (
   `id` int NOT NULL,
   `user_id` int NOT NULL,
   `ven_com_id` int DEFAULT NULL,
-  `ven_com_idb` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `ven_com_idb` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `ven_date` date NOT NULL,
-  `ven_time` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
+  `ven_time` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `vn_id` int DEFAULT NULL,
   `vns_id` int DEFAULT NULL,
-  `gcal_id` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `ref1` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `ref2` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `file` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `comment` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `gcal_id` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `ref1` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `ref2` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `file` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `comment` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `status` int DEFAULT NULL,
   `update_at` datetime DEFAULT NULL,
   `create_at` datetime DEFAULT NULL
@@ -320,13 +329,13 @@ CREATE TABLE `ven_com` (
   `id` int NOT NULL,
   `com_num` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `com_date` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `ven_month` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `status` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `ven_month` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `status` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `ven_name_id` int DEFAULT NULL,
-  `ven_com_days` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
-  `comment` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `file` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
-  `ref` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `ven_com_days` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
+  `comment` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `file` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `ref` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `create_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
@@ -336,8 +345,8 @@ CREATE TABLE `ven_com` (
 
 INSERT INTO `ven_com` (`id`, `com_num`, `com_date`, `ven_month`, `status`, `ven_name_id`, `ven_com_days`, `comment`, `file`, `ref`, `create_at`) VALUES
 (1765858095, '4/2568', '2025-12-16', '2025-12', '1', 25, '', NULL, NULL, '16grxL3Ot4AcQmjaRZPW', NULL),
-(1772680473, '999/9999', '2026-03-05', '2026-04', '1', 24, '4,5,10,11', NULL, NULL, '3AnblhvKL7xjcdugH6kz', NULL),
-(1772680474, '222', '2026-04-26', '2026-04', '1', 25, '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30', NULL, NULL, NULL, NULL);
+(1772680473, '1111', '2026-03-05', '2026-04', '1', 24, '4,5,11,12,18,19,25,26', NULL, NULL, '3AnblhvKL7xjcdugH6kz', NULL),
+(1772680474, '2222', '2026-04-26', '2026-04', '1', 25, '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -389,19 +398,19 @@ INSERT INTO `ven_name_sub` (`id`, `name`, `ven_name_id`, `price`, `color`, `srt`
 (109, 'ผู้พิพากษา', 25, 2500, 'Violet', 0),
 (110, 'จนท', 25, 1200, 'Violet', 1),
 (113, 'ผู้พิพากษา', 27, 2000, 'Green', 0),
-(115, 'ผู้พิพากษา', 28, 3000, 'Brown', 3),
-(116, 'รับฟ้อง+ปชส ', 28, 1500, 'Brown', 1),
-(117, 'งานรับฟ้อง', 24, 1500, 'BlueViolet', 1),
-(118, 'งานหน้าบัลลังก์', 24, 1500, 'BlueViolet', 2),
+(115, 'ผู้พิพากษา', 28, 3000, 'Brown', 1),
+(116, 'รับฟ้อง+ปชส ', 28, 1500, 'Brown', 2),
+(117, 'งานรับฟ้อง', 24, 1500, 'BlueViolet', 2),
+(118, 'งานหน้าบัลลังก์', 24, 1500, 'BlueViolet', 3),
 (119, 'งานหมาย', 24, 1500, 'BlueViolet', 4),
 (120, 'งานประชาสัมพันธ์', 24, 1500, 'BlueViolet', 5),
 (121, 'งานการเงิน', 24, 1500, 'BlueViolet', 6),
 (123, 'รับฟ้อง+ปชส', 27, 1000, 'Green', 1),
 (124, 'การเงิน+ปล่อยตัวชั่วคราว', 27, 1000, 'Green', 2),
 (125, 'หน้าบัลลังก์', 27, 1000, 'Green', 3),
-(128, 'การเงิน+ปล่อยตัวชั่วคราว ', 28, 1500, 'Brown', 2),
+(128, 'การเงิน+ปล่อยตัวชั่วคราว ', 28, 1500, 'Brown', 3),
 (129, 'หน้าบัลลังก์', 28, 1500, 'Brown', 4),
-(130, 'ผู้พิพากษา', 24, 3000, 'BlueViolet', 3),
+(130, 'ผู้พิพากษา', 24, 3000, 'BlueViolet', 1),
 (133, 'ผู้พิพากษาสมทบ', 29, 1000, 'Magenta', 0),
 (134, 'ผู้พิพากษาสมทบ', 30, 1000, 'DarkCyan', 0),
 (135, 'z^hrld', 31, 160, 'Magenta', NULL);
@@ -418,6 +427,7 @@ CREATE TABLE `ven_schedule` (
   `ven_com_id` int NOT NULL COMMENT 'อ้างอิงรหัสคำสั่งจากตาราง ven_com',
   `ven_name_sub_id` int NOT NULL COMMENT 'อ้างอิงรหัสหน้าที่ย่อยจากตาราง ven_name_sub',
   `user_id` int NOT NULL COMMENT 'อ้างอิงรหัสพนักงานจากตาราง user',
+  `status` int NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -425,41 +435,45 @@ CREATE TABLE `ven_schedule` (
 -- Dumping data for table `ven_schedule`
 --
 
-INSERT INTO `ven_schedule` (`id`, `ven_date`, `ven_com_id`, `ven_name_sub_id`, `user_id`, `created_at`) VALUES
-(31, '2026-04-04', 1772680473, 117, 1680162056, '2026-04-26 15:28:22'),
-(78, '2026-04-11', 1772680473, 117, 1680162051, '2026-04-26 15:45:56'),
-(82, '2026-04-10', 1772680473, 117, 1680162052, '2026-04-26 15:48:13'),
-(84, '2026-04-10', 1772680473, 117, 1680162054, '2026-04-26 15:49:35'),
-(85, '2026-04-06', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
-(86, '2026-04-02', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
-(87, '2026-04-03', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
-(88, '2026-04-01', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
-(89, '2026-04-04', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
-(90, '2026-04-05', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
-(91, '2026-04-08', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
-(92, '2026-04-11', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
-(93, '2026-04-07', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
-(94, '2026-04-10', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
-(95, '2026-04-12', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
-(96, '2026-04-09', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
-(97, '2026-04-13', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
-(98, '2026-04-16', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
-(99, '2026-04-15', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
-(100, '2026-04-14', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
-(101, '2026-04-18', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
-(102, '2026-04-17', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
-(103, '2026-04-22', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
-(104, '2026-04-20', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
-(105, '2026-04-21', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
-(106, '2026-04-19', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
-(107, '2026-04-27', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
-(108, '2026-04-23', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
-(109, '2026-04-26', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
-(110, '2026-04-25', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
-(111, '2026-04-28', 1772680474, 109, 1680162049, '2026-04-26 17:23:59'),
-(112, '2026-04-24', 1772680474, 109, 1680162051, '2026-04-26 17:23:59'),
-(113, '2026-04-29', 1772680474, 109, 1680162050, '2026-04-26 17:23:59'),
-(114, '2026-04-30', 1772680474, 109, 1680162051, '2026-04-26 17:23:59');
+INSERT INTO `ven_schedule` (`id`, `ven_date`, `ven_com_id`, `ven_name_sub_id`, `user_id`, `status`, `created_at`) VALUES
+(322, '2026-04-04', 1772680473, 130, 1680162049, 0, '2026-04-27 08:24:13'),
+(323, '2026-04-05', 1772680473, 130, 1680162050, 0, '2026-04-27 08:24:13'),
+(324, '2026-04-11', 1772680473, 130, 1680162051, 0, '2026-04-27 08:24:13'),
+(325, '2026-04-12', 1772680473, 130, 1680162049, 0, '2026-04-27 08:24:13'),
+(326, '2026-04-18', 1772680473, 130, 1680162050, 0, '2026-04-27 08:24:13'),
+(327, '2026-04-19', 1772680473, 130, 1680162051, 0, '2026-04-27 08:24:13'),
+(328, '2026-04-25', 1772680473, 130, 1680162049, 0, '2026-04-27 08:24:13'),
+(329, '2026-04-26', 1772680473, 130, 1680162050, 0, '2026-04-27 08:24:13'),
+(330, '2026-04-01', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
+(331, '2026-04-02', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
+(332, '2026-04-03', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
+(333, '2026-04-04', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
+(334, '2026-04-05', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
+(335, '2026-04-06', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
+(336, '2026-04-07', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
+(337, '2026-04-08', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
+(338, '2026-04-09', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
+(339, '2026-04-10', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
+(340, '2026-04-11', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
+(341, '2026-04-12', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
+(342, '2026-04-13', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
+(343, '2026-04-14', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
+(344, '2026-04-15', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
+(345, '2026-04-16', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
+(346, '2026-04-17', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
+(347, '2026-04-18', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
+(348, '2026-04-19', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
+(349, '2026-04-20', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
+(350, '2026-04-21', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
+(351, '2026-04-22', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
+(352, '2026-04-23', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
+(353, '2026-04-24', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
+(354, '2026-04-25', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:48'),
+(355, '2026-04-26', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:48'),
+(356, '2026-04-27', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:48'),
+(357, '2026-04-28', 1772680474, 109, 1680162049, 0, '2026-04-27 08:24:49'),
+(358, '2026-04-29', 1772680474, 109, 1680162050, 0, '2026-04-27 08:24:49'),
+(359, '2026-04-30', 1772680474, 109, 1680162051, 0, '2026-04-27 08:24:49');
 
 -- --------------------------------------------------------
 
@@ -469,10 +483,10 @@ INSERT INTO `ven_schedule` (`id`, `ven_date`, `ven_com_id`, `ven_name_sub_id`, `
 
 CREATE TABLE `ven_user` (
   `id` int NOT NULL,
-  `user_id` varchar(36) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `user_id` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `order_num` int DEFAULT NULL,
   `ven_name_sub_id` int DEFAULT NULL,
-  `comment` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `comment` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `create_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
@@ -531,7 +545,6 @@ ALTER TABLE `line`
 -- Indexes for table `profile`
 --
 ALTER TABLE `profile`
-  ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `user_id` (`user_id`),
   ADD KEY `user_id_2` (`user_id`);
 
@@ -632,12 +645,6 @@ ALTER TABLE `sign_name`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
--- AUTO_INCREMENT for table `user`
---
-ALTER TABLE `user`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1680162057;
-
---
 -- AUTO_INCREMENT for table `ven`
 --
 ALTER TABLE `ven`
@@ -671,7 +678,7 @@ ALTER TABLE `ven_name_sub`
 -- AUTO_INCREMENT for table `ven_schedule`
 --
 ALTER TABLE `ven_schedule`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=115;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=360;
 
 --
 -- AUTO_INCREMENT for table `ven_user`
