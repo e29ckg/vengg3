@@ -226,7 +226,7 @@
                    <li v-for="(u, index) in assignedUsers" :key="u.vu_id" class="list-group-item d-flex justify-content-between align-items-center bg-light">
                       <span>
                         <span class="badge bg-secondary me-2">{{ index + 1 }}</span>
-                        <i class="bi bi-person-check-fill text-success me-2"></i>{{ u.prefix }}{{ u.name }} {{ u.sname }}
+                        <i class="bi bi-person-check-fill text-success me-2"></i>{{ u.full_name }}
                       </span>
                       
                       <div class="btn-group btn-group-sm">
