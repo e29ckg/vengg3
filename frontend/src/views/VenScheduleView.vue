@@ -129,7 +129,7 @@
                  class="user-card shadow-sm mb-2 p-2 rounded-2 bg-white border-start border-4 border-primary d-flex align-items-center"
                  draggable="true" @dragstart="startDragFromSidebar($event, user)">
               <i class="bi bi-grip-vertical text-muted me-1"></i>
-              <span class="fw-semibold small">{{ user.prefix }}{{ user.name }} {{ user.sname }}</span>
+              <span class="fw-semibold small">{{ user.prefix_name }}{{ user.first_name }} {{ user.last_name }}</span>
             </div>
             
             <div v-if="eligibleUsers.length === 0" class="text-center text-muted py-4 small">
@@ -192,9 +192,18 @@
                <label class="form-label fw-bold small">เลือกบุคคลเริ่มต้นคิวแรก:</label>
                <select class="form-select" v-model="selectedStartUser">
                  <option v-for="user in eligibleUsers" :key="user.id" :value="user.user_id">
-                   {{ user.prefix }}{{ user.name }} {{ user.sname }}
+                   {{ user.prefix_name }}{{ user.first_name }} {{ user.last_name }}
                  </option>
                </select>
+             </div>
+             
+             <div class="mb-2">
+               <label class="form-label fw-bold small">จำนวนคนต่อวัน (หน้าที่นี้):</label>
+               <div class="input-group">
+                 <input type="number" class="form-control" v-model="peoplePerDay" min="1" :max="eligibleUsers.length || 1">
+                 <span class="input-group-text bg-light text-muted">คน / วัน</span>
+               </div>
+               <div class="form-text small" style="font-size: 0.75rem;">ระบบจะจัดคนลงในวันเดียวกันจนครบ แล้วจึงเปลี่ยนวัน</div>
              </div>
           </div>
           <div class="modal-footer border-0 pb-4 pe-4">
@@ -287,6 +296,7 @@ const eligibleUsers = ref([])
 const allSchedules = ref([])
 let autoAssignModalInstance = null
 const selectedStartUser = ref('')
+const peoplePerDay = ref(1)
 
 // --- Computed ---
 const daysInMonth = computed(() => {
@@ -487,19 +497,61 @@ const clearAllCommandSchedules = async () => {
 }
 
 const openAutoAssignModal = () => { if (eligibleUsers.value.length > 0) { selectedStartUser.value = eligibleUsers.value[0].user_id; autoAssignModalInstance.show() } }
+
 const runAutoAssign = async () => {
   const days = activeCommand.value.ven_com_days?.split(',').map(Number).sort((a,b)=>a-b) || []
   let idx = eligibleUsers.value.findIndex(u => u.user_id === selectedStartUser.value)
+  if (idx === -1) idx = 0
+
   const payloads = []
+  
+  // 🌟 ป้องกันกรณีใส่คนต่อวัน มากกว่าพนักงานที่มีในแผนก (เพื่อไม่ให้คนเดียวเข้าเวรซ้ำ 2 รอบในวันเดียวกัน)
+  const assignCount = Math.min(parseInt(peoplePerDay.value) || 1, eligibleUsers.value.length)
+
+  // ลูปตามวันที่
   days.forEach(d => {
-    const u = eligibleUsers.value[idx]
-    if (!allSchedules.value.some(s => parseInt(s.day) === d && s.com_id === activeCommand.value.id && String(s.user_id) === String(u.user_id))) {
-      payloads.push({ date: `${currentMonth.value}-${String(d).padStart(2,'0')}`, com_id: activeCommand.value.id, sub_id: activeSubDuty.value.id, user_id: u.user_id })
+    // 🌟 ลูปตามจำนวนคนที่ต้องการในแต่ละวัน
+    for (let i = 0; i < assignCount; i++) {
+      const u = eligibleUsers.value[idx]
+      const targetDate = `${currentMonth.value}-${String(d).padStart(2,'0')}`
+
+      // เช็คว่ามีคนนี้ในตารางจริงของวันนี้หรือยัง
+      const alreadyInDb = allSchedules.value.some(s => parseInt(s.day) === d && s.com_id === activeCommand.value.id && String(s.user_id) === String(u.user_id))
+      
+      // เช็คว่ามีคนนี้ในคิวที่จะส่งบันทึก (payloads) หรือยัง
+      const alreadyInPayload = payloads.some(p => p.date === targetDate && String(p.user_id) === String(u.user_id))
+
+      // ถ้ายังไม่เคยลงเวรวันนี้ ก็จับใส่คิวเลย
+      if (!alreadyInDb && !alreadyInPayload) {
+        payloads.push({ 
+          date: targetDate, 
+          com_id: activeCommand.value.id, 
+          sub_id: activeSubDuty.value.id, 
+          user_id: u.user_id 
+        })
+      }
+      
+      // ขยับคิวไปคนที่ 2, 3 ถัดไป (ถ้าหมดรายชื่อให้วนกลับไปคนแรก)
+      idx = (idx + 1) % eligibleUsers.value.length
     }
-    idx = (idx + 1) % eligibleUsers.value.length
   })
-  if (payloads.length) await Promise.all(payloads.map(p => api.post('?route=admin/ven_schedule&action=add', p)))
-  autoAssignModalInstance.hide(); fetchMonthSchedules(); Swal.fire('สำเร็จ', 'จัดเวรเรียบร้อย', 'success')
+  
+  if (payloads.length) {
+    Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() })
+    
+    // 🌟 เปลี่ยนจาก Promise.all เป็น for...of เพื่อบังคับให้ API บันทึกทีละรายการ (เรียงตามลำดับคิว)
+    for (const payload of payloads) {
+      await api.post('?route=admin/ven_schedule&action=add', payload)
+    }
+
+    autoAssignModalInstance.hide()
+    peoplePerDay.value = 1 
+    fetchMonthSchedules()
+    Swal.fire('สำเร็จ', `จัดเวรอัตโนมัติเรียบร้อย (${payloads.length} คิว)`, 'success')
+  } else {
+    autoAssignModalInstance.hide()
+    Swal.fire('แจ้งเตือน', 'ไม่มีวันที่ว่าง หรือรายชื่อถูกจัดครบแล้ว', 'info')
+  }
 }
 
 const isClashing = (sch) => {

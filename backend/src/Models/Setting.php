@@ -187,11 +187,10 @@ class Setting {
     }
 
     public function getUsersBySubId($sub_id) {
-        $query = "SELECT vu.id as vu_id, vu.order_num, u.id as user_id, p.fname_id, f.name as prefix, p.name, p.sname 
+        $query = "SELECT vu.id as vu_id, vu.order_num, u.id as user_id, p.prefix_name, p.first_name, p.last_name
                   FROM ven_user vu
                   JOIN user u ON vu.user_id = u.id
                   JOIN profile p ON u.id = p.user_id
-                  LEFT JOIN fname f ON p.fname_id = f.id
                   WHERE vu.ven_name_sub_id = :sub_id
                   ORDER BY vu.order_num ASC, vu.id ASC"; // 🌟 สั่งให้เรียงตาม order_num
         $stmt = $this->conn->prepare($query);
@@ -292,7 +291,7 @@ class Setting {
     // 1. ดึงข้อมูลเวรทั้งหมดในเดือนที่เลือก เพื่อเอาไปลงปฏิทิน (Global View)
     public function getSchedulesByMonth($year_month) {
         $query = "SELECT s.id, s.ven_date as date, DAY(s.ven_date) as day, 
-                         s.user_id, CONCAT(f.name, p.name, ' ', p.sname) as user_name,
+                         s.user_id, CONCAT(p.prefix_name, ' ', p.first_name, ' ', p.last_name) as user_name,
                          s.ven_com_id as com_id, c.com_num,
                          s.ven_name_sub_id as sub_id, sub.name as sub_name, sub.color,
                          n.dn as shift_type

@@ -58,14 +58,14 @@ class VenController {
             $ven_detail = array(
                 "ven_id" => $row['ven_id'],
                 "user_id" => $row['user_id'],
-                "full_name" => $row['prefix_name'] . $row['first_name'] . ' ' . $row['last_name'],
-                "profile_image" => $row['img'] ? $row['img'] : 'default_avatar.jpg',
+                "full_name" => $row['full_name'] ? $row['full_name'] : 'ไม่มีชื่อ', // กรณีชื่อไม่ครบ ให้แสดงข้อความแทน
+                "profile_image" => $row['profile_image'] ? $row['profile_image'] : 'default_avatar.jpg',
                 "ven_date" => $row['ven_date'],
                 "ven_time" => $row['ven_time'],
-                "duty_main" => $row['main_duty_name'],
-                "duty_role" => $row['role_name'],
+                "duty_main" => $row['duty_main'],
+                "duty_role" => $row['duty_role'],
                 "price" => $row['price'],
-                "command_num" => $row['ven_com_num'] ? $row['ven_com_num'] : 'ไม่มีคำสั่ง',
+                "command_num" => $row['command_num'] ? $row['command_num'] : 'ไม่มีคำสั่ง',
                 "color" => $row['color'],
                 "status" => $row['status']
             );
