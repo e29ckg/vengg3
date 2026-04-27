@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # 1. 🌟 บริการ Frontend (Vue.js / Node.js)
+  frontend:
+    build:
+      context: ./frontend
+    container_name: vengg_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # ป้องกันไม่ให้ node_modules ของเครื่องเราไปทับใน Docker
+    environment:
+      - NODE_ENV=development
+
+  # 2. บริการ Web Server (PHP + Apache)
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vengg_web
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/var/www/html/vengg3
+    depends_on:
+      - db
+
+  # 3. บริการฐานข้อมูล (MySQL)
+  db:
+    image: mysql:8.0
+    container_name: vengg_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: vengg_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # 4. บริการจัดการฐานข้อมูล (phpMyAdmin)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: vengg_pma
+    restart: always
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+
+volumes:
+  db_data:
