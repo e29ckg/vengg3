@@ -187,7 +187,7 @@ class Setting {
     }
 
     public function getUsersBySubId($sub_id) {
-        $query = "SELECT vu.id as vu_id, vu.order_num, u.id as user_id, p.prefix_name, p.first_name, p.last_name
+        $query = "SELECT vu.id as vu_id, vu.order_num, u.id as user_id, p.prefix_name, p.first_name, p.last_name, CONCAT(p.prefix_name, p.first_name, ' ', p.last_name) as full_name
                   FROM ven_user vu
                   JOIN user u ON vu.user_id = u.id
                   JOIN profile p ON u.id = p.user_id
@@ -315,14 +315,15 @@ class Setting {
 
     // 2. บันทึกคนลงเวร (Drag & Drop)
     public function addSchedule($data) {
-        $query = "INSERT INTO ven_schedule (ven_date, ven_com_id, ven_name_sub_id, user_id) 
-                  VALUES (:ven_date, :com_id, :sub_id, :user_id)";
+        $query = "INSERT INTO ven_schedule (ven_date, ven_com_id, ven_name_sub_id, user_id, status) 
+                  VALUES (:ven_date, :com_id, :sub_id, :user_id, :status)";
         $stmt = $this->conn->prepare($query);
         return $stmt->execute([
             ':ven_date' => $data['date'],
             ':com_id'   => $data['com_id'],
             ':sub_id'   => $data['sub_id'],
-            ':user_id'  => $data['user_id']
+            ':user_id'  => $data['user_id'],
+            ':status'   => 1
         ]);
     }
 
