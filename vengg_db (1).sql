@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.2
+-- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
 -- Host: db
--- Generation Time: Apr 27, 2026 at 07:28 PM
--- Server version: 8.0.42
--- PHP Version: 8.2.27
+-- Generation Time: Apr 28, 2026 at 08:51 AM
+-- Server version: 8.0.43
+-- PHP Version: 8.3.26
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -29,13 +29,13 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `agency_config` (
   `id` int NOT NULL,
-  `agency_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ชื่อหน่วยงานเต็ม (เช่น ศาลจังหวัดเพชรบุรี)',
-  `agency_short_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ชื่อหน่วยงานย่อ',
-  `director_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ชื่อหัวหน้าหน่วยงาน/ผู้บริหาร',
-  `director_position` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ตำแหน่งหัวหน้าหน่วยงาน',
-  `admin_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ชื่อผู้จัดทำตารางเวร/ผู้อำนวยการ',
-  `admin_position` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ตำแหน่งผู้จัดทำตารางเวร',
-  `logo_image` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT 'default_logo.png' COMMENT 'ชื่อไฟล์โลโก้หน่วยงาน',
+  `agency_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ชื่อหน่วยงานเต็ม (เช่น ศาลจังหวัดเพชรบุรี)',
+  `agency_short_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ชื่อหน่วยงานย่อ',
+  `director_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ชื่อหัวหน้าหน่วยงาน/ผู้บริหาร',
+  `director_position` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ตำแหน่งหัวหน้าหน่วยงาน',
+  `admin_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ชื่อผู้จัดทำตารางเวร/ผู้อำนวยการ',
+  `admin_position` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ตำแหน่งผู้จัดทำตารางเวร',
+  `logo_image` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'default_logo.png' COMMENT 'ชื่อไฟล์โลโก้หน่วยงาน',
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'อัปเดตล่าสุดเมื่อไหร่'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -290,14 +290,14 @@ CREATE TABLE `user` (
 
 INSERT INTO `user` (`id`, `username`, `auth_key`, `password_hash`, `password_reset_token`, `email`, `role`, `status`, `is_deleted`, `created_at`, `updated_at`) VALUES
 ('0fe42647-50be-422a-b75b-25a792a9e79a', 'f', NULL, '$2y$10$40wGPYZjmKf2hp.ZoK73c.6DKL7fVRJjjCN0s9ugXsAlRwM1bOVZy', NULL, NULL, 1, 10, 0, '2026-04-27 03:40:31', NULL),
-('1', 'admin', 'e514e3a0f4b3ee16b4a5e4187f19606c', '$2y$10$SjrUtSxJ8dcOU2cnkltWbOFNzXpCKhd0.5McR3qskS0nIVsOLZrT2', NULL, NULL, 9, 10, 0, '2023-12-14 09:54:13', '2024-04-27 18:13:27'),
+('1', 'admin', 'a74bed483eb18f31cba86f51756e7453', '$2y$10$SjrUtSxJ8dcOU2cnkltWbOFNzXpCKhd0.5McR3qskS0nIVsOLZrT2', NULL, NULL, 9, 10, 0, '2023-12-14 09:54:13', '2024-04-27 18:13:27'),
 ('1680162049', 'j1', NULL, '$2y$10$ZYsif1LMin6gCWhKLZZ4hObuMqc8CtHBfPQ2jf/BL4ayNDvCO4hjq', NULL, NULL, 1, 10, 0, '2025-09-02 11:14:34', '2025-09-02 11:14:34'),
 ('1680162050', 'j2', NULL, '$2y$10$EWjmeA.i7d1ZaEZAOv3zouA3r0fBsJUu6VUaJ5WYF8WKgOLi5p8wK', NULL, NULL, 1, 10, 0, '2025-09-02 11:15:07', '2025-09-02 11:15:07'),
 ('1680162051', 'j3', NULL, '$2y$10$p8jIYxzYWdvsMupgq063w.hnOR0HX4bMixbUX8U0KkDd5zoZ2Mdiq', NULL, NULL, 1, 10, 0, '2025-09-02 11:15:44', '2025-09-02 11:15:44'),
-('1680162052', 'user1', NULL, '$2y$10$6.xneoVTL6DkcC23fNucUe3BD5aLvD6bpjVAD/NNzeHHj4sSAuyfi', NULL, NULL, 1, 10, 0, '2025-09-02 11:17:28', '2025-09-02 11:17:28'),
+('1680162052', 'user1', 'f35d8890b1a367ea61dd2fcda6d5427f', '$2y$10$6.xneoVTL6DkcC23fNucUe3BD5aLvD6bpjVAD/NNzeHHj4sSAuyfi', NULL, NULL, 1, 10, 0, '2025-09-02 11:17:28', '2025-09-02 11:17:28'),
 ('1680162053', 'user2', NULL, '$2y$10$bEU30/NLOPUPlcT9R9HYWuT1VhtwuE.EIpwUvvG5sfDCCRqaWfBPK', NULL, NULL, 1, 10, 0, '2025-09-02 11:25:08', '2025-09-02 11:25:08'),
 ('1680162054', 'user3', 'da34c2c4a8c1fda3e7cf5ec445ac78fd', '$2y$10$olBspSbuGrdMlyZSNy913.CgRPvexRCp212MQw651mVbliSdRcNtS', NULL, NULL, 1, 10, 0, '2025-09-02 11:27:09', '2025-09-02 11:27:09'),
-('1680162055', 'user4', NULL, '$2y$10$o5CL0z0xoGLx1wkVWmKyLOxAV7LrxyJxSYEot/FyI8rEgh4h2NhO.', NULL, NULL, 1, 10, 0, '2025-09-02 11:29:32', '2025-09-02 11:29:32'),
+('1680162055', 'user4', 'b4d9470179774dac2f590be4809078a2', '$2y$10$o5CL0z0xoGLx1wkVWmKyLOxAV7LrxyJxSYEot/FyI8rEgh4h2NhO.', NULL, NULL, 1, 10, 0, '2025-09-02 11:29:32', '2025-09-02 11:29:32'),
 ('1680162056', 'user5', 'ca2bcace20d7cdbd623192db3515eaaa', '$2y$10$gUsJavBCJMAk.JW10JTLmeQD5b.rSsmOj0j27T8rPhh865xZPZxp.', NULL, NULL, 1, 10, 0, '2025-09-02 11:30:11', '2025-09-02 11:30:11'),
 ('4dcc6854-a3b2-4fae-9617-bc8fd9158255', 'dd', NULL, '$2y$10$uI8iTmktzPpAtI4pRAz2lu3P5bc67MLjnKR9KyjyREUfR29zwkyZq', NULL, NULL, 1, 10, 0, '2026-04-27 04:04:41', NULL),
 ('865368c8-440a-409d-bce9-1ffa28f072b0', 'sss', NULL, '$2y$10$gpc2ohIJbV2E2LEC8Fa4j.ZGIIM0MgRCafBPjFRrIXsvMxRTMLOia', NULL, NULL, 1, 10, 1, '2026-04-27 03:23:49', NULL),
@@ -356,11 +356,11 @@ INSERT INTO `ven` (`id`, `user_id`, `ven_com_id`, `ven_com_idb`, `ven_date`, `ve
 
 CREATE TABLE `ven_change` (
   `id` int NOT NULL,
-  `change_no` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `change_no` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `s1_id` int NOT NULL COMMENT 'รหัสตารางเวรของผู้ขอ (ven_schedule.id)',
-  `user1_id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'รหัสผู้ขอแลก',
+  `user1_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'รหัสผู้ขอแลก',
   `s2_id` int DEFAULT NULL COMMENT 'รหัสตารางเวรของเพื่อน (ven_schedule.id)',
-  `user2_id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'รหัสเพื่อนที่ถูกขอแลก',
+  `user2_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'รหัสเพื่อนที่ถูกขอแลก',
   `status` int DEFAULT '0' COMMENT '0=รออนุมัติ, 1=ยอมรับแล้ว, 2=ปฏิเสธ',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -373,7 +373,9 @@ INSERT INTO `ven_change` (`id`, `change_no`, `s1_id`, `user1_id`, `s2_id`, `user
 (1, NULL, 531, '1', NULL, '1680162056', 1, '2026-04-27 16:01:31'),
 (3, 'VC-2604-001', 533, '1', NULL, '1680162050', 0, '2026-04-27 19:01:26'),
 (5, 'VC-2604-003', 516, '1', NULL, '1680162051', 0, '2026-04-27 19:10:14'),
-(6, 'VC-2604-004', 535, '1680162054', NULL, '1680162056', 0, '2026-04-27 19:26:31');
+(6, 'VC-2604-004', 535, '1680162054', NULL, '1680162056', 0, '2026-04-27 19:26:31'),
+(9, 'VC-2604-005', 539, '1', NULL, '1680162055', 1, '2026-04-28 08:45:26'),
+(10, 'VC-2604-006', 539, '1680162055', NULL, '1680162051', 0, '2026-04-28 08:49:26');
 
 -- --------------------------------------------------------
 
@@ -427,7 +429,7 @@ CREATE TABLE `ven_name` (
 INSERT INTO `ven_name` (`id`, `name`, `name_full`, `dn`, `word`, `srt`) VALUES
 (24, 'เวรเปิดทำการศาลนอกเวลาราชการ (เวรตรวจสอบการจับ)', 'ให้ข้าราชการฝ่ายตุลาการศาลยุติธรรม พนักงานราชการศาลยุติธรรม และลูกจ้างในศาลเยาวชนและครอบครัวกลาง อยู่ปฏิบัติหน้าที่โดยเปิดทำการศาลนอกเวลาราชการในวันหยุดราชการ', 'กลางวัน(08.30-16.30)', 'ven_report_24_1756973949.docx', 0),
 (25, 'เวรปฏิบัติหน้าที่ออกหมายจับและหมายค้นนอกเวลาราชการ (เวรกลางคืน)', 'ให้ข้าราชการฝ่ายตุลาการศาลยุติธรรม พนักงานราชการศาลยุติธรรม และลูกจ้างในศาลเยาวชนและครอบครัวกลางอยู่ปฏิบัติหน้าที่ออกหมายจับและหมายค้นนอกเวลาราชการ (เวรกลางคืน) ', 'กลางคืน(16.30-08.30)', NULL, 5),
-(27, 'เวรปฏิบัติงานนอกเวลาราชการในวันทำการปกติตามโครงการเปิดทำการศาลนอกเวลาราชการฯ 16.30-20.30 น.', 'ให้ข้าราชการตุลาการ ข้าราชการศาลยุติธรรม ลูกจ้าง และพนักงานราชการ ปฏิบัติงานในวันหยุดราชการ เวลา 16.30 – 20.30 นาฬิกา ตามโครงการเปิดทำการศาลนอกเวลาราชการเพื่อเร่งรัดการพิจารณาพิพากษาคดี หรือเพื่ออำนวยความสะดวกแก่ประชาชน ประจำปีงบประมาณ พ.ศ. ๒๕๖๗ ', 'nightCourt', NULL, 3),
+(27, 'เวรปฏิบัติงานนอกเวลาราชการในวันทำการปกติตามโครงการเปิดทำการศาลนอกเวลาราชการฯ 16.30-20.30 น.', 'ให้ข้าราชการตุลาการ ข้าราชการศาลยุติธรรม ลูกจ้าง และพนักงานราชการ ปฏิบัติงานในวันหยุดราชการ เวลา 16.30 – 20.30 นาฬิกา ตามโครงการเปิดทำการศาลนอกเวลาราชการเพื่อเร่งรัดการพิจารณาพิพากษาคดี หรือเพื่ออำนวยความสะดวกแก่ประชาชน ประจำปีงบประมาณ พ.ศ. ๒๕๖๗ ', 'nightCourt(16.30-20.00)', NULL, 3),
 (28, 'เวรปฏิบัติงานในวันหยุดราชการตามโครงการเปิดทำการศาลนอกเวลาราชการฯ 8.30-16.30 น.', 'ให้ข้าราชการตุลาการ ข้าราชการศาลยุติธรรม ลูกจ้าง และพนักงานราชการ ปฏิบัติงานในวันหยุดราชการ เวลา 08.30 – 16.30 นาฬิกา ตามโครงการเปิดทำการศาลนอกเวลาราชการเพื่อเร่งรัดการพิจารณาพิพากษาคดี หรือเพื่ออำนวยความสะดวกแก่ประชาชน ประจำปีงบประมาณ พ.ศ. ๒๕๖๗ ', 'กลางวัน(08.30-16.30)', NULL, 1),
 (29, 'เวรปฏิบัติงานนอกเวลาราชการในวันทำการปกติตามโครงการเปิดทำการศาลนอกเวลาราชการฯ 16.30-20.30 น. ( ผู้พิพากษาสมทบ)', NULL, 'nightCourt', NULL, 4),
 (30, 'เวรปฏิบัติงานในวันหยุดราชการตามโครงการเปิดทำการศาลนอกเวลาราชการฯ 8.30-16.30 น. (ผู้พิพากษาสมทบ)', NULL, 'กลางวัน', NULL, 6);
@@ -483,7 +485,7 @@ CREATE TABLE `ven_schedule` (
   `ven_date` date NOT NULL COMMENT 'วันที่ปฏิบัติหน้าที่ (YYYY-MM-DD)',
   `ven_com_id` int NOT NULL COMMENT 'อ้างอิงรหัสคำสั่งจากตาราง ven_com',
   `ven_name_sub_id` int NOT NULL COMMENT 'อ้างอิงรหัสหน้าที่ย่อยจากตาราง ven_name_sub',
-  `user_id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'อ้างอิงรหัสพนักงานจากตาราง user',
+  `user_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'อ้างอิงรหัสพนักงานจากตาราง user',
   `status` int NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -501,37 +503,11 @@ INSERT INTO `ven_schedule` (`id`, `ven_date`, `ven_com_id`, `ven_name_sub_id`, `
 (327, '2026-04-19', 1772680473, 130, '1680162051', 0, '2026-04-27 08:24:13'),
 (328, '2026-04-25', 1772680473, 130, '1680162049', 0, '2026-04-27 08:24:13'),
 (329, '2026-04-26', 1772680473, 130, '1680162050', 0, '2026-04-27 08:24:13'),
-(506, '2026-04-01', 1772680474, 110, '1680162055', 1, '2026-04-27 11:04:27'),
-(507, '2026-04-02', 1772680474, 110, '0fe42647-50be-422a-b75b-25a792a9e79a', 1, '2026-04-27 11:04:27'),
-(508, '2026-04-03', 1772680474, 110, '1680162052', 1, '2026-04-27 11:04:27'),
-(509, '2026-04-04', 1772680474, 110, '1680162053', 1, '2026-04-27 11:04:27'),
-(510, '2026-04-05', 1772680474, 110, '1680162054', 1, '2026-04-27 11:04:27'),
-(511, '2026-04-06', 1772680474, 110, '1', 1, '2026-04-27 11:04:27'),
-(512, '2026-04-07', 1772680474, 110, '0fe42647-50be-422a-b75b-25a792a9e79a', 1, '2026-04-27 11:04:27'),
-(513, '2026-04-08', 1772680474, 110, '1680162052', 1, '2026-04-27 11:04:27'),
-(514, '2026-04-09', 1772680474, 110, '1680162053', 1, '2026-04-27 11:04:27'),
-(515, '2026-04-10', 1772680474, 110, '1680162054', 1, '2026-04-27 11:04:27'),
-(516, '2026-04-11', 1772680474, 110, '1680162051', 1, '2026-04-27 11:04:27'),
-(517, '2026-04-12', 1772680474, 110, '0fe42647-50be-422a-b75b-25a792a9e79a', 1, '2026-04-27 11:04:27'),
-(518, '2026-04-13', 1772680474, 110, '1680162052', 1, '2026-04-27 11:04:27'),
-(519, '2026-04-14', 1772680474, 110, '1680162053', 1, '2026-04-27 11:04:28'),
-(520, '2026-04-15', 1772680474, 110, '1680162054', 1, '2026-04-27 11:04:28'),
-(521, '2026-04-16', 1772680474, 110, '1', 1, '2026-04-27 11:04:28'),
-(522, '2026-04-17', 1772680474, 110, '0fe42647-50be-422a-b75b-25a792a9e79a', 1, '2026-04-27 11:04:28'),
-(523, '2026-04-18', 1772680474, 110, '1680162052', 1, '2026-04-27 11:04:28'),
-(524, '2026-04-19', 1772680474, 110, '1680162053', 1, '2026-04-27 11:04:28'),
-(525, '2026-04-20', 1772680474, 110, '1680162054', 1, '2026-04-27 11:04:28'),
-(526, '2026-04-21', 1772680474, 110, '1680162050', 1, '2026-04-27 11:04:28'),
-(527, '2026-04-22', 1772680474, 110, '0fe42647-50be-422a-b75b-25a792a9e79a', 1, '2026-04-27 11:04:28'),
-(528, '2026-04-23', 1772680474, 110, '1680162052', 1, '2026-04-27 11:04:28'),
-(529, '2026-04-24', 1772680474, 110, '1680162053', 1, '2026-04-27 11:04:28'),
-(530, '2026-04-25', 1772680474, 110, '1680162054', 1, '2026-04-27 11:04:28'),
-(531, '2026-04-26', 1772680474, 110, '1680162056', 1, '2026-04-27 11:04:28'),
-(532, '2026-04-27', 1772680474, 110, '0fe42647-50be-422a-b75b-25a792a9e79a', 1, '2026-04-27 11:04:28'),
-(533, '2026-04-28', 1772680474, 110, '1680162050', 1, '2026-04-27 11:04:28'),
-(534, '2026-04-29', 1772680474, 110, '1680162053', 1, '2026-04-27 11:04:28'),
-(535, '2026-04-30', 1772680474, 110, '1680162056', 1, '2026-04-27 11:04:28'),
-(537, '2026-04-11', 1772680473, 117, '1680162054', 1, '2026-04-27 18:17:32');
+(537, '2026-04-11', 1772680473, 117, '1680162054', 1, '2026-04-27 18:17:32'),
+(538, '2026-04-06', 1772680474, 109, '1680162049', 1, '2026-04-28 06:17:53'),
+(539, '2026-04-28', 1772680474, 110, '1680162051', 1, '2026-04-28 06:34:00'),
+(540, '2026-04-29', 1772680474, 110, '1680162055', 1, '2026-04-28 06:34:02'),
+(541, '2026-04-30', 1772680474, 110, '1680162051', 1, '2026-04-28 06:34:31');
 
 -- --------------------------------------------------------
 
@@ -541,8 +517,8 @@ INSERT INTO `ven_schedule` (`id`, `ven_date`, `ven_com_id`, `ven_name_sub_id`, `
 
 CREATE TABLE `ven_time` (
   `id` int NOT NULL,
-  `name_th` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ชื่อเรียก เช่น กลางวัน',
-  `time_period` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ช่วงเวลา เช่น 08.30-16.30',
+  `name_th` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ชื่อเรียก เช่น กลางวัน',
+  `time_period` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ช่วงเวลา เช่น 08.30-16.30',
   `srt` int NOT NULL DEFAULT '99' COMMENT 'ลำดับการแสดงผล'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -763,13 +739,13 @@ ALTER TABLE `ven`
 -- AUTO_INCREMENT for table `ven_change`
 --
 ALTER TABLE `ven_change`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `ven_com`
 --
 ALTER TABLE `ven_com`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1772680476;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1772680477;
 
 --
 -- AUTO_INCREMENT for table `ven_name`
@@ -787,7 +763,7 @@ ALTER TABLE `ven_name_sub`
 -- AUTO_INCREMENT for table `ven_schedule`
 --
 ALTER TABLE `ven_schedule`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=538;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=542;
 
 --
 -- AUTO_INCREMENT for table `ven_time`
