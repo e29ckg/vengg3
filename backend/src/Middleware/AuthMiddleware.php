@@ -68,5 +68,18 @@ class AuthMiddleware {
 
         return $userData;
     }
+    public static function checkDirector($db) {
+        // 1. ให้ยามปกติเช็ค Token ก่อน
+        $userData = self::checkToken($db);
+
+        // 2. เช็คว่ามีสิทธิ์เป็น Director (role = 2) หรือไม่
+        if ($userData['role'] != 2 && $userData['role'] != 9) { // อนุญาตให้ Admin เข้าถึงได้ด้วย
+            http_response_code(403); // 403 Forbidden
+            echo json_encode(["error" => "Access denied. Director  role required."]);
+            exit();
+        }
+
+        return $userData;
+    }
 }
 ?>

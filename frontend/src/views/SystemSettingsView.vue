@@ -1,16 +1,5 @@
 <template>
   <div class="bg-light min-vh-100 pb-5">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4">
-      <div class="container">
-        <router-link class="navbar-brand fw-bold" to="/home">
-          <i class="bi bi-arrow-left me-2"></i>กลับหน้าหลัก
-        </router-link>
-        <span class="navbar-text text-white fw-bold">
-          <i class="bi bi-gear-fill me-1"></i> ระบบจัดการการตั้งค่า (Admin Only)
-        </span>
-      </div>
-    </nav>
-
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-md-8">

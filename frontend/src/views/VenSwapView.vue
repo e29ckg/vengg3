@@ -1,18 +1,5 @@
 <template>
   <div class="bg-light min-vh-100 pb-5">
-    <nav class="navbar navbar-dark bg-info shadow-sm">
-      <div class="container-fluid px-4">
-        <a class="navbar-brand fw-bold fs-5"><i class="bi bi-arrow-left-right me-2"></i>ระบบแลกเปลี่ยนเวร</a>
-        
-        <div class="d-flex align-items-center bg-white rounded-pill px-3 py-1 shadow-sm">
-          <i class="bi bi-person-circle text-info me-2 fs-5"></i>
-          <select class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark" v-model="currentUserId" @change="fetchMyData">
-            <option v-for="u in allUsers" :key="u.id" :value="u.id">{{ u.full_name }}</option>
-          </select>
-        </div>
-      </div>
-    </nav>
-
     <div class="container py-4">
       <div class="row g-4">
         

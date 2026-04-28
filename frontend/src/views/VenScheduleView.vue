@@ -1,51 +1,5 @@
 <template>
   <div class="bg-light min-vh-100 d-flex flex-column pb-3">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-      <div class="container-fluid px-4">
-        <a class="navbar-brand fw-bold fs-5" href="#">
-          <i class="bi bi-briefcase-fill me-2"></i>กลุ่มงานช่วยอำนวยการ
-        </a>
-
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#directorMenu">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="directorMenu">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
-            
-            <li class="nav-item">
-              <router-link to="/director/ven-settings" class="nav-link" active-class="active fw-bold text-warning">
-                <i class="bi bi-card-checklist me-1"></i> ชื่อเวร / กลุ่มหน้าที่
-              </router-link>
-            </li>
-            
-            <li class="nav-item">
-              <router-link to="/director/commands" class="nav-link" active-class="active fw-bold text-warning">
-                <i class="bi bi-file-earmark-text me-1"></i> จัดการคำสั่งเวร
-              </router-link>
-            </li>
-            
-            <li class="nav-item">
-              <router-link to="/director/schedule" class="nav-link" active-class="active fw-bold text-warning">
-                <i class="bi bi-calendar-week me-1"></i> จัดเวร
-              </router-link>
-            </li>
-            
-          </ul>
-          
-          <div class="d-flex">
-            <button class="btn btn-warning btn-sm rounded-pill px-3 shadow-sm fw-bold" @click="printSchedule">
-              <i class="bi bi-printer-fill me-1"></i>พิมพ์ตาราง
-            </button>
-            <router-link to="/home" class="btn btn-outline-light btn-sm rounded-pill px-3 shadow-sm">
-              <i class="bi bi-house-door-fill me-1"></i>กลับหน้าหลัก
-            </router-link>
-          </div>
-        </div>
-        
-      </div>
-    </nav>
-
     <div class="container-fluid flex-grow-1 d-flex p-3 gap-3">
       
       <div class="card shadow-sm border-0 rounded-4 d-flex flex-column position-sticky" 
@@ -161,18 +115,25 @@
             <div class="day-body p-1 flex-grow-1 overflow-auto custom-scrollbar">
               <div v-for="schedule in getSchedulesForDay(day)" :key="schedule.id" 
                    class="schedule-item mb-1 p-1 rounded-1 border d-flex justify-content-between align-items-start"
-                   draggable="true" @dragstart="startDragFromCalendar($event, schedule)"
+                   :draggable="isScheduleEditable(schedule)" 
+                   @dragstart="startDragFromCalendar($event, schedule)"
                    :class="{ 'clash-warning blink': isClashing(schedule) }"
-                   :style="{ backgroundColor: schedule.color, color: getTextColor(schedule.color) }">
+                   :style="{ 
+                     backgroundColor: schedule.color, 
+                     color: getTextColor(schedule.color),
+                     cursor: isScheduleEditable(schedule) ? 'grab' : 'not-allowed',
+                     opacity: isScheduleEditable(schedule) ? '1' : '0.85'
+                   }">
                 
                 <div class="text-truncate" style="max-width: 85%; white-space: normal; line-height: 1.1; font-size: 0.7rem;">
                   <span class="fw-bold d-block">{{ schedule.user_name }}</span>
                   <span style="opacity: 0.8; font-size: 0.6rem;">{{ schedule.com_num }} - {{ schedule.sub_name }}</span>
                 </div>
                 
-                <button class="btn btn-sm p-0 border-0 ms-1 opacity-75" :style="{ color: getTextColor(schedule.color) }" @click="removeSchedule(schedule.id)">
+                <button v-if="isScheduleEditable(schedule)" class="btn btn-sm p-0 border-0 ms-1 opacity-75" :style="{ color: getTextColor(schedule.color) }" @click="removeSchedule(schedule.id)">
                   <i class="bi bi-x-circle-fill"></i>
                 </button>
+                <i v-else class="bi bi-lock-fill ms-1 mt-1 opacity-50 small" :style="{ color: getTextColor(schedule.color) }" title="คำสั่งนี้ถูกยืนยันแล้ว"></i>
               </div>
             </div>
           </div>
@@ -257,8 +218,6 @@
     </div>
 
   </div>
-
-  
 </template>
 
 <script setup>
@@ -286,7 +245,6 @@ const updateCurrentMonth = () => {
 }
 
 // --- State อื่นๆ ---
-// const weekDays = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์']
 const weekDays = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์']
 const commands = ref([])
 const activeCommand = ref('')
@@ -303,14 +261,8 @@ const daysInMonth = computed(() => {
   const [y, m] = currentMonth.value.split('-')
   return new Date(y, m, 0).getDate()
 })
-// const blankDays = computed(() => {
-//   const [y, m] = currentMonth.value.split('-')
-//   return new Date(y, m - 1, 1).getDay()
-// })
 const blankDays = computed(() => {
   const [y, m] = currentMonth.value.split('-')
-  // getDay() ปกติ: อาทิตย์=0, จันทร์=1, ... เสาร์=6
-  // ปรับสูตรให้ จันทร์=0, อังคาร=1, ... อาทิตย์=6
   const dayOfWeek = new Date(y, m - 1, 1).getDay()
   return (dayOfWeek + 6) % 7
 })
@@ -331,6 +283,13 @@ const formatMonthThai = (ym) => {
 const getTextColor = (bg) => {
   const darks = ['blueviolet', 'brown', 'green', 'darkblue', 'crimson', '#0d6efd', '#dc3545']
   return darks.includes(bg?.toLowerCase()) ? '#fff' : '#000'
+}
+
+// 🌟 เพิ่มฟังก์ชันเช็คสถานะเวรว่า "ล็อค" อยู่หรือไม่
+const isScheduleEditable = (sch) => {
+  const scheduleCommand = commands.value.find(c => c.id === sch.com_id);
+  // ถ้าหาคำสั่งเจอ และสถานะเป็น 0 (กำลังดำเนินการ) จะให้ค่าเป็น true (แก้ไขลากได้)
+  return scheduleCommand ? scheduleCommand.status == 0 : false;
 }
 
 // --- API & Logic ---
@@ -363,7 +322,7 @@ const startDragFromCalendar = (e, sch) => {
   e.dataTransfer.setData('source', 'calendar'); e.dataTransfer.setData('scheduleID', sch.id)
 }
 
-// 🌟 ฟังก์ชันอัปเดตสถานะคำสั่ง
+// อัปเดตสถานะคำสั่ง
 const toggleCommandStatus = async (newStatus) => {
   const statusText = newStatus === 0 ? 'ยืนยันการจัดเวรและเปิดให้สมาชิกแลกเปลี่ยน?' : 'ปลดล็อคเพื่อกลับมาแก้ไขตารางเวร?';
   const result = await Swal.fire({
@@ -381,12 +340,9 @@ const toggleCommandStatus = async (newStatus) => {
         id: activeCommand.value.id,
         status: newStatus
       });
-      // อัปเดตข้อมูลใน UI ทันที
       activeCommand.value.status = newStatus;
-      // โหลดข้อมูลคำสั่งใหม่เพื่อให้ Dropdown อัปเดตด้วย
       await fetchCommands();
       
-      // เลือกคำสั่งเดิมกลับมา
       const updatedCom = commands.value.find(c => c.id === activeCommand.value.id);
       if(updatedCom) activeCommand.value = updatedCom;
 
@@ -397,19 +353,15 @@ const toggleCommandStatus = async (newStatus) => {
   }
 }
 
-// 🌟 แก้ไขฟังก์ชัน onDrop ใหม่ แยกการตรวจสอบซ้ายมือ และ ในปฏิทินให้ชัดเจน
+// ฟังก์ชันดรอป (วางเวร)
 const onDrop = async (e, day) => {
   const source = e.dataTransfer.getData('source')
   
-  // ==========================================
-  // 1. กรณีลากจากรายชื่อด้านซ้ายมือ (Sidebar)
-  // ==========================================
   if (source === 'sidebar') {
-    // ⛔ เช็คว่าคำสั่งที่เลือกอยู่ ถูกล็อคหรือไม่
-    if (activeCommand.value && activeCommand.value.status == 2) {
+    // ⛔ เช็คว่าคำสั่งที่เลือกอยู่ ถูกล็อคหรือไม่ (status != 0 แปลว่าล็อค)
+    if (activeCommand.value && activeCommand.value.status != 0) {
       return Swal.fire('ถูกล็อค!', 'คำสั่งนี้ได้รับการยืนยันแล้ว โปรดปลดล็อคก่อนแก้ไข', 'warning');
     }
-    // ⛔ เช็ควันที่อนุญาตของคำสั่งที่เลือกอยู่
     if (!isDayEnabled(day)) {
       return Swal.fire({ title: 'ไม่อนุญาต!', text: 'วันนี้ไม่ได้ระบุไว้ในเงื่อนไขของคำสั่งนี้', icon: 'error', timer: 2000, showConfirmButton: false })
     }
@@ -417,65 +369,51 @@ const onDrop = async (e, day) => {
     const uID = e.dataTransfer.getData('userID')
     if (!uID || !activeCommand.value || !activeSubDuty.value) return
 
-    // ⛔ เช็คชื่อซ้ำ
     if (allSchedules.value.some(s => parseInt(s.day) === day && s.com_id === activeCommand.value.id && String(s.user_id) === String(uID))) {
       return Swal.fire('รายชื่อซ้ำ!', 'บุคคลนี้มีเวรในคำสั่งนี้ของวันนี้แล้ว', 'warning')
     }
 
-    // บันทึก
     await api.post('?route=admin/ven_schedule&action=add', { date: `${currentMonth.value}-${String(day).padStart(2,'0')}`, com_id: activeCommand.value.id, sub_id: activeSubDuty.value.id, user_id: uID })
     fetchMonthSchedules()
   } 
   
-  // ==========================================
-  // 2. กรณีลากย้ายภายในปฏิทิน (Calendar)
-  // ==========================================
   else if (source === 'calendar') {
     const sID = e.dataTransfer.getData('scheduleID')
     const old = allSchedules.value.find(s => String(s.id) === String(sID))
 
     if (!old || parseInt(old.day) === day) return
 
-    // 🌟 ค้นหาข้อมูลคำสั่งของเวรที่เรากำลังลาก
     const scheduleCommand = commands.value.find(c => c.id === old.com_id)
 
-    // ⛔ เช็คสถานะ: คำสั่งของเวรนี้ถูกล็อคอยู่หรือไม่?
-    if (scheduleCommand && scheduleCommand.status == 2) {
+    // ⛔ เช็คสถานะคำสั่งที่ดึงมาว่าถูกล็อคอยู่หรือไม่ (แก้จาก status == 2 เป็น != 0)
+    if (scheduleCommand && scheduleCommand.status != 0) {
       return Swal.fire('ถูกล็อค!', `คำสั่งเลขที่ ${scheduleCommand.com_num} ถูกยืนยันแล้ว ไม่สามารถย้ายได้`, 'warning');
     }
 
-    // ⛔ เช็ควันที่: คำสั่งของเวรนี้ อนุญาตให้ไปลงวันใหม่ (day) ได้หรือไม่?
     if (scheduleCommand && scheduleCommand.ven_com_days) {
       const allowedDays = scheduleCommand.ven_com_days.split(',').map(Number)
       if (!allowedDays.includes(parseInt(day))) {
-         return Swal.fire({ 
-           title: 'ย้ายไม่ได้!', 
-           text: `คำสั่งเลขที่ ${scheduleCommand.com_num} อนุญาตให้จัดเวรเฉพาะวันที่ ${scheduleCommand.ven_com_days} เท่านั้น`, 
-           icon: 'error', 
-           timer: 3000, 
-           showConfirmButton: false 
-         })
+         return Swal.fire({ title: 'ย้ายไม่ได้!', text: `อนุญาตให้จัดเวรเฉพาะวันที่ ${scheduleCommand.ven_com_days} เท่านั้น`, icon: 'error', timer: 3000, showConfirmButton: false })
       }
     }
 
-    // ⛔ เช็คชื่อซ้ำในวันใหม่
     if (allSchedules.value.some(s => parseInt(s.day) === day && s.com_id === old.com_id && String(s.user_id) === String(old.user_id))) {
       return Swal.fire('ย้ายไม่ได้!', 'มีชื่อบุคคลนี้ในวันนั้นอยู่แล้ว', 'warning')
     }
 
-    // ทำการลบของเก่า แล้วเพิ่มของใหม่ (เสมือนการย้าย)
     await api.post('?route=admin/ven_schedule&action=remove', { id: old.id })
     await api.post('?route=admin/ven_schedule&action=add', { date: `${currentMonth.value}-${String(day).padStart(2,'0')}`, com_id: old.com_id, sub_id: old.sub_id, user_id: old.user_id })
     fetchMonthSchedules()
   }
 }
 
-// 🌟 แก้ไขฟังก์ชันลบ เพื่อป้องกันการลบข้อมูลของคำสั่งที่ถูกล็อคไปแล้ว
+// ฟังก์ชันลบ
 const removeSchedule = async (id) => {
   const schedule = allSchedules.value.find(s => s.id === id);
   if (schedule) {
     const scheduleCommand = commands.value.find(c => c.id === schedule.com_id);
-    if (scheduleCommand && scheduleCommand.status == 2) {
+    // ⛔ (แก้จาก status == 2 เป็น != 0)
+    if (scheduleCommand && scheduleCommand.status != 0) {
       return Swal.fire('ถูกล็อค!', `คำสั่งเลขที่ ${scheduleCommand.com_num} ถูกยืนยันแล้ว ไม่สามารถลบได้`, 'warning');
     }
   }
@@ -485,8 +423,6 @@ const removeSchedule = async (id) => {
     fetchMonthSchedules();
   } 
 }
-
-// const removeSchedule = async (id) => { if ((await Swal.fire({ title: 'ลบชื่อนี้?', icon: 'warning', showCancelButton: true })).isConfirmed) { await api.post('?route=admin/ven_schedule&action=remove', { id }); fetchMonthSchedules() } }
 
 const clearAllCommandSchedules = async () => {
   if ((await Swal.fire({ title: 'ลบเวรทั้งหมด?', text: 'ล้างชื่อทั้งหมดในคำสั่งนี้', icon: 'warning', showCancelButton: true })).isConfirmed) {
@@ -504,46 +440,25 @@ const runAutoAssign = async () => {
   if (idx === -1) idx = 0
 
   const payloads = []
-  
-  // 🌟 ป้องกันกรณีใส่คนต่อวัน มากกว่าพนักงานที่มีในแผนก (เพื่อไม่ให้คนเดียวเข้าเวรซ้ำ 2 รอบในวันเดียวกัน)
   const assignCount = Math.min(parseInt(peoplePerDay.value) || 1, eligibleUsers.value.length)
 
-  // ลูปตามวันที่
   days.forEach(d => {
-    // 🌟 ลูปตามจำนวนคนที่ต้องการในแต่ละวัน
     for (let i = 0; i < assignCount; i++) {
       const u = eligibleUsers.value[idx]
       const targetDate = `${currentMonth.value}-${String(d).padStart(2,'0')}`
-
-      // เช็คว่ามีคนนี้ในตารางจริงของวันนี้หรือยัง
       const alreadyInDb = allSchedules.value.some(s => parseInt(s.day) === d && s.com_id === activeCommand.value.id && String(s.user_id) === String(u.user_id))
-      
-      // เช็คว่ามีคนนี้ในคิวที่จะส่งบันทึก (payloads) หรือยัง
       const alreadyInPayload = payloads.some(p => p.date === targetDate && String(p.user_id) === String(u.user_id))
 
-      // ถ้ายังไม่เคยลงเวรวันนี้ ก็จับใส่คิวเลย
       if (!alreadyInDb && !alreadyInPayload) {
-        payloads.push({ 
-          date: targetDate, 
-          com_id: activeCommand.value.id, 
-          sub_id: activeSubDuty.value.id, 
-          user_id: u.user_id 
-        })
+        payloads.push({ date: targetDate, com_id: activeCommand.value.id, sub_id: activeSubDuty.value.id, user_id: u.user_id })
       }
-      
-      // ขยับคิวไปคนที่ 2, 3 ถัดไป (ถ้าหมดรายชื่อให้วนกลับไปคนแรก)
       idx = (idx + 1) % eligibleUsers.value.length
     }
   })
   
   if (payloads.length) {
     Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() })
-    
-    // 🌟 เปลี่ยนจาก Promise.all เป็น for...of เพื่อบังคับให้ API บันทึกทีละรายการ (เรียงตามลำดับคิว)
-    for (const payload of payloads) {
-      await api.post('?route=admin/ven_schedule&action=add', payload)
-    }
-
+    for (const payload of payloads) { await api.post('?route=admin/ven_schedule&action=add', payload) }
     autoAssignModalInstance.hide()
     peoplePerDay.value = 1 
     fetchMonthSchedules()
@@ -563,10 +478,7 @@ const isClashing = (sch) => {
   return false
 }
 
-// 🌟 ฟังก์ชันเรียกคำสั่งพิมพ์ของบราวเซอร์
-const printSchedule = () => {
-  window.print()
-}
+const printSchedule = () => { window.print() }
 
 onMounted(() => { fetchCommands(); fetchMonthSchedules(); autoAssignModalInstance = new Modal(document.getElementById('autoAssignModal')) })
 </script>
@@ -597,39 +509,12 @@ onMounted(() => { fetchCommands(); fetchMonthSchedules(); autoAssignModalInstanc
    🌟 CSS สำหรับการพิมพ์ (Print Mode)
    ========================================== */
 @media print {
-  /* 1. ซ่อน UI ฝั่งระบบจัดการทั้งหมด */
-  nav, .container-fluid.flex-grow-1, .modal, .swal2-container {
-    display: none !important;
-  }
-  
-  /* 2. แสดงพื้นที่พิมพ์ */
-  .print-area {
-    display: block !important;
-    padding: 20px;
-  }
-  .print-area.d-none {
-    display: block !important;
-  }
-
-  /* 3. ปรับแต่งตารางให้ขอบดำชัดเจน */
-  .print-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  .print-table th, .print-table td {
-    border: 1px solid #000 !important;
-    padding: 6px 8px !important;
-  }
-
-  /* 4. ตั้งค่าหน้ากระดาษ A4 แนวตั้ง (Portrait) */
-  @page {
-    size: A4 portrait;
-    margin: 1cm;
-  }
-  
-  /* ลบพื้นหลังสีเทาของ body */
-  body {
-    background-color: #fff !important;
-  }
+  nav, .container-fluid.flex-grow-1, .modal, .swal2-container { display: none !important; }
+  .print-area { display: block !important; padding: 20px; }
+  .print-area.d-none { display: block !important; }
+  .print-table { width: 100%; border-collapse: collapse; }
+  .print-table th, .print-table td { border: 1px solid #000 !important; padding: 6px 8px !important; }
+  @page { size: A4 portrait; margin: 1cm; }
+  body { background-color: #fff !important; }
 }
 </style>
