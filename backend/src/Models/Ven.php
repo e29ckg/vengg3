@@ -51,19 +51,25 @@ class Ven {
         $query = "SELECT 
                     v.id AS ven_id,
                     v.ven_date,
-                    v.status,
-                    vc.status AS com_status,
-                    IF(vn.dn LIKE '%กลางคืน%', '16:30:00', '08:30:00') AS ven_time,
-                    p.user_id,                    
-                    
+                    v.status,                    
+                    p.user_id,
+
                     CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS full_name,
+                    p.dep AS dep,
                     p.img  AS profile_image,
                     vns.id AS sub_id,
                     vns.name AS duty_role,
                     vns.price,
                     vns.color,
+
                     vn.name AS duty_main,
+                    vn.name_full AS duty_main_full,
+                    IF(vn.dn LIKE '%กลางคืน%', '16:30:00', '08:30:00') AS ven_time,
+                    
                     vc.com_num AS command_num,
+                    vc.com_date AS command_date,
+                    vc.ven_month AS command_month,
+                    vc.status AS com_status,
 
                     -- 🌟 ข้อมูลการเปลี่ยนเวร
                     vch.id AS change_id,
@@ -105,6 +111,8 @@ public function getChangeHistory($ven_id) {
                 vch.created_at AS change_date, -- วันที่ทำรายการ
                 vch.user1_id, -- 🌟 สำคัญ: ดึงไอดีคนโอน (เพื่อใช้เช็คสิทธิ์ปุ่มยกเลิก)
                 vch.user2_id,
+                p1.dep as user1_dep,
+                p2.dep as user2_dep,
                 CONCAT_WS(' ', CONCAT(IFNULL(p1.prefix_name, ''), IFNULL(p1.first_name, '')), p1.last_name) AS user1_name,
                 CONCAT_WS(' ', CONCAT(IFNULL(p2.prefix_name, ''), IFNULL(p2.first_name, '')), p2.last_name) AS user2_name
               FROM ven_change vch

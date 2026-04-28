@@ -159,9 +159,16 @@
 
             <div class="bg-light border rounded-3 p-3 text-start mb-4 shadow-sm">
               <p class="mb-2"><i class="bi bi-calendar-event me-2 text-primary"></i> 
-                <strong>{{ formatDate(selectedVen.ven_date) }}</strong> <span v-if="selectedVen.ven_time">(เวลา {{ selectedVen.ven_time.substring(0,5) }} น.)</span>
+                <strong>{{ formatDate(selectedVen.ven_date) }}</strong> 
+                <span v-if="selectedVen.ven_time">(เวลา {{ selectedVen.ven_time }} น.)</span>
               </p>
               <p class="mb-2"><i class="bi bi-moon-stars me-2 text-warning"></i> {{ selectedVen.duty_main }}</p>
+              
+              <p v-if="selectedVen.order_no" class="mb-2 text-muted small">
+                <i class="bi bi-file-earmark-text me-2"></i> คำสั่งเลขที่ {{ selectedVen.order_no }} 
+                <span v-if="selectedVen.order_date">ลงวันที่ {{ formatDate(selectedVen.order_date) }}</span>
+              </p>
+
               <p class="mb-0 text-success fw-bold fs-5"><i class="bi bi-cash-coin me-2"></i> {{ Number(selectedVen.price).toLocaleString() }} บาท</p>
             </div>
 
@@ -195,75 +202,72 @@
                         <span class="fw-semibold">{{ user.full_name || (user.prefix_name + user.first_name + ' ' + user.last_name) }}</span>
                       </button>
                       <div v-if="recipients.length === 0" class="p-3 text-center text-muted small">ไม่พบผู้มีสิทธิ์ท่านอื่นในหน้าที่นี้</div>
+                    </div>
+                    <div class="text-center mt-2">
+                      <button class="btn btn-link btn-sm text-decoration-none text-muted" @click="showRecipientList = false">ยกเลิก</button>
+                    </div>
                   </div>
-                  <div class="text-center mt-2">
-                    <button class="btn btn-link btn-sm text-decoration-none text-muted" @click="showRecipientList = false">ยกเลิก</button>
-                  </div>
+                </template>
+                
+                <div v-else class="alert alert-danger border-0 small text-center mt-2 shadow-sm rounded-3">
+                  <i class="bi bi-exclamation-triangle-fill me-1"></i> ระบบไม่อนุญาตให้เปลี่ยนเวรย้อนหลัง
                 </div>
               </template>
+            </div>
+            
+            <div v-else class="alert alert-secondary border-0 small text-center mt-3 mb-4">
+              <i class="bi bi-info-circle me-1"></i> การเปลี่ยนเวรหรือยกเวร สามารถทำได้เฉพาะเวรของตนเองเท่านั้น
+            </div>
+
+            <div class="timeline-container mt-4 pt-4 border-top text-start">
+              <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>ประวัติการเปลี่ยนเวร</h6>
+              
+              <div v-if="selectedVen.history && selectedVen.history.length > 0">
+                <div v-for="(history, index) in selectedVen.history" :key="index" class="card mb-2 border-0 shadow-sm bg-light">
+                  <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="badge bg-primary">ใบเปลี่ยนเลขที่: {{ history.change_no || history.change_id }}</span>
+                      
+                      <span v-if="history.status == 1" class="badge bg-success">อนุมัติแล้ว</span>
+                      <span v-else class="badge bg-warning text-dark">รออนุมัติ</span>
+                    </div>
+                    
+                    <p class="mb-1 text-muted" style="font-size: 0.9rem;">
+                      {{ history.user1_name }} <i class="bi bi-arrow-right mx-1"></i> {{ history.user2_name }}
+                    </p>
+                    
+                    <div class="d-flex justify-content-end gap-2 mt-2">
+                      <button v-if="history.status == 0 || history.status == 1" 
+                              @click="downloadWordForm(history)" 
+                              class="btn btn-sm btn-outline-primary bg-white">
+                        <i class="bi bi-file-earmark-word"></i> พิมพ์ใบเปลี่ยนเวร
+                      </button>
+                      <button v-if="history.status == 0 && history.user1_id == currentUserId" 
+                              @click="cancelChange(history.change_id)" 
+                              class="btn btn-sm btn-outline-danger bg-white">
+                        <i class="bi bi-x-circle"></i> ยกเลิก
+                      </button>                    
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div v-else class="text-center text-muted py-3 bg-light rounded-3 border">
+                <small>ไม่มีประวัติการเปลี่ยนเวร</small>
+              </div>
+            </div>
+
+          </div></div>
+      </div>
     
-    <div v-else class="alert alert-danger border-0 small text-center mt-2 shadow-sm rounded-3">
-      <i class="bi bi-exclamation-triangle-fill me-1"></i> ระบบไม่อนุญาตให้เปลี่ยนเวรย้อนหลัง
-    </div>
-  </template>
-</div>
-        
-        <div v-else class="alert alert-secondary border-0 small text-center mt-3 mb-4">
-          <i class="bi bi-info-circle me-1"></i> การเปลี่ยนเวรหรือยกเวร สามารถทำได้เฉพาะเวรของตนเองเท่านั้น
-        </div>
-
-        <div v-if="selectedVen.history && selectedVen.history.length > 0" class="mt-3 text-start border-top pt-4">
-          <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-clock-history me-2"></i>ประวัติการเปลี่ยนเวร</h6>
-          
-          <div class="timeline-container ps-3 border-start border-2 ms-2">
-  <div v-for="(item, index) in selectedVen.history" :key="item.change_id" class="mb-3 position-relative">
-    
-    <div class="card border-0 shadow-sm p-3 ms-3 border-start border-4" 
-         :class="item.status == 1 ? 'border-success' : 'border-warning'">
-      
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <div class="small text-muted fw-bold">ใบเปลี่ยน: {{ item.change_no || ('#VC-'+item.change_id) }}</div>
-        <span :class="item.status == 1 ? 'badge bg-success' : 'badge bg-warning text-dark'" class="rounded-pill small">
-          {{ item.status == 1 ? 'อนุมัติแล้ว' : 'รอการอนุมัติ' }}
-        </span>
-      </div>
-
-      <div class="small mb-2">
-        <span class="text-danger">{{ item.user1_name }}</span> 
-        <i class="bi bi-arrow-right mx-2 text-primary"></i> 
-        <span class="text-success fw-bold">{{ item.user2_name }}</span>
-      </div>
-
-      <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-1">
-        <div class="text-muted" style="font-size: 0.7rem;">
-          <i class="bi bi-calendar3 me-1"></i> ทำรายการ: {{ item.change_date }}
-        </div>
-        
-        <button v-if="item.status == 0 && (currentUserId == item.user1_id || currentUserId == item.user2_id || userRole == 9)" 
-                class="btn btn-sm btn-outline-danger py-0 px-2 rounded-pill" 
-                style="font-size: 0.75rem;"
-                @click="cancelChange(item.change_id)">
-          <i class="bi bi-x-circle me-1"></i> ยกเลิก
-        </button>
-      </div>
-
-    </div>
-
   </div>
-</div>
-
-        </div>
-
-      </div>
-    </div>
-  </div>
-</div>
 </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { exportShiftChangeToWord } from '../services/wordService';
 import Swal from 'sweetalert2'
 import { Modal } from 'bootstrap'
 import api from '../services/api'
@@ -670,6 +674,41 @@ const cancelChange = async (changeId) => {
     } catch (error) {
       Swal.fire('ผิดพลาด', error.response?.data?.error || 'ไม่สามารถยกเลิกได้', 'error');
     }
+  }
+};
+
+const downloadWordForm = async (historyItem) => {
+  try {
+    Swal.fire({
+      title: 'กำลังสร้างเอกสาร...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    const venInfo = {
+        ...selectedVen.value,
+        order_no: selectedVen.value.order_no, // มั่นใจว่ามีค่านี้
+        order_date: selectedVen.value.order_date,
+        ven_name: selectedVen.value.ven_name, // ตัวแปรที่เก็บ "เวรปฏิบัติหน้าที่พยาบาล..."
+        duty_main: selectedVen.value.duty_main,
+        duty_main_full: selectedVen.value.duty_main_full,
+        command_num: selectedVen.value.command_num,
+        command_date: selectedVen.value.command_date,
+        command_month: selectedVen.value.command_month,
+        duty_role: selectedVen.value.duty_role,
+    };
+
+    await exportShiftChangeToWord(historyItem, venInfo);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'ดาวน์โหลดสำเร็จ',
+      text: 'เอกสาร Word ถูกดาวน์โหลดเรียบร้อยแล้ว',
+      timer: 2000,
+      showConfirmButton: false
+    });
+  } catch (error) {
+    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้างเอกสาร Word ได้ กรุณาตรวจสอบไฟล์ Template', 'error');
   }
 };
 

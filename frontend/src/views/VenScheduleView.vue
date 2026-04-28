@@ -105,7 +105,7 @@
               <option v-for="sub in subDuties" :key="sub.id" :value="sub">{{ sub.name }}</option>
             </select>
             
-            <div class="d-flex gap-1" v-if="activeSubDuty && activeCommand.status == 1">
+            <div class="d-flex gap-1" v-if="activeSubDuty && activeCommand.status == 0">
               <button v-if="eligibleUsers.length > 0" class="btn btn-xs btn-outline-success flex-grow-1 fw-bold" @click="openAutoAssignModal">
                 <i class="bi bi-robot"></i> จัด Auto
               </button>
@@ -120,7 +120,7 @@
 
           </div>
 
-          <div class="user-list-container border rounded-3 p-2 bg-light flex-grow-1 shadow-inner overflow-auto" v-if="activeSubDuty">
+          <div class="user-list-container border rounded-3 p-2 bg-light flex-grow-1 shadow-inner overflow-auto" v-if="activeSubDuty && activeCommand && activeCommand.status == 0">
             <p class="text-center small text-muted mb-2 sticky-top bg-light pb-2 pt-1 border-bottom" style="z-index: 1; font-size: 0.75rem;">
               <i class="bi bi-arrows-move me-1"></i>ลากชื่อไปวางในปฏิทิน
             </p>
@@ -365,11 +365,11 @@ const startDragFromCalendar = (e, sch) => {
 
 // 🌟 ฟังก์ชันอัปเดตสถานะคำสั่ง
 const toggleCommandStatus = async (newStatus) => {
-  const statusText = newStatus === 2 ? 'ยืนยันการจัดเวรและเปิดให้สมาชิกแลกเปลี่ยน?' : 'ปลดล็อคเพื่อกลับมาแก้ไขตารางเวร?';
+  const statusText = newStatus === 0 ? 'ยืนยันการจัดเวรและเปิดให้สมาชิกแลกเปลี่ยน?' : 'ปลดล็อคเพื่อกลับมาแก้ไขตารางเวร?';
   const result = await Swal.fire({
-    title: newStatus === 2 ? 'ยืนยันการจัดเวร?' : 'ปลดล็อคแก้ไข?',
+    title: newStatus === 0 ? 'ยืนยันการจัดเวร?' : 'ปลดล็อคแก้ไข?',
     text: statusText,
-    icon: newStatus === 2 ? 'info' : 'warning',
+    icon: newStatus === 0 ? 'info' : 'warning',
     showCancelButton: true,
     confirmButtonText: 'ตกลง',
     cancelButtonText: 'ยกเลิก'
