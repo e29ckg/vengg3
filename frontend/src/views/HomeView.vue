@@ -1,77 +1,7 @@
 <template>
   <div class="bg-light min-vh-100 d-flex flex-column pb-4">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-      <div class="container-fluid px-4">
-        <a class="navbar-brand fw-bold fs-4" href="#"><i class="bi bi-calendar-check me-2"></i>Vengg3</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0 fs-5">
-            <li class="nav-item"><router-link class="nav-link active" to="/home">หน้าแรก</router-link></li>
-            <li class="nav-item"><a class="nav-link" href="#">ประวัติการเปลี่ยนเวร</a></li>
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">รายงาน</a>
-              <ul class="dropdown-menu shadow border-0">
-                <li><a class="dropdown-item" href="#">สรุปการอยู่เวร</a></li>
-                <li><a class="dropdown-item" href="#">พิมพ์คำสั่ง</a></li>
-              </ul>
-            </li>
-            
-            <li class="nav-item dropdown" v-if="userRole === 9 || userRole === 2">
-              <a class="nav-link dropdown-toggle fw-bold text-info" 
-                 @click.prevent="toggleDirectorMenu" 
-                 style="cursor: pointer;">
-                <i class="bi bi-briefcase-fill me-1"></i>งานอำนวยการ
-              </a>
-              <ul class="dropdown-menu shadow border-0 mt-2 rounded-3" :class="{ 'show': isDirectorMenuOpen }">
-                <li>
-                  <router-link class="dropdown-item py-2" to="/director/commands">
-                    <i class="bi bi-file-earmark-plus me-2 text-primary"></i>เพิ่มคำสั่ง (จัดเวร)
-                  </router-link>
-                </li>
-                <li>
-                  <router-link class="dropdown-item py-2" to="/director/ven-settings">
-                    <i class="bi bi-card-checklist me-2 text-success"></i>จัดการชื่อเวร/กลุ่มหน้าที่
-                  </router-link>
-                </li>
-              </ul>
-            </li>
-            
-            <li class="nav-item dropdown" v-if="userRole === 9">
-                <a class="nav-link dropdown-toggle text-warning fw-bold" 
-                   @click.prevent="toggleAdminMenu" 
-                   style="cursor: pointer;">
-                    <i class="bi bi-shield-lock-fill me-1"></i>ผู้ดูแลระบบ
-                </a>
-                <ul class="dropdown-menu shadow border-0 mt-2 rounded-3" :class="{ 'show': isAdminMenuOpen }">
-                    <li>
-                    <router-link class="dropdown-item py-2" to="/admin/users">
-                        <i class="bi bi-people-fill me-2 text-primary"></i>จัดการสมาชิก (Users)
-                    </router-link>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                    <router-link class="dropdown-item py-2" to="/admin/settings">
-                        <i class="bi bi-gear-fill me-2 text-secondary"></i>ตั้งค่าระบบ (Master Data)
-                    </router-link>
-                    </li>
-                    
-                </ul>
-            </li>
-          </ul>
-          
-          <div class="d-flex align-items-center">
-            <span class="text-light me-3 fw-semibold"><i class="bi bi-person-circle me-1"></i> {{ currentUsername }}</span>
-            <button class="btn btn-light btn-sm rounded-pill fw-bold text-danger px-3 shadow-sm" @click="handleLogout">ออกจากระบบ</button>
-          </div>
-        </div>
-      </div>
-    </nav>
-
     <div class="container-fluid py-4 px-4 flex-grow-1 d-flex flex-column">
-      <div class="card shadow-sm border-0 rounded-4 flex-grow-1 d-flex flex-column overflow-hidden">
-        
+      <div class="card shadow-sm border-0 rounded-4 flex-grow-1 d-flex flex-column overflow-hidden">        
         <div class="card-header bg-white border-bottom-0 pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
           <h4 class="fw-bold mb-0 text-primary">
             <i class="bi bi-calendar3 me-2"></i>ตารางเวรเดือน {{ formatMonthThai(currentMonth) }}
@@ -301,9 +231,15 @@ const fetchUserInfo = async () => {
 
 // เมนู
 const isAdminMenuOpen = ref(false)
-const toggleAdminMenu = () => { isAdminMenuOpen.value = !isAdminMenuOpen.value }
+const toggleAdminMenu = () => { 
+  isAdminMenuOpen.value = !isAdminMenuOpen.value 
+  if (isAdminMenuOpen.value) isDirectorMenuOpen.value = false // ปิดเมนูอำนวยการถ้าเปิดเมนูแอดมิน
+  }
 const isDirectorMenuOpen = ref(false)
-const toggleDirectorMenu = () => { isDirectorMenuOpen.value = !isDirectorMenuOpen.value }
+const toggleDirectorMenu = () => { 
+  isDirectorMenuOpen.value = !isDirectorMenuOpen.value 
+  if (isDirectorMenuOpen.value) isAdminMenuOpen.value = false // ปิดเมนูแอดมินถ้าเปิดเมนูอำนวยการ
+}
 
 // --- 🌟 จัดการเรื่องปฏิทิน Custom ---
 const todayDate = new Date()

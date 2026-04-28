@@ -44,7 +44,7 @@ switch ($route) {
 
     case 'admin/user/list':
         // 🔒 เรียกใช้ยาม VIP (ต้องเป็น Admin เท่านั้นถึงผ่านได้)
-        AuthMiddleware::checkAdmin($connection);
+        AuthMiddleware::checkDirector($connection);
         
         $controller = new UserController($connection);
         $controller->listUsers();
@@ -97,7 +97,7 @@ switch ($route) {
 
     // ใน switch ของ index.php
     case 'admin/setting':
-        AuthMiddleware::checkAdmin($connection); // 🔒 ยาม VIP
+        AuthMiddleware::checkDirector($connection); // 🔒 ยาม VIP
         $table = $_GET['table'] ?? ''; // dep หรือ group
         $action = $_GET['action'] ?? 'list';
         
@@ -107,7 +107,7 @@ switch ($route) {
         break;
 
     case 'admin/ven_user':
-        AuthMiddleware::checkAdmin($connection);
+        AuthMiddleware::checkDirector($connection);
         require_once '../src/Models/Setting.php';
         $settingModel = new Setting($connection);
         $action = $_GET['action'] ?? '';
@@ -126,7 +126,7 @@ switch ($route) {
         break;
 
     case 'admin/ven_com':
-        AuthMiddleware::checkAdmin($connection);
+        AuthMiddleware::checkDirector($connection);
         require_once '../src/Models/Setting.php';
         $settingModel = new Setting($connection);
         $action = $_GET['action'] ?? '';
@@ -153,7 +153,7 @@ switch ($route) {
         break;
 
     case 'admin/ven_schedule':
-        AuthMiddleware::checkAdmin($connection);
+        AuthMiddleware::checkDirector($connection);
         require_once '../src/Models/Setting.php';
         $settingModel = new Setting($connection);
         $action = $_GET['action'] ?? '';
@@ -185,14 +185,14 @@ switch ($route) {
     case 'admin/ven_time':
         // ถ้าต้องการทำระบบเพิ่มลบแก้ในอนาคต ก็มาเขียนเงื่อนไขเพิ่มตรงนี้ได้
         // แต่ตอนนี้ใช้ดึงข้อมูล (List) อย่างเดียวไปก่อนครับ
-        AuthMiddleware::checkAdmin($connection);
+        AuthMiddleware::checkDirector($connection);
         require_once '../src/Models/Setting.php';
         $settingModel = new Setting($connection);
         echo json_encode($settingModel->getVenTimes());
         break;
 
     case 'admin/agency_config':
-        AuthMiddleware::checkAdmin($connection);
+        AuthMiddleware::checkDirector($connection);
         require_once '../src/Models/Setting.php';
         $settingModel = new Setting($connection);
         $action = $_GET['action'] ?? '';
@@ -209,7 +209,29 @@ switch ($route) {
             }
         }
         break;
+
+    case 'admin/ven_approve':
+        // ตรวจสอบสิทธิ์ (ใช้ Middleware เดียวกับ admin)
+        AuthMiddleware::checkDirector($connection);
+        $settingModel = new Setting($connection);
+        $action = $_GET['action'] ?? '';
+        $data = json_decode(file_get_contents("php://input"), true);
         
+        if ($action === 'list') {
+            echo json_encode($settingModel->getAllChangeRequests());
+        } 
+        elseif ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $data = json_decode(file_get_contents("php://input"), true);
+            if (isset($data['id']) && isset($data['status'])) {
+                if ($settingModel->updateChangeStatus($data['id'], $data['status'])) {
+                    echo json_encode(["success" => true, "message" => "อัปเดตสถานะเรียบร้อย"]);
+                } else {
+                    http_response_code(500);
+                    echo json_encode(["error" => "ไม่สามารถอัปเดตสถานะได้"]);
+                }
+            }
+        }
+        break;
     
     case 'settings/update':
         // 🌟 ด่านตรวจ: ถ้าไม่ใช่ Admin ระบบจะส่ง 403 Forbidden กลับไปทันที

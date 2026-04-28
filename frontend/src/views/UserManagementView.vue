@@ -1,16 +1,5 @@
 <template>
   <div class="bg-light min-vh-100">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-      <div class="container-fluid px-4">
-        <a class="navbar-brand fw-bold fs-4" href="#"><i class="bi bi-gear me-2"></i>Admin Panel</a>
-        <div class="d-flex align-items-center">
-          <router-link to="/home" class="btn btn-outline-light btn-sm rounded-pill px-3 me-3">
-            <i class="bi bi-arrow-left me-1"></i>กลับหน้าปฏิทิน
-          </router-link>
-        </div>
-      </div>
-    </nav>
-
     <div class="container py-5">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="fw-bold mb-0"><i class="bi bi-people-fill me-2"></i>จัดการสมาชิก</h3>

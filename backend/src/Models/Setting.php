@@ -526,4 +526,62 @@ class Setting {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
+    // ดึงรายการขอเปลี่ยนเวรทั้งหมด
+public function getAllChangeRequests() {
+    $query = "SELECT vc.id, vc.change_no, vc.status, vc.created_at, 
+                     vs.ven_date, vn.name AS duty_main, vns.name AS duty_role,
+                     CONCAT_WS(' ', p1.prefix_name, p1.first_name, p1.last_name) AS user1_name,
+                     CONCAT_WS(' ', p2.prefix_name, p2.first_name, p2.last_name) AS user2_name
+              FROM ven_change vc
+              JOIN ven_schedule vs ON vc.s1_id = vs.id
+              LEFT JOIN ven_name_sub vns ON vs.ven_name_sub_id = vns.id
+              LEFT JOIN ven_com vcom ON vs.ven_com_id = vcom.id
+              LEFT JOIN ven_name vn ON vcom.ven_name_id = vn.id
+              LEFT JOIN profile p1 ON vc.user1_id = p1.user_id
+              LEFT JOIN profile p2 ON vc.user2_id = p2.user_id
+              ORDER BY vc.created_at DESC";
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// อัปเดตสถานะการอนุมัติ (รองรับการแก้ไขสถานะย้อนหลัง)
+public function updateChangeStatus($id, $status) {
+    try {
+        $this->conn->beginTransaction();
+
+        // 1. ดึงข้อมูลใบเปลี่ยนเวรออกมาก่อน เพื่อดูว่าใครแลกกับใคร
+        $stmtChange = $this->conn->prepare("SELECT s1_id, user1_id, user2_id FROM ven_change WHERE id = :id");
+        $stmtChange->execute([':id' => $id]);
+        $changeData = $stmtChange->fetch(PDO::FETCH_ASSOC);
+
+        if (!$changeData) {
+            throw new Exception("ไม่พบข้อมูลใบเปลี่ยนเวร");
+        }
+
+        // 2. อัปเดตสถานะในตาราง ven_change
+        $query = "UPDATE ven_change SET status = :status WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([':status' => $status, ':id' => $id]);
+
+        // 3. ปรับปรุงชื่อผู้เข้าเวรในตารางหลัก (ven_schedule) ให้ตรงกับสถานะ
+        // - ถ้าสถานะเป็น 2 (ไม่อนุมัติ) -> คืนเวรให้คนเดิม (user1_id)
+        // - ถ้าสถานะเป็น 1 หรือ 0 (อนุมัติ/รออนุมัติ) -> ให้สิทธิ์คนใหม่ (user2_id)
+        $targetUserId = ($status == 2) ? $changeData['user1_id'] : $changeData['user2_id'];
+
+        $queryRev = "UPDATE ven_schedule SET user_id = :user_id WHERE id = :s1_id";
+        $stmtRev = $this->conn->prepare($queryRev);
+        $stmtRev->execute([
+            ':user_id' => $targetUserId,
+            ':s1_id' => $changeData['s1_id']
+        ]);
+
+        $this->conn->commit();
+        return true;
+    } catch (Exception $e) {
+        $this->conn->rollBack();
+        return false;
+    }
+}
+
 }

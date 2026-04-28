@@ -1,16 +1,5 @@
 <template>
   <div class="bg-light min-vh-100 pb-5">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-      <div class="container-fluid px-4">
-        <a class="navbar-brand fw-bold" href="#"><i class="bi bi-building-gear me-2"></i>ตั้งค่าระบบ</a>
-        <div class="d-flex align-items-center">
-          <router-link to="/admin/settings" class="btn btn-outline-light btn-sm rounded-pill px-3">
-            <i class="bi bi-arrow-left me-1"></i>กลับหน้าตั้งค่าหลัก
-          </router-link>
-        </div>
-      </div>
-    </nav>
-
     <div class="container py-5">
       <div class="row justify-content-center">
         <div class="col-lg-8">
