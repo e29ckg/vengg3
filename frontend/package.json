@@ -16,6 +16,9 @@
     "@popperjs/core": "^2.11.8",
     "axios": "^1.15.2",
     "bootstrap": "^5.3.8",
+    "docxtemplater": "^3.68.6",
+    "file-saver": "^2.0.5",
+    "pizzip": "^3.2.0",
     "sweetalert2": "^11.26.24",
     "vue": "^3.5.32",
     "vue-router": "^4.6.4"
