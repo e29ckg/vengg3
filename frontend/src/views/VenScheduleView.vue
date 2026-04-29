@@ -53,6 +53,9 @@
           </div>
 
           <div v-if="activeCommand" class="d-flex flex-column gap-2">
+            <button class="btn btn-xs btn-primary fw-bold px-3" @click="printSchedule">
+                <i class="bi bi-printer-fill me-1"></i> พิมพ์รายงาน
+              </button>
             <label class="form-label small fw-bold text-muted mb-0">3. เลือกหน้าที่เพื่อจัดคน</label>
             <select class="form-select form-select-sm border-primary" v-model="activeSubDuty" @change="loadEligibleUsers">
               <option value="">-- เลือกหน้าที่ย่อย --</option>
@@ -66,6 +69,8 @@
               <button class="btn btn-xs btn-outline-danger flex-grow-1 fw-bold" @click="clearAllCommandSchedules" :disabled="!hasSchedulesInActiveCommand">
                 <i class="bi bi-trash"></i> ล้าง
               </button>
+              
+
             </div>
             
             <div v-if="activeCommand && activeCommand.status == 1" class="alert alert-success py-2 mt-2 mb-0 text-center small fw-bold">
@@ -174,43 +179,52 @@
       </div>
     </div>
 
+    
     <div class="print-area d-none text-black bg-white">
       <div class="text-center mb-4">
-        <h4 class="fw-bold mb-1">ตารางปฏิบัติงานนอกเวลาราชการ</h4>
-        <h5 class="fw-bold">ประจำเดือน {{ formatMonthThai(currentMonth) }}</h5>
+        <h4 class="fw-bold mb-1" style="font-size: 1.4rem;">ตารางปฏิบัติงานนอกเวลาราชการ (เวร...{{ activeCommand?.ven_name_title || '' }})</h4>
+        <h5 class="fw-bold" style="font-size: 1.2rem;">ประจำเดือน {{ formatMonthThai(currentMonth) }}</h5>
+        <p class="mb-0">ตามคำสั่งเลขที่ {{ activeCommand?.com_num || '....................' }}</p>
       </div>
       
       <table class="table table-bordered border-dark print-table">
         <thead>
-          <tr class="text-center" style="background-color: #f8f9fa !important; -webkit-print-color-adjust: exact;">
-            <th style="width: 10%;">วันที่</th>
-            <th style="width: 90%;">รายชื่อผู้ปฏิบัติหน้าที่</th>
+          <tr class="text-center align-middle" style="background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact;">
+            <th style="width: 12%; border: 1px solid black;">วันที่</th>
+            <th style="border: 1px solid black;" v-for="vns in subDuties"> {{vns.name}}</th>
+            <th style="width: 20%; border: 1px solid black;">หมายเหตุ</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="day in daysInMonth" :key="'print-'+day">
-            <td class="text-center align-middle fw-bold fs-5">{{ day }}</td>
-            <td class="p-2">
-              <div v-if="getSchedulesForDay(day).length === 0" class="text-muted small text-center mt-2">- ไม่มีเวร -</div>
-              <div v-else class="row g-1">
-                <div v-for="schedule in getSchedulesForDay(day)" :key="'p-'+schedule.id" class="col-6 mb-1" style="font-size: 0.9rem;">
-                  <span class="fw-bold me-1">{{ schedule.sub_name }}:</span>
-                  <span>{{ schedule.user_name }}</span>
+            <td class="text-center align-middle fw-bold" style="border: 1px solid black; font-size: 1.1rem;">
+              {{ day }} {{ getThaiDayShort(day) }}
+            </td>
+            <td class="p-2" style="border: 1px solid black;" v-for="vns in subDuties" :key="'print-'+day+'-'+vns.id">
+              <div v-if="getSchedulesForDay(day).length === 0" class="text-muted small text-center">-</div>
+              <div v-else class="d-flex flex-wrap gap-3">
+                <div v-for="schedule in getSchedulesForDay(day)" :key="'p-'+schedule.id" class="mb-1">
+                  <span class="fw-bold">{{schedule.com_id == activeCommand.id && schedule.sub_name == vns.name ? schedule.user_name : '-' }}</span> 
+                  <!-- <span class="ms-1">{{ schedule.user_name }}</span> -->
                 </div>
               </div>
             </td>
+            <td style="border: 1px solid black;"></td>
           </tr>
         </tbody>
       </table>
       
-      <div class="row mt-5 text-center" style="page-break-inside: avoid;">
+      <div class="row mt-5 pt-3 text-center" style="page-break-inside: avoid;">
         <div class="col-6">
-          <p class="mb-5">ผู้จัดทำตารางเวร</p>
+          <br>
+          <p class="mb-5">(ลงชื่อ).......................................................ผู้จัดทำ</p>
           <p>(.......................................................)</p>
-          <p>ตำแหน่ง ...............................................</p>
+          <p>ตำแหน่ง .......................................................</p>
         </div>
         <div class="col-6">
-          <p class="mb-5">ผู้อนุมัติ</p>
+          <p class="mb-2">ทราบ/อนุมัติ</p>
+          <br>
+          <p class="mb-5">(ลงชื่อ).......................................................ผู้อนุมัติ</p>
           <p>(.......................................................)</p>
           <p>ผู้อำนวยการฯ</p>
         </div>
@@ -355,16 +369,6 @@ const toggleCommandStatus = async (newStatus) => {
 
 // ฟังก์ชันดรอป (วางเวร)
 const onDrop = async (e, day) => {
-  if (isConfirmed.value) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'ล็อกการแก้ไข',
-      text: 'คำสั่งนี้ถูกยืนยันแล้ว ไม่สามารถแก้ไขตารางเวรได้',
-      timer: 2000,
-      showConfirmButton: false
-    })
-    return
-  }
   
   const source = e.dataTransfer.getData('source')
   
@@ -489,7 +493,21 @@ const isClashing = (sch) => {
   return false
 }
 
-const printSchedule = () => { window.print() }
+// ฟังก์ชันดึงชื่อวันภาษาไทยย่อ (จ., อ., พ.)
+const getThaiDayShort = (day) => {
+  const [y, m] = currentMonth.value.split('-')
+  const date = new Date(y, m - 1, day)
+  const days = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.']
+  return days[date.getDay()]
+}
+
+// แก้ไขฟังก์ชันพิมพ์ให้เรียกใช้ได้ทันที
+const printSchedule = () => {
+  if (!activeCommand.value) {
+    return Swal.fire('แจ้งเตือน', 'โปรดเลือกคำสั่งก่อนพิมพ์รายงาน', 'warning')
+  }
+  window.print()
+}
 
 onMounted(() => { fetchCommands(); fetchMonthSchedules(); autoAssignModalInstance = new Modal(document.getElementById('autoAssignModal')) })
 </script>
@@ -520,12 +538,27 @@ onMounted(() => { fetchCommands(); fetchMonthSchedules(); autoAssignModalInstanc
    🌟 CSS สำหรับการพิมพ์ (Print Mode)
    ========================================== */
 @media print {
-  nav, .container-fluid.flex-grow-1, .modal, .swal2-container { display: none !important; }
-  .print-area { display: block !important; padding: 20px; }
-  .print-area.d-none { display: block !important; }
-  .print-table { width: 100%; border-collapse: collapse; }
-  .print-table th, .print-table td { border: 1px solid #000 !important; padding: 6px 8px !important; }
-  @page { size: A4 portrait; margin: 1cm; }
-  body { background-color: #fff !important; }
+  /* ซ่อนทุกอย่างยกเว้น print-area */
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    display: block !important;
+  }
+  
+  /* เส้นตารางเข้มขึ้น */
+  .print-table { border: 2px solid black !important; }
+  .print-table th, .print-table td { 
+    border: 1px solid black !important; 
+    color: black !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
 }
 </style>
