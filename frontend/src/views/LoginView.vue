@@ -27,7 +27,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+// 1. นำเข้า onMounted เพิ่มเติม
+import { ref, onMounted } from 'vue' 
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
@@ -39,13 +40,21 @@ const password = ref('')
 const isLoading = ref(false)
 const router = useRouter()
 
+// 🌟 2. เพิ่มส่วน onMounted ตรวจสอบ Token ตอนโหลดหน้าเว็บ
+onMounted(() => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    // ถ้ามี Token อยู่แล้ว ให้เด้งไปหน้า /home ทันที
+    router.push('/home')
+  }
+})
+
 // ฟังก์ชันทำงานเมื่อกดปุ่ม Submit
 const handleLogin = async () => {
   isLoading.value = true
   
   try {
-    // 1. ส่งข้อมูลไปหา Backend API (แก้ไข URL ให้ตรงกับพอร์ตของ Backend หากจำเป็น)
-
+    // 1. ส่งข้อมูลไปหา Backend API
     const response = await api.post('?route=auth/login', {
       username: username.value,
       password: password.value
