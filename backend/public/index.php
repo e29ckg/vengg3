@@ -327,15 +327,7 @@ switch ($route) {
         $authController->getMe();
         break;
         
-    case 'user/swap':
-        if ($action === 'my_shifts') {
-            echo json_encode($settingModel->getMySchedules($_GET['user_id']));
-        } elseif ($action === 'request') {
-            echo json_encode(["success" => $settingModel->createSwapRequest($data)]);
-        } elseif ($action === 'approve') {
-            echo json_encode(["success" => $settingModel->approveSwap($data['change_id'])]);
-        }
-        break;
+    
 
     case 'user/transfer':
         // 1. ตรวจสอบสิทธิ์ (ต้องล็อกอินถึงจะโอนเวรได้)
@@ -367,6 +359,40 @@ switch ($route) {
             }
         }
         break;
+
+    case 'report/monthly':
+        // ตรวจสอบ Token ก่อนเข้าถึง API
+        $currentUser = AuthMiddleware::checkToken($connection);
+        $data = json_decode(file_get_contents("php://input"), true);
+        $month = isset($_GET['month']) ? $_GET['month'] : null;
+        $year = isset($_GET['year']) ? $_GET['year'] : null;
+
+        if (isset($_GET['month']) && isset($_GET['year'])) {            
+            require_once '../src/Controllers/ReportController.php';
+            $creportController = new ReportController($connection);
+            $monthYear = $year . '-' . str_pad($month, 2, '0', STR_PAD_LEFT); // รวมเป็นรูปแบบ YYYY-MM
+            $creportController->getCommonReport($monthYear);    
+                   
+        } else {
+            http_response_code(400);
+            echo json_encode(["error" => "Missing month or year parameter (expected format: YYYY-MM)"]);
+        }
+        break;
+
+    case 'report/schedule-details':
+            //$currentUser = AuthMiddleware::checkToken($connection);
+            
+            $command_id = isset($_GET['command_id']) ? $_GET['command_id'] : null;
+                       
+            if ($command_id) {            
+                require_once '../src/Controllers/ReportController.php';
+                $creportController = new ReportController($connection);
+                $creportController->getScheduleDetails($command_id);            
+            } else {
+                http_response_code(400);
+                echo json_encode(["error" => "Missing command_id parameter"]);
+            }
+            break;
 
     
 

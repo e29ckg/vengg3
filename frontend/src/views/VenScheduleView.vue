@@ -191,12 +191,12 @@
         <thead>
           <tr class="text-center align-middle" style="background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact;">
             <th style="width: 12%; border: 1px solid black;">วันที่</th>
-            <th style="border: 1px solid black;" v-for="vns in subDuties"> {{vns.name}}</th>
+            <th style="border: 1px solid black;" v-for="vns in subDuties" :key="vns.id"> {{vns.name}}</th>
             <th style="width: 20%; border: 1px solid black;">หมายเหตุ</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="day in daysInMonth" :key="'print-'+day">
+          <tr v-for="day in daysInMonth" :key="'print-'+day" >
             <td class="text-center align-middle fw-bold" style="border: 1px solid black; font-size: 1.1rem;">
               {{ day }} {{ getThaiDayShort(day) }}
             </td>
@@ -204,7 +204,7 @@
               <div v-if="getSchedulesForDay(day).length === 0" class="text-muted small text-center">-</div>
               <div v-else class="d-flex flex-wrap gap-3">
                 <div v-for="schedule in getSchedulesForDay(day)" :key="'p-'+schedule.id" class="mb-1">
-                  <span class="fw-bold">{{schedule.com_id == activeCommand.id && schedule.sub_name == vns.name ? schedule.user_name : '-' }}</span> 
+                  <span class="fw-bold">{{schedule.com_id == activeCommand.id && schedule.sub_name == vns.name ? schedule.user_name : '-' }} {{ schedule }}</span> 
                   <!-- <span class="ms-1">{{ schedule.user_name }}</span> -->
                 </div>
               </div>

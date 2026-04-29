@@ -22,6 +22,7 @@
               <li><router-link class="dropdown-item" to="/director/ven-settings"><i class="bi bi-gear"></i> จัดการชื่อเวร</router-link></li>
               <li><router-link class="dropdown-item" to="/director/commands"><i class="bi bi-file-earmark-text"></i> จัดการคำสั่งเวร</router-link></li>
               <li><router-link class="dropdown-item" to="/director/schedule"><i class="bi bi-calendar-check"></i> จัดเวร</router-link></li>
+              <li><router-link class="dropdown-item" active-class="active fw-bold text-warning" to="/director/schedule-list">รายการการจัดเวร</router-link></li>
               <li><hr class="dropdown-divider"></li>
               <li><router-link class="dropdown-item" to="/director/approvals"><i class="bi bi-check-circle"></i> อนุมัติใบเปลี่ยนเวร</router-link></li>
             </ul>
