@@ -56,11 +56,16 @@ const router = createRouter({
       component: () => import('../views/VenApproveView.vue'),
       meta: { requiresAuth: true, roles: [2, 9] } // อนุญาตเฉพาะสิทธิ์ 2 (อำนวยการ) และ 9 (แอดมิน)
     },
-   {
+    {
         path: '/staff/swap',
         name: 'staff-swap',
         component: () => import('../views/VenSwapView.vue')
-      },
+    },
+    {
+      path: '/director/schedule-list',
+      name: 'ven-schedule-list',
+      component: () => import('../views/VenScheduleListView.vue')
+    },
 
   ]
 })
