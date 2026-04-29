@@ -355,6 +355,17 @@ const toggleCommandStatus = async (newStatus) => {
 
 // ฟังก์ชันดรอป (วางเวร)
 const onDrop = async (e, day) => {
+  if (isConfirmed.value) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'ล็อกการแก้ไข',
+      text: 'คำสั่งนี้ถูกยืนยันแล้ว ไม่สามารถแก้ไขตารางเวรได้',
+      timer: 2000,
+      showConfirmButton: false
+    })
+    return
+  }
+  
   const source = e.dataTransfer.getData('source')
   
   if (source === 'sidebar') {
