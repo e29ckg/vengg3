@@ -66,6 +66,12 @@ const router = createRouter({
       name: 'ven-schedule-list',
       component: () => import('../views/VenScheduleListView.vue')
     },
+    {
+      path: '/finance/report',
+      name: 'finance-report',
+      component: () => import('../views/FinanceReportView.vue'),
+      meta: { requiresAuth: true , roles: [3, 9] } // อนุญาตเฉพาะสิทธิ์ 3 (การเงิน)
+    }
 
   ]
 })

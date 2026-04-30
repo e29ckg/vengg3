@@ -363,14 +363,13 @@ switch ($route) {
     case 'report/monthly':
         // ตรวจสอบ Token ก่อนเข้าถึง API
         $currentUser = AuthMiddleware::checkToken($connection);
-        $data = json_decode(file_get_contents("php://input"), true);
-        $month = isset($_GET['month']) ? $_GET['month'] : null;
-        $year = isset($_GET['year']) ? $_GET['year'] : null;
-
+        
         if (isset($_GET['month']) && isset($_GET['year'])) {            
             require_once '../src/Controllers/ReportController.php';
             $creportController = new ReportController($connection);
-            $monthYear = $year . '-' . str_pad($month, 2, '0', STR_PAD_LEFT); // รวมเป็นรูปแบบ YYYY-MM
+            $month = $_GET['month'] ? $_GET['month'] : null;
+            $year = $_GET['year'] ? $_GET['year'] : null;
+            $monthYear = $year . '-' . str_pad((string)$month, 2, '0', STR_PAD_LEFT);
             $creportController->getCommonReport($monthYear);    
                    
         } else {
@@ -393,6 +392,25 @@ switch ($route) {
                 echo json_encode(["error" => "Missing command_id parameter"]);
             }
             break;
+
+    case 'finance/report':
+        $currentUser = AuthMiddleware::checkToken($connection);
+        // รับค่าเดือน (YYYY-MM)
+        $data = json_decode(file_get_contents("php://input"), true);
+        $month = $data['month'] ?? date('Y-m');
+        
+        echo json_encode([
+            "month" => $month,
+            "total_shifts" => 120, // ตัวอย่างข้อมูล
+            "total_payments" => 50000, // ตัวอย่างข้อมูล
+            "details" => [
+                ["user_id" => 1, "name" => "นาย ก", "shifts" => 10, "payment" => 4000],
+                ["user_id" => 2, "name" => "นาง ส", "shifts" => 8, "payment" => 3200],
+                // ... รายละเอียดเพิ่มเติม
+            ]
+        ]);
+    
+        break;
 
     
 
