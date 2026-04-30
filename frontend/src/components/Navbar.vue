@@ -4,42 +4,59 @@
       <router-link class="navbar-brand fw-bold" to="/home">
         <i class="bi bi-calendar2-check"></i> ระบบจัดเวร
       </router-link>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" @click="toggleMobileMenu">
         <span class="navbar-toggler-icon"></span>
       </button>
 
-      <div class="collapse navbar-collapse" id="navbarNav">
+      <div class="collapse navbar-collapse" :class="{ 'show': isMobileMenuOpen }" id="navbarNav">
         <ul class="navbar-nav me-auto">
           <li class="nav-item">
-            <router-link class="nav-link" to="/home"><i class="bi bi-house"></i> หน้าแรก</router-link>
+            <router-link class="nav-link" active-class="active fw-bold" to="/home">
+              <i class="bi bi-house"></i> หน้าแรก
+            </router-link>
           </li>
 
           <li class="nav-item dropdown" v-if="userRole === 9 || userRole === 2">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" @click="toggleDirectorMenu">
+            <a class="nav-link dropdown-toggle" 
+               :class="{ 'active fw-bold': route.path.startsWith('/director') }" 
+               href="#" role="button" data-bs-toggle="dropdown" @click.prevent="toggleDirectorMenu">
               <i class="bi bi-briefcase"></i> งานอำนวยการ
             </a>
-            <ul  class="dropdown-menu shadow-sm" :class="{ 'show': isDirectorMenuOpen }">
-              <li><router-link class="dropdown-item" to="/director/ven-settings"><i class="bi bi-gear"></i> จัดการชื่อเวร</router-link></li>
-              <li><router-link class="dropdown-item" to="/director/commands"><i class="bi bi-file-earmark-text"></i> จัดการคำสั่งเวร</router-link></li>
-              <li><router-link class="dropdown-item" to="/director/schedule"><i class="bi bi-calendar-check"></i> จัดเวร</router-link></li>
-              <li><router-link class="dropdown-item" active-class="active fw-bold text-warning" to="/director/schedule-list">รายการการจัดเวร</router-link></li>
+            <ul class="dropdown-menu shadow-sm" :class="{ 'show': isDirectorMenuOpen }">
+              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/ven-settings"><i class="bi bi-gear"></i> จัดการชื่อเวร</router-link></li>
+              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/commands"><i class="bi bi-file-earmark-text"></i> จัดการคำสั่งเวร</router-link></li>
+              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/schedule"><i class="bi bi-calendar-check"></i> จัดเวร</router-link></li>
+              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/schedule-list"><i class="bi bi-card-list"></i> รายการการจัดเวร</router-link></li>
               <li><hr class="dropdown-divider"></li>
-              <li><router-link class="dropdown-item" to="/director/approvals"><i class="bi bi-check-circle"></i> อนุมัติใบเปลี่ยนเวร</router-link></li>
+              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/approvals"><i class="bi bi-check-circle"></i> อนุมัติใบเปลี่ยนเวร</router-link></li>
+            </ul>
+          </li>
+
+          <li class="nav-item dropdown" v-if="userRole === 9 || userRole === 3">
+            <a class="nav-link dropdown-toggle" 
+               :class="{ 'active fw-bold': route.path.startsWith('/finance') }" 
+               href="#" role="button" data-bs-toggle="dropdown" @click.prevent="toggleFinanceMenu">
+              <i class="bi bi-cash-coin"></i> การเงิน
+            </a>
+            <ul class="dropdown-menu shadow-sm" :class="{ 'show': isFinanceMenuOpen }">
+              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/finance/report"><i class="bi bi-file-earmark-spreadsheet"></i> ออกรายงาน</router-link></li>
             </ul>
           </li>
 
           <li class="nav-item dropdown" v-if="userRole === 9">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" @click="toggleAdminMenu">
+            <a class="nav-link dropdown-toggle" 
+               :class="{ 'active fw-bold': route.path.startsWith('/admin') }" 
+               href="#" role="button" data-bs-toggle="dropdown" @click.prevent="toggleAdminMenu">
               <i class="bi bi-shield-lock"></i> ผู้ดูแลระบบ
             </a>
             <ul class="dropdown-menu shadow-sm" :class="{ 'show': isAdminMenuOpen }">
-              <li><router-link class="dropdown-item" to="/admin/users"><i class="bi bi-people"></i> จัดการผู้ใช้งาน</router-link></li>
-              <li><router-link class="dropdown-item" to="/admin/settings"><i class="bi bi-sliders"></i> ตั้งค่าระบบ</router-link></li>
+              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/admin/users"><i class="bi bi-people"></i> จัดการผู้ใช้งาน</router-link></li>
+              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/admin/settings"><i class="bi bi-sliders"></i> ตั้งค่าระบบ</router-link></li>
             </ul>
           </li>
         </ul>
 
-        <div class="d-flex align-items-center text-white">
+        <div class="d-flex align-items-center text-white mt-2 mt-lg-0">
           <div class="me-3">
             <i class="bi bi-person-circle"></i> {{ userName }}
           </div>
@@ -51,6 +68,7 @@
     </div>
   </nav>
 </template>
+
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -66,6 +84,7 @@ const userRole = ref(null)
 // ตัวแปรควบคุมการเปิด/ปิดเมนู
 const isAdminMenuOpen = ref(false)
 const isDirectorMenuOpen = ref(false)
+const isFinanceMenuOpen = ref(false) // เพิ่มตัวแปรสำหรับเมนูการเงิน
 const isMobileMenuOpen = ref(false)
 
 // ฟังก์ชันเช็คว่าล็อกอินอยู่หรือไม่
@@ -83,12 +102,26 @@ const checkAuth = () => {
 // ฟังก์ชันสลับสถานะเมนูต่างๆ
 const toggleAdminMenu = () => { 
   isAdminMenuOpen.value = !isAdminMenuOpen.value 
-  if (isAdminMenuOpen.value) isDirectorMenuOpen.value = false // ปิดเมนูอำนวยการถ้าเปิดแอดมิน
+  if (isAdminMenuOpen.value) {
+    isDirectorMenuOpen.value = false 
+    isFinanceMenuOpen.value = false
+  }
 }
 
 const toggleDirectorMenu = () => { 
   isDirectorMenuOpen.value = !isDirectorMenuOpen.value 
-  if (isDirectorMenuOpen.value) isAdminMenuOpen.value = false // ปิดเมนูแอดมินถ้าเปิดอำนวยการ
+  if (isDirectorMenuOpen.value) {
+    isAdminMenuOpen.value = false 
+    isFinanceMenuOpen.value = false
+  }
+}
+
+const toggleFinanceMenu = () => { 
+  isFinanceMenuOpen.value = !isFinanceMenuOpen.value 
+  if (isFinanceMenuOpen.value) {
+    isAdminMenuOpen.value = false 
+    isDirectorMenuOpen.value = false
+  }
 }
 
 const toggleMobileMenu = () => {
@@ -100,19 +133,16 @@ watch(() => route.path, () => {
   checkAuth()
   isAdminMenuOpen.value = false
   isDirectorMenuOpen.value = false
+  isFinanceMenuOpen.value = false
   isMobileMenuOpen.value = false
 }, { immediate: true })
 
-// ดักจับการคลิกบนหน้าจอ (Click Outside)
+// ดักจับการคลิกบนหน้าจอ (Click Outside) ปิด Dropdown
 const closeDropdowns = (event) => {
-  // ปิดเมนู Dropdown ย่อย ถ้าไม่ได้คลิกในเมนู
   if (!event.target.closest('.dropdown')) {
     isAdminMenuOpen.value = false
     isDirectorMenuOpen.value = false
-  }
-  // ปิดเมนูมือถือ ถ้าไม่ได้คลิกบน Navbar
-  if (!event.target.closest('.navbar')) {
-    isMobileMenuOpen.value = false
+    isFinanceMenuOpen.value = false
   }
 }
 
