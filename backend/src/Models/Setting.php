@@ -584,4 +584,69 @@ public function updateChangeStatus($id, $status) {
     }
 }
 
+// --- ตั้งค่า Telegram ---
+
+    // 1. ดึงข้อมูลการตั้งค่า Telegram
+    public function getTelegramSettings() {
+        try {
+            $stmt = $this->conn->prepare("SELECT * FROM telegram_settings WHERE id = 1 LIMIT 1");
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error fetching Telegram settings: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // 2. อัปเดตข้อมูลการตั้งค่า Telegram
+    public function updateTelegramSettings($data) {
+    try {
+        // 1. เริ่ม Transaction (ถ้ามี Error ตรงไหน จะได้ยกเลิกการบันทึกทั้งหมด ป้องกันข้อมูลแหว่ง)
+        $this->conn->beginTransaction();
+        
+        $sql = "UPDATE telegram_settings SET 
+                    bot_token = :bot_token, 
+                    chat_id = :chat_id, 
+                    notify_confirmed = :notify_confirmed, 
+                    notify_change_request = :notify_change_request, 
+                    notify_approval = :notify_approval 
+                WHERE id = 1";
+        
+        $stmt = $this->conn->prepare($sql);
+        
+        // 2. 🌟 เอาคำว่า return ออกจากตรงนี้ เพื่อให้โค้ดบรรทัดถัดไปทำงานต่อได้
+        $stmt->execute([
+            ':bot_token' => $data['bot_token'],
+            ':chat_id' => $data['chat_id'],
+            ':notify_confirmed' => $data['notify_confirmed'] ? 1 : 0,
+            ':notify_change_request' => $data['notify_change_request'] ? 1 : 0,
+            ':notify_approval' => $data['notify_approval'] ? 1 : 0
+        ]);
+
+        // 3. จัดการตารางเวลาแจ้งเตือน
+        $this->conn->prepare("DELETE FROM telegram_notify_times")->execute();
+        if (!empty($data['notify_times'])) {
+            $stmtTime = $this->conn->prepare("INSERT INTO telegram_notify_times (send_time, status) VALUES (:t, :s)");
+            foreach ($data['notify_times'] as $timeSlot) {
+                $stmtTime->execute([
+                    ':t' => $timeSlot['send_time'],
+                    ':s' => $timeSlot['status'] ? 1 : 0
+                ]);
+            }
+        }
+        
+        // 4. บันทึกข้อมูลทั้งหมดลงฐานข้อมูล (Commit) และจบฟังก์ชัน
+        $this->conn->commit();
+        return true;
+
+    } catch (PDOException $e) {
+        // ถ้ายกเลิก หรือมี Error ตรงไหน ให้ Rollback (ย้อนกลับ) สิ่งที่ทำไปใน Transaction นี้ทั้งหมด
+        if ($this->conn->inTransaction()) {
+            $this->conn->rollBack();
+        }
+        error_log("Error updating Telegram settings: " . $e->getMessage());
+        return false;
+    }
+}
+
 }

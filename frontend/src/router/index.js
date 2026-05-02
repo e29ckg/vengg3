@@ -71,6 +71,12 @@ const router = createRouter({
       name: 'finance-report',
       component: () => import('../views/FinanceReportView.vue'),
       meta: { requiresAuth: true , roles: [3, 9] } // อนุญาตเฉพาะสิทธิ์ 3 (การเงิน)
+    },
+    {
+      path: '/admin/settings/telegram',
+      name: 'TelegramSettings',
+      component: () => import('../views/admin/TelegramSettingsView.vue'),
+      meta: { requiresAuth: true, role: 9 } // เฉพาะ Admin
     }
 
   ]

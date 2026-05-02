@@ -411,6 +411,102 @@ switch ($route) {
         $financeController->getCommands($month);
         break;
     
+    // ==========================================
+        // 📢 ระบบตั้งค่าการแจ้งเตือน Telegram
+        // ==========================================
+        
+        // 1. API ดึงข้อมูลการตั้งค่ามาแสดงที่หน้าฟอร์ม
+        case 'admin/telegram_settings':
+            AuthMiddleware::checkAdmin($connection); // ตรวจสอบสิทธิ์แอดมิน
+            if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+                require_once '../src/Models/Setting.php';
+                $settingModel = new Setting($connection);
+                $settings = $settingModel->getTelegramSettings();
+                
+                // หากยังไม่มีข้อมูลในตาราง ให้ส่งค่าตั้งต้นกลับไป
+                if (!$settings) {
+                    $settings = [
+                        'bot_token' => '', 'chat_id' => '',
+                        'notify_confirmed' => true, 
+                        'notify_change_request' => true, 
+                        'notify_approval' => true
+                    ];
+                } else {
+                    // แปลงค่า 1/0 กลับเป็น Boolean ให้ Vue.js เข้าใจง่าย
+                    $settings['notify_confirmed'] = (bool)$settings['notify_confirmed'];
+                    $settings['notify_change_request'] = (bool)$settings['notify_change_request'];
+                    $settings['notify_approval'] = (bool)$settings['notify_approval'];
+                }
+                
+                echo json_encode($settings);
+            }
+            break;
+
+        // 2. API บันทึกการตั้งค่าลง Database
+        case 'admin/telegram_settings/update':
+            AuthMiddleware::checkAdmin($connection); // ตรวจสอบสิทธิ์แอดมิน
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                // 1. รับค่าและแปลงเป็น Array (บังคับใส่ true)
+                $data = json_decode(file_get_contents("php://input"), true);
+                
+                require_once '../src/Models/Setting.php'; 
+                $settingModel = new Setting($connection);
+               
+                // 3. ส่งข้อมูลไปอัปเดตที่ Model
+                $result = $settingModel->updateTelegramSettings($data);
+                
+                if ($result) {
+                    echo json_encode(["success" => true, "message" => "อัปเดตข้อมูลสำเร็จ"]);
+                } else {
+                    http_response_code(500);
+                    echo json_encode(["error" => "ไม่สามารถบันทึกข้อมูลได้"]);
+                }
+            }
+            break;
+
+        // 3. API ทดสอบส่งข้อความ (ใช้ค่าจากฟอร์มชั่วคราว ไม่ต้องรอเซฟลงฐานข้อมูลก่อน)
+        case 'admin/telegram_settings/test':
+            AuthMiddleware::checkAdmin($connection);
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $data = json_decode(file_get_contents("php://input"), true);
+                
+                $botToken = $data['bot_token'];
+                $chatId = $data['chat_id'];
+                
+                if(empty($botToken) || empty($chatId)) {
+                    http_response_code(400);
+                    echo json_encode(["error" => "กรุณากรอก Token และ Chat ID ก่อนทดสอบ"]);
+                    exit;
+                }
+
+                $message = "✅ <b>ทดสอบระบบแจ้งเตือน</b>\nข้อความนี้ถูกส่งจาก \"ระบบจัดเวรนอกเวลาทำการ\" เพื่อทดสอบการเชื่อมต่อ Telegram ครับ";
+                
+                // ยิง API ไปหา Telegram โดยตรง
+                $url = "https://api.telegram.org/bot" . $botToken . "/sendMessage";
+                $postData = [
+                    'chat_id' => $chatId,
+                    'text' => $message,
+                    'parse_mode' => 'HTML'
+                ];
+                
+                $ch = curl_init($url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                
+                $response = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+
+                if ($httpCode == 200) {
+                    echo json_encode(["success" => true, "message" => "ส่งข้อความสำเร็จ!"]);
+                } else {
+                    http_response_code(400);
+                    echo json_encode(["error" => "ส่งไม่สำเร็จ กรุณาตรวจสอบ Token และ Chat ID"]);
+                }
+            }
+            break;
 
     default:
         http_response_code(404);
