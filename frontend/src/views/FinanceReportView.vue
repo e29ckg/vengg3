@@ -6,31 +6,42 @@
       </div>
       <div class="card-body">
         <div class="row align-items-end">
-          <div class="col-md-3">
-            <label class="form-label">เลือกเดือน</label>
-            <select class="form-select" v-model="selectedMonthValue" @change="updateSelectedMonth">
-              <option v-for="(month, index) in thaiMonths" :key="index" :value="String(index + 1).padStart(2, '0')">
-                {{ month }}
-              </option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">เลือกปี (พ.ศ.)</label>
-            <select class="form-select" v-model="selectedYearValue" @change="updateSelectedMonth">
-              <option v-for="year in availableYears" :key="year" :value="year">
-                {{ year + 543 }}
-              </option>
-            </select>
-          </div>
-          <div class="col-md-6 text-end">
-            <button class="btn btn-outline-success me-2" @click="exportToExcel" :disabled="!reportData.length">
-              <i class="bi bi-file-earmark-excel"></i> ส่งออก Excel
-            </button>
-            <button class="btn btn-primary" @click="window.print()" :disabled="!reportData.length">
-              <i class="bi bi-printer"></i> พิมพ์เอกสาร
-            </button>
-          </div>
-        </div>
+  <div class="col-md-2">
+    <label class="form-label">เลือกเดือน</label>
+    <select class="form-select" v-model="selectedMonthValue" @change="updateSelectedMonth">
+      <option v-for="(month, index) in thaiMonths" :key="index" :value="String(index + 1).padStart(2, '0')">
+        {{ month }}
+      </option>
+    </select>
+  </div>
+  
+  <div class="col-md-2">
+    <label class="form-label">เลือกปี (พ.ศ.)</label>
+    <select class="form-select" v-model="selectedYearValue" @change="updateSelectedMonth">
+      <option v-for="year in availableYears" :key="year" :value="year">
+        {{ year + 543 }}
+      </option>
+    </select>
+  </div>
+
+  <div class="col-md-4">
+    <label class="form-label">เลือกคำสั่ง</label>
+    <select class="form-select" v-model="selectedCommand" @change="fetchFinanceReport" :disabled="loadingCommands">
+      <option value="">-- ทั้งหมด / ไม่ระบุ --</option>
+      <option v-for="cmd in commandList" :key="cmd.id" :value="cmd.id">
+        {{ cmd.name }} </option>
+    </select>
+  </div>
+
+  <div class="col-md-4 text-end">
+    <button class="btn btn-outline-success me-2" @click="exportToExcel" :disabled="!reportData.length">
+      <i class="bi bi-file-earmark-excel"></i> ส่งออก Excel
+    </button>
+    <button @click="printDocument" class="btn btn-primary d-print-none">
+      <i class="bi bi-printer"></i> พิมพ์เอกสาร
+    </button>
+  </div>
+</div>
       </div>
     </div>
 
@@ -43,36 +54,58 @@
 
       <table class="table table-bordered border-dark table-sm align-middle text-center print-table">
         <thead>
-          <tr class="align-middle bg-light">
-            <th width="4%">ลำดับ</th>
-            <th width="15%">ชื่อ - สกุล</th>
-            <th width="12%">ตำแหน่ง</th>
-            <th width="6%">จำนวน<br>(วัน)</th>
-            <th width="8%">อัตรา<br>(บาท/วัน)</th>
-            <th width="8%">จำนวนเงิน<br>(บาท)</th>
-            <th width="15%">วัน เดือน ปี<br>ที่ปฏิบัติงาน</th>
-            <th width="12%">ลายมือชื่อ<br>ผู้รับเงิน</th>
-            <th width="10%">วัน เดือน ปี<br>ที่รับเงิน</th>
-            <th width="10%">หมายเหตุ</th>
+          <tr class="align-middle bg-light text-center">
+            <th rowspan="2" width="4%">ลำดับ</th>
+            <th rowspan="2" width="15%">ชื่อ - สกุล</th>
+            <th rowspan="2" width="8%">อัตรา<br>(บาท/วัน)</th>
+            
+            <th :colspan="monthInfo.total_days" class="py-2">วันที่ปฏิบัติงานนอกเวลาราชการ</th>
+            
+            <th colspan="3">ระยะเวลาปฏิบัติงาน</th>
+
+            <th rowspan="2" width="8%">จำนวนเงิน<br>(บาท)</th>
+            <th rowspan="2" width="10%">วัน เดือน ปี<br>ที่รับเงิน</th>
+            <th rowspan="2" width="12%">ลายมือชื่อ<br>ผู้รับเงิน</th>
+            <th rowspan="2" width="10%">หมายเหตุ</th>
+          </tr>
+          <tr class="align-middle bg-light text-center">
+            <th v-for="index in monthInfo.total_days" :key="index" 
+                class="px-1" 
+                :class="{ 'table-secondary': monthInfo.holidays && monthInfo.holidays.includes(index) }"
+                style="font-size: 0.8rem; min-width: 22px;">
+              {{ index }}
+            </th>
+            <th style="font-size: 0.85rem;">วันปกติ</th>
+            <th style="font-size: 0.85rem;">วันหยุด</th>
+            <th style="font-size: 0.85rem;">ชั่วโมง</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(item, index) in reportData" :key="index">
             <td>{{ index + 1 }}</td>
-            <td class="text-start px-2">{{ item.user_name }}</td>
-            <td class="text-start px-2">{{ item.role_name }}</td>
-            <td>{{ item.total_days }}</td>
+            <td class="text-start px-2">{{item.prefix_name }}{{ item.first_name }} {{ item.last_name }}</td>
             <td>{{ item.rate_per_day }}</td>
+
+            <td v-for="day in monthInfo.total_days" :key="day" 
+                class="p-0 align-middle"
+                :class="{ 'table-secondary': monthInfo.holidays && monthInfo.holidays.includes(day) }">
+              <span v-if="checkWorkDay(item.work_dates, day)" class="fw-bold text-dark">&#10003;</span>
+            </td>
+            
+            <td>{{ countRegularDays(item.work_dates, item.total_days) || '-' }}</td>
+            <td>{{ countHolidays(item.work_dates) || '-' }}</td>
+            <td></td>
+            
             <td class="fw-bold">{{ (item.total_days * item.rate_per_day).toLocaleString() }}</td>
-            <td class="text-start px-2" style="font-size: 0.85rem;">{{ item.work_dates }}</td>
-            <td></td> <td></td> <td>{{ item.remark || '' }}</td>
+            <td class="text-start px-2" style="font-size: 0.85rem;"></td>
+            <td></td> <td>{{ item.remark || '' }}</td>
           </tr>
         </tbody>
         <tfoot>
           <tr class="fw-bold bg-light">
-            <td colspan="5" class="text-end pe-3">รวมเงินทั้งสิ้น</td>
+            <td :colspan="6 + monthInfo.total_days" class="text-end pe-3">รวมเงินทั้งสิ้น</td>
             <td>{{ totalAmount.toLocaleString() }}</td>
-            <td colspan="4"></td>
+            <td colspan="3"></td>
           </tr>
         </tfoot>
       </table>
@@ -104,17 +137,23 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import api from '../services/api'
-import axios from 'axios';
+import api from '../services/api'; // ใช้ api ที่คุณตั้งค่าไว้
+import * as XLSX from 'xlsx';
 
 const selectedMonthValue = ref('');
 const selectedYearValue = ref('');
 const selectedMonth = ref('');
 const reportData = ref([]);
 const loading = ref(false);
+
+// 1. เพิ่มตัวแปรสำหรับจัดการ "คำสั่ง"
+const selectedCommand = ref('');
+const commandList = ref([]);
+const loadingCommands = ref(false);
+
+const monthInfo = ref({ total_days: 0, holidays: [] });
 
 const thaiMonths = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", 
@@ -141,11 +180,50 @@ const totalAmount = computed(() => {
   return reportData.value.reduce((sum, item) => sum + (item.total_days * item.rate_per_day), 0);
 });
 
-const updateSelectedMonth = () => {
+// 2. เพิ่มฟังก์ชันสำหรับดึงรายการคำสั่งของเดือนนั้นๆ
+const fetchCommandsList = async () => {
+  loadingCommands.value = true;
+  selectedCommand.value = ''; // รีเซ็ตค่าเมื่อเปลี่ยนเดือน
+  try {
+    // หมายเหตุ: ปรับ route=... ให้ตรงกับ API ที่ดึงข้อมูลคำสั่งของคุณ
+    const response = await api.get(`?route=get_commands&month=${selectedMonth.value}`);
+    if (response.data && response.data.status === 'success') {
+      commandList.value = response.data.data;
+    } else {
+      commandList.value = [];
+    }
+  } catch (error) {
+    console.error("Error fetching commands:", error);
+    // ข้อมูลจำลองสำหรับทดสอบ (ลบออกได้เมื่อ API เสร็จ)
+    /*
+    commandList.value = [
+      { id: 1, name: 'คำสั่งที่ 123/2567' },
+      { id: 2, name: 'คำสั่งที่ 124/2567' }
+    ];
+    */
+  } finally {
+    loadingCommands.value = false;
+  }
+};
+
+// 3. ปรับฟังก์ชันอัปเดตเดือน ให้ดึงคำสั่งก่อน แล้วค่อยดึงรายงาน
+const updateSelectedMonth = async () => {
   if (selectedYearValue.value && selectedMonthValue.value) {
     selectedMonth.value = `${selectedYearValue.value}-${selectedMonthValue.value}`;
-    fetchFinanceReport();
+    await fetchCommandsList(); // รอให้ดึงรายการคำสั่งเสร็จก่อน
+    fetchFinanceReport();      // จากนั้นดึงข้อมูลตารางรายงาน
   }
+};
+
+// ฟังก์ชันสำหรับเช็คว่าวันนั้นตรงกับวันที่ขึ้นเวรหรือไม่
+const checkWorkDay = (workDatesString, day) => {
+  if (!workDatesString) return false;
+  
+  // แปลงข้อความ "1, 8, 15" ให้เป็น Array ของตัวเลข [1, 8, 15]
+  const workedDays = workDatesString.split(',').map(d => parseInt(d.trim()));
+  
+  // ตรวจสอบว่าวันที่กำลังวาด (day) มีอยู่ใน Array หรือไม่
+  return workedDays.includes(day);
 };
 
 onMounted(() => {
@@ -155,13 +233,22 @@ onMounted(() => {
   updateSelectedMonth();
 });
 
+// 4. อัปเดตการดึงข้อมูลรายงานให้แนบ command_id ไปด้วย
 const fetchFinanceReport = async () => {
   if (!selectedMonth.value) return;
   loading.value = true;
   try {
-    const response = await api.get(`?route=finance/report&month=${selectedMonth.value}`);
+    // สร้าง URL โดยเช็คว่ามีการเลือกคำสั่งหรือไม่
+    let url = `?route=finance/report&month=${selectedMonth.value}`;
+    if (selectedCommand.value) {
+      url += `&command_id=${selectedCommand.value}`;
+    }
+
+    const response = await api.get(url);
     if (response.data && response.data.status === 'success') {
-      reportData.value = response.data.data;
+      // แยกเก็บข้อมูล
+      monthInfo.value = response.data.data.month_info;
+      reportData.value = response.data.data.report_list;
     } else {
       reportData.value = [];
     }
@@ -177,8 +264,144 @@ const fetchFinanceReport = async () => {
   }
 };
 
+// 1. ฟังก์ชันนับจำนวน "วันหยุด" ที่มาขึ้นเวร
+const countHolidays = (workDatesString) => {
+  if (!workDatesString || !monthInfo.value.holidays) return 0;
+  
+  // แปลง "1, 8, 15" เป็น Array [1, 8, 15]
+  const workedDays = workDatesString.split(',').map(d => parseInt(d.trim()));
+  
+  // กรองหาเฉพาะวันที่มาทำงาน และตรงกับวันหยุด
+  const holidaysWorked = workedDays.filter(day => monthInfo.value.holidays.includes(day));
+  
+  return holidaysWorked.length; // คืนค่าจำนวนวันหยุดที่มาทำงาน
+};
+
+// 2. ฟังก์ชันนับจำนวน "วันปกติ" ที่มาขึ้นเวร
+const countRegularDays = (workDatesString, totalDays) => {
+  // วันปกติ = วันทำงานทั้งหมด ลบด้วย วันหยุด
+  const holidaysCount = countHolidays(workDatesString);
+  return totalDays - holidaysCount;
+};
+
+const printDocument = () => {
+  // คำสั่งนี้จะเปิดหน้าต่าง Print ของ Browser (Chrome, Edge, Safari) ขึ้นมา
+  window.print();
+};
+
 const exportToExcel = () => {
-  alert('คุณสามารถเชื่อมฟังก์ชัน Export Excel ได้ในภายหลังครับ');
+  if (!reportData.value.length) return;
+
+  const totalDays = monthInfo.value.total_days || 31;
+  const aoa = []; // Array of Arrays สำหรับเก็บข้อมูลแต่ละแถว
+
+  // ==========================================
+  // 1. ส่วนที่เพิ่มใหม่: หัวเอกสาร (แทรก 4 บรรทัด)
+  // ==========================================
+  aoa.push(['หลักฐานการจ่ายเงินตอบแทนการปฏิบัติงานนอกเวลาราชการ']);
+  aoa.push(['ส่วนราชการ ศาลจังหวัดประจวบคีรีขันธ์']); // แก้ไขชื่อหน่วยงานได้ตามต้องการ
+  aoa.push([`ประจำเดือน ${formattedMonth.value}`]);
+  aoa.push([]); // บรรทัดว่าง 1 บรรทัดก่อนเริ่มตาราง
+
+  // --- แถวที่ 1: หัวตารางชั้นบน ---
+  const headerRow1 = ['ลำดับ', 'ชื่อ - สกุล', 'อัตรา (บาท/วัน)'];
+  // เพิ่มช่อง "วันที่ปฏิบัติงานนอกเวลาราชการ" (ใช้ช่องแรกช่องเดียว นอกนั้นปล่อยว่างไว้เพื่อ Merge)
+  for (let i = 1; i <= totalDays; i++) {
+    headerRow1.push(i === 1 ? 'วันที่ปฏิบัติงานนอกเวลาราชการ' : '');
+  }
+  // เพิ่มช่อง "ระยะเวลาปฏิบัติงาน" (กินพื้นที่ 3 คอลัมน์)
+  headerRow1.push('ระยะเวลาปฏิบัติงาน', '', '');
+  // คอลัมน์ที่เหลือ
+  headerRow1.push('จำนวนเงิน (บาท)', 'วัน เดือน ปี ที่รับเงิน', 'ลายมือชื่อผู้รับเงิน', 'หมายเหตุ');
+  aoa.push(headerRow1);
+
+  // --- แถวที่ 2: หัวตารางชั้นล่าง (ตัวเลขวัน และประเภทวัน) ---
+  const headerRow2 = ['', '', '']; // ปล่อยว่าง 3 ช่องแรกเพื่อ Merge ลงมา
+  for (let i = 1; i <= totalDays; i++) {
+    headerRow2.push(i.toString());
+  }
+  headerRow2.push('วันปกติ', 'วันหยุด', 'ชั่วโมง');
+  headerRow2.push('', '', '', ''); // ปล่อยว่างคอลัมน์ท้ายๆ เพื่อ Merge ลงมา
+  aoa.push(headerRow2);
+
+  // --- แถวข้อมูล (Data Rows) ---
+  reportData.value.forEach((item, index) => {
+    const rowData = [
+      index + 1,
+      `${item.prefix_name}${item.first_name} ${item.last_name}`,
+      item.rate_per_day
+    ];
+
+    // ติ๊กถูกในวันที่ทำงาน (ใน Excel ใช้เครื่องหมาย ✓)
+    for (let day = 1; day <= totalDays; day++) {
+      rowData.push(checkWorkDay(item.work_dates, day) ? '✓' : '');
+    }
+
+    // จำนวนวัน/ชั่วโมง
+    rowData.push(
+      countRegularDays(item.work_dates, item.total_days) || '-',
+      countHolidays(item.work_dates) || '-',
+      '' // ชั่วโมง
+    );
+
+    // จำนวนเงิน และช่องว่างสำหรับเซ็นชื่อ
+    rowData.push(
+      item.total_days * item.rate_per_day, 
+      '', // วันที่รับเงิน
+      '', // ลายมือชื่อ
+      item.remark || ''
+    );
+
+    aoa.push(rowData);
+  });
+
+  // --- แถวสรุปยอดรวมท้ายตาราง (Footer) ---
+  const footerRow = [];
+  footerRow.push('รวมเงินทั้งสิ้น');
+  // ดันคอลัมน์ไปให้ตรงกับ "จำนวนเงิน (บาท)"
+  for (let i = 1; i < 3 + totalDays + 3; i++) {
+    footerRow.push('');
+  }
+  footerRow.push(totalAmount.value, '', '', '');
+  aoa.push(footerRow);
+
+  // --- สร้าง Worksheet ---
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // ==========================================
+  // 2. กำหนดการผสานเซลล์ (Merge Cells) ฉบับอัปเดต
+  // ==========================================
+  const offset = 4; // จำนวนบรรทัดที่เราแทรกเพิ่มไปด้านบน (เพื่อให้ตารางขยับลงมา)
+  const totalCols = 3 + totalDays + 3 + 3; // ตำแหน่ง index ของคอลัมน์ขวาสุด
+
+  const merges = [
+    // --- ผสานเซลล์หัวเอกสาร (คลุมตั้งแต่ซ้ายสุดไปขวาสุดของตาราง) ---
+    { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols } }, // ชื่อรายงาน
+    { s: { r: 1, c: 0 }, e: { r: 1, c: totalCols } }, // ชื่อหน่วยงาน
+    { s: { r: 2, c: 0 }, e: { r: 2, c: totalCols } }, // ประจำเดือน
+
+    // --- ผสานเซลล์ตาราง (บวก offset เพิ่มเข้าไปในรหัสแถว r) ---
+    { s: { r: offset + 0, c: 0 }, e: { r: offset + 1, c: 0 } }, // ลำดับ
+    { s: { r: offset + 0, c: 1 }, e: { r: offset + 1, c: 1 } }, // ชื่อ-สกุล
+    { s: { r: offset + 0, c: 2 }, e: { r: offset + 1, c: 2 } }, // อัตรา
+    { s: { r: offset + 0, c: 3 }, e: { r: offset + 0, c: 3 + totalDays - 1 } }, // วันที่ปฏิบัติงาน
+    { s: { r: offset + 0, c: 3 + totalDays }, e: { r: offset + 0, c: 3 + totalDays + 2 } }, // ระยะเวลา
+    { s: { r: offset + 0, c: 3 + totalDays + 3 }, e: { r: offset + 1, c: 3 + totalDays + 3 } }, // จำนวนเงิน
+    { s: { r: offset + 0, c: 3 + totalDays + 4 }, e: { r: offset + 1, c: 3 + totalDays + 4 } }, // วันที่รับเงิน
+    { s: { r: offset + 0, c: 3 + totalDays + 5 }, e: { r: offset + 1, c: 3 + totalDays + 5 } }, // ลายมือชื่อ
+    { s: { r: offset + 0, c: 3 + totalDays + 6 }, e: { r: offset + 1, c: 3 + totalDays + 6 } }, // หมายเหตุ
+    
+    // ผสานเซลล์แถว Footer "รวมเงินทั้งสิ้น"
+    { s: { r: aoa.length - 1, c: 0 }, e: { r: aoa.length - 1, c: 3 + totalDays + 2 } } 
+  ];
+  ws['!merges'] = merges;
+
+  // --- สร้าง Workbook และสั่งดาวน์โหลด ---
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "รายงานการเงิน");
+  
+  // ตั้งชื่อไฟล์ตามเดือนที่เลือก
+  XLSX.writeFile(wb, `รายงานการเงิน_${selectedMonth.value}.xlsx`);
 };
 </script>
 
@@ -193,39 +416,49 @@ const exportToExcel = () => {
   border: 1px solid #000 !important; /* บังคับขอบตารางสีดำเข้ม */
 }
 
+.document-area {
+  background: white;
+  padding: 20px;
+}
+
+/* =========================================
+   ตั้งค่าเฉพาะเวลาสั่งพิมพ์เอกสาร (@media print)
+   ========================================= */
 @media print {
+  /* 1. ตั้งค่าหน้ากระดาษ */
   @page {
-    size: A4 landscape; /* บังคับพิมพ์แนวนอน */
-    margin: 10mm; /* ตั้งค่าขอบกระดาษ */
-  }
-  
-  body * {
-    visibility: hidden; /* ซ่อนทุกอย่างก่อน */
-  }
-  
-  .printable-document, .printable-document * {
-    visibility: visible; /* แสดงเฉพาะส่วนเอกสาร */
-  }
-  
-  .printable-document {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    padding: 0;
+    size: A4 landscape; /* ใช้ portrait สำหรับแนวตั้ง หรือ landscape สำหรับแนวนอน */
+    margin: 1.5cm; /* ระยะขอบกระดาษ */
   }
 
-  .print-table {
-    font-size: 12pt; /* ปรับขนาดตัวอักษรสำหรับพิมพ์ */
-  }
-  
-  .print-table th, .print-table td {
-    padding: 4px;
+  /* 2. ซ่อนสิ่งที่ไม่ต้องการให้ติดไปในกระดาษ */
+  /* .d-print-none,  */
+  .d-print-none *,
+  nav, 
+  .sidebar,
+  button {
+    display: none !important;
   }
 
-  .doc-header h5, .doc-header h6 {
-    font-size: 14pt;
-    margin-bottom: 5px;
+  /* 3. บังคับให้แสดงสีพื้นหลัง (เช่น สีไฮไลต์แถวตาราง) */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 4. ป้องกันไม่ให้ตารางถูกตัดขาดครึ่งแถวเวลาขึ้นหน้าใหม่ */
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  
+  /* 5. ปรับขนาดตัวอักษรสำหรับพิมพ์ให้พอดีอ่าน */
+  body {
+    font-size: 12pt;
+    color: black;
   }
 }
 </style>

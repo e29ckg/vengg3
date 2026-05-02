@@ -17,6 +17,7 @@ require_once '../src/Controllers/VenController.php';
 require_once '../src/Controllers/AuthController.php';
 require_once '../src/Controllers/UserController.php';
 require_once '../src/Controllers/SettingController.php';
+require_once '../src/Controllers/FinanceController.php';
 require_once '../src/Middleware/AuthMiddleware.php';
 
 
@@ -393,25 +394,22 @@ switch ($route) {
             }
             break;
 
+    // โค้ดสำหรับดึงข้อมูลตารางรายงานการเงิน
     case 'finance/report':
-        $currentUser = AuthMiddleware::checkToken($connection);
-        // รับค่าเดือน (YYYY-MM)
-        $data = json_decode(file_get_contents("php://input"), true);
-        $month = $data['month'] ?? date('Y-m');
+        $financeController = new FinanceController($connection); // หรือ $db ตามที่คุณตั้งชื่อตัวแปรเชื่อมต่อ
+        $month = $_GET['month'] ?? date('Y-m');
+        $command_id = $_GET['command_id'] ?? null;
         
-        echo json_encode([
-            "month" => $month,
-            "total_shifts" => 120, // ตัวอย่างข้อมูล
-            "total_payments" => 50000, // ตัวอย่างข้อมูล
-            "details" => [
-                ["user_id" => 1, "name" => "นาย ก", "shifts" => 10, "payment" => 4000],
-                ["user_id" => 2, "name" => "นาง ส", "shifts" => 8, "payment" => 3200],
-                // ... รายละเอียดเพิ่มเติม
-            ]
-        ]);
-    
+        $financeController->getFinanceReport($month, $command_id);
         break;
 
+    // โค้ดสำหรับดึงรายการคำสั่งส่งให้ Dropdown
+    case 'get_commands':
+        $financeController = new FinanceController($connection);
+        $month = $_GET['month'] ?? date('Y-m');
+        
+        $financeController->getCommands($month);
+        break;
     
 
     default:
