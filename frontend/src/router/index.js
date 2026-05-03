@@ -24,15 +24,18 @@ const router = createRouter({
       name: 'admin-users', 
       component: () => import('../views/UserManagementView.vue') 
     },
-    { 
-      path: '/admin/settings', 
-      name: 'admin-settings', 
-      component: () => import('../views/SystemSettingsView.vue') 
+    {
+      path: '/admin/settings/system',
+      name: 'SystemSettings',
+      component: () => import('../views/admin/SystemSettingsView.vue'),
+      meta: { requiresAuth: true, role: 9 }
     },
-    { 
-      path: '/admin/agency-config', 
-      name: 'agency-config', 
-      component: () => import('../views/AgencyConfigView.vue') 
+       
+    {
+      path: '/admin/settings/agency',
+      name: 'AgencySettings',
+      component: () => import('../views/admin/AgencySettingsView.vue'),
+      meta: { requiresAuth: true, role: 9 } // เฉพาะ Admin
     },
     { 
       path: '/director/ven-settings', 
