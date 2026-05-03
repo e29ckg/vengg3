@@ -20,7 +20,7 @@
                 <button class="btn btn-warning btn-sm fw-bold text-dark rounded-3 px-3 me-1" @click="editMainVen(ven)">
                   แก้ไข
                 </button>
-                <button class="btn btn-outline-danger btn-sm rounded-3 px-2" @click="deleteItem('ven_name', ven.id)" title="ลบเวรนี้">
+                <button class="btn btn-outline-danger btn-sm rounded-3 px-2" @click="deleteVenName(ven.id)" title="ลบเวรนี้">
                   <i class="bi bi-trash"></i>
                 </button>
               </div>
@@ -54,7 +54,7 @@
                     <button class="btn btn-sm border-0 opacity-75 hover-opacity-100" :style="{ color: getTextColor(sub.color) }" @click="openSubModal('edit', ven.id, sub)">
                       <i class="bi bi-pencil-square fs-5"></i>
                     </button>
-                    <button class="btn btn-sm border-0 opacity-75 hover-opacity-100" :style="{ color: getTextColor(sub.color) }" @click="deleteItem('ven_name_sub', sub.id)">
+                    <button class="btn btn-sm border-0 opacity-75 hover-opacity-100" :style="{ color: getTextColor(sub.color) }" @click="deleteSubDuty(sub.id)">
                       <i class="bi bi-trash fs-5"></i>
                     </button>
                   </div>
@@ -81,7 +81,7 @@
         <div class="modal-content border-0 shadow-lg rounded-4">
           <div class="modal-header bg-success text-white border-0 rounded-top-4">
             <h5 class="modal-title fw-bold"><i class="bi bi-tags me-2"></i>{{ isEditingSub ? 'แก้ไขหน้าที่ย่อย' : 'เพิ่มหน้าที่ย่อย' }}</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" id="closeSubModal"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <form @submit.prevent="submitSubVen">
             <div class="modal-body p-4">
@@ -133,7 +133,7 @@
         <div class="modal-content border-0 shadow-lg rounded-4">
           <div class="modal-header bg-primary text-white border-0 rounded-top-4">
             <h5 class="modal-title fw-bold"><i class="bi bi-card-heading me-2"></i>{{ isEditingMain ? 'แก้ไขชื่อเวร' : 'เพิ่มชื่อเวร' }}</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" id="closeMainModal"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <form @submit.prevent="submitMainVen">
             <div class="modal-body p-4">
@@ -149,16 +149,13 @@
                 
                 <div class="col-md-4 mb-3">
                   <label class="form-label small fw-bold">กลางวัน/กลางคืน</label>
-                  
                   <select class="form-select" v-model="mainForm.dn" required>
                     <option value="" disabled>-- เลือกช่วงเวลา --</option>
-                    
                     <option v-for="t in timeOptions" :key="t.id" :value="t.name_th + '(' + t.time_period + ')'">
                       {{ t.name_th }}({{ t.time_period }})
                     </option>
                   </select>
                 </div>
-
               </div>
               <div class="mb-3">
                 <label class="form-label fw-semibold text-muted small">ชื่อเวรเต็ม (แสดงในคำสั่ง)</label>
@@ -179,7 +176,7 @@
         <div class="modal-content border-0 shadow-lg rounded-4">
           <div class="modal-header bg-info text-white border-0 rounded-top-4">
             <h5 class="modal-title fw-bold"><i class="bi bi-people-fill me-2"></i>ผู้มีสิทธิ์อยู่เวร: {{ activeManageSub?.name }}</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" id="closeManageUsersModal"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4 row g-4">
              <div class="col-md-6 border-end">
@@ -188,7 +185,7 @@
                    <li v-for="(u, index) in assignedUsers" :key="u.vu_id" class="list-group-item d-flex justify-content-between align-items-center bg-light">
                       <span>
                         <span class="badge bg-secondary me-2">{{ index + 1 }}</span>
-                        <i class="bi bi-person-check-fill text-success me-2"></i>{{ u.full_name }}
+                        <i class="bi bi-person-check-fill text-success me-2"></i>{{ u.full_name || (u.prefix_name + u.first_name + ' ' + u.last_name) }}
                       </span>
                       
                       <div class="btn-group btn-group-sm">
@@ -212,11 +209,11 @@
                    <span class="input-group-text bg-white border-0"><i class="bi bi-search text-muted"></i></span>
                    <input type="text" class="form-control border-0 shadow-none" v-model="userSearchQuery" placeholder="ค้นหาชื่อพนักงาน...">
                 </div>
-                <div class="list-group list-group-flush border rounded-3 overflow-auto" style="max-height: 250px;">
+                <div class="list-group list-group-flush border rounded-3 overflow-auto custom-scrollbar" style="max-height: 250px;">
                    <button v-for="user in filteredAllUsers" :key="user.id" 
                            class="list-group-item list-group-item-action py-2 d-flex justify-content-between align-items-center" 
                            @click="addUserToSub(user.id)">
-                      <span>{{ user.full_name }}</span>
+                      <span>{{ user.full_name || (user.prefix_name + user.first_name + ' ' + user.last_name) }}</span>
                       <i class="bi bi-plus-circle text-primary fs-5"></i>
                    </button>
                    <div v-if="filteredAllUsers.length === 0" class="text-center text-muted p-3">ไม่พบรายชื่อ หรือพนักงานทุกคนถูกเพิ่มแล้ว</div>
@@ -245,28 +242,97 @@ const venData = ref([])
 const fetchVenFullData = async () => {
   try {
     const response = await api.get('?route=admin/setting&action=ven_full')
-    // 🌟 ดึงข้อมูลมาแล้ว สั่งเรียงลำดับหน้าที่ย่อย (subs) ตามค่า srt เลย
-    venData.value = response.data.map(ven => {
-      if (ven.subs) ven.subs.sort((a, b) => a.srt - b.srt)
-      return ven
-    })
+    
+    // 🌟 เช็คว่า API ทำงานสำเร็จ (success: true) และมีข้อมูล (data) อยู่จริง
+    if (response.data && response.data.success && Array.isArray(response.data.data)) {
+      
+      // 🌟 เข้าถึง Array จริงๆ ผ่าน response.data.data
+      venData.value = response.data.data.map(ven => {
+        // จัดเรียง subs ตามลำดับ srt
+        if (ven.subs && Array.isArray(ven.subs)) {
+            ven.subs.sort((a, b) => a.srt - b.srt)
+        }
+        return ven
+      })
+
+    } else {
+      console.warn("ข้อมูลเวรว่างเปล่า หรือรูปแบบ API ไม่ถูกต้อง", response.data)
+      venData.value = []
+    }
+    
   } catch (error) {
+    console.error("Fetch Ven Error:", error)
     Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลเวรได้', 'error')
   }
 }
 
-const deleteItem = async (table, id) => {
-  const result = await Swal.fire({ title: 'ยืนยันการลบ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' })
+const deleteVenName = async (id) => {
+  const result = await Swal.fire({ 
+    title: 'ยืนยันการลบกลุ่มเวร?', 
+    text: 'คำเตือน: หากลบกลุ่มเวรนี้ หน้าที่ย่อยทั้งหมดที่อยู่ในกลุ่มจะถูกลบไปด้วย คุณแน่ใจหรือไม่?',
+    icon: 'warning', 
+    showCancelButton: true, 
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'ใช่, ลบเลย!',
+    cancelButtonText: 'ยกเลิก'
+  })
+
   if (result.isConfirmed) {
-    await api.post(`?route=admin/setting&table=${table}&action=delete`, { id })
-    fetchVenFullData()
+    try {
+      await api.post(`?route=admin/setting&action=delete_ven_name`, { id })
+      fetchVenFullData()
+      Swal.fire('ลบสำเร็จ!', 'ข้อมูลกลุ่มเวรถูกลบเรียบร้อยแล้ว', 'success')
+    } catch (error) {
+      Swal.fire('ผิดพลาด', 'ไม่สามารถลบข้อมูลได้', 'error')
+    }
   }
 }
 
+const deleteSubDuty = async (id) => {
+  const result = await Swal.fire({ 
+    title: 'ยืนยันการลบหน้าที่ย่อย?', 
+    text: 'คุณแน่ใจหรือไม่ที่จะลบหน้าที่ย่อยนี้?',
+    icon: 'warning', 
+    showCancelButton: true, 
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'ใช่, ลบเลย!',
+    cancelButtonText: 'ยกเลิก'
+  })
+
+  if (result.isConfirmed) {
+    try {
+      await api.post(`?route=admin/setting&action=delete_sub_duty`, { id })
+      fetchVenFullData()
+      Swal.fire('ลบสำเร็จ!', 'ข้อมูลหน้าที่ย่อยถูกลบเรียบร้อยแล้ว', 'success')
+    } catch (error) {
+      Swal.fire('ผิดพลาด', 'ไม่สามารถลบข้อมูลได้', 'error')
+    }
+  }
+}
+
+// 🌟 ปรับปรุงฟังก์ชันคำนวณสีตัวอักษรให้ฉลาดขึ้น (รองรับโค้ดสี HEX)
 const getTextColor = (bgColor) => {
   if (!bgColor) return '#000'
-  const darkColors = ['blueviolet', 'brown', 'green', 'magenta', 'darkblue', '#8a2be2', '#a52a2a', '#008000', '#ff00ff']
-  return darkColors.includes(bgColor.toLowerCase()) ? '#fff' : '#000'
+  
+  // เช็คสีชื่อปกติ (Known CSS colors)
+  const darkColors = ['blueviolet', 'brown', 'green', 'magenta', 'darkblue', 'teal', 'crimson', 'darkorange']
+  if (darkColors.includes(bgColor.toLowerCase())) return '#fff'
+  
+  // เช็คสีรหัส HEX
+  if (bgColor.startsWith('#')) {
+    let color = bgColor.substring(1)
+    if (color.length === 3) color = color.split('').map(c => c + c).join('')
+    if (color.length === 6) {
+      const r = parseInt(color.substring(0, 2), 16)
+      const g = parseInt(color.substring(2, 4), 16)
+      const b = parseInt(color.substring(4, 6), 16)
+      const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000
+      return (yiq >= 128) ? '#000' : '#fff'
+    }
+  }
+  return '#fff' // ค่า Default
 }
 
 // ==========================================
@@ -310,7 +376,7 @@ const submitMainVen = async () => {
   try {
     const action = isEditingMain.value ? 'update_venname' : 'create_venname' 
     await api.post(`?route=admin/setting&table=ven_name&action=${action}`, mainForm.value)
-    document.getElementById('closeMainModal').click()
+    mainModalInstance.hide() // 🌟 ใช้ API ของ Bootstrap Modal แทนการจำลองคลิก
     Swal.fire('สำเร็จ', 'บันทึกชื่อเวรหลักเรียบร้อย', 'success')
     fetchVenFullData()
   } catch (error) {
@@ -323,7 +389,7 @@ const submitMainVen = async () => {
 // ==========================================
 let subModalInstance = null
 const isEditingSub = ref(false)
-const subForm = ref({ id: '', ven_name_id: '', name: '', price: 0, color: 'BlueViolet', srt: 1 }) // เพิ่ม srt
+const subForm = ref({ id: '', ven_name_id: '', name: '', price: 0, color: 'BlueViolet', srt: 1 })
 const presetColors = ref(['BlueViolet', 'Brown', 'Green', 'Magenta', 'Teal', 'DarkBlue', 'Crimson', 'DarkOrange', '#0d6efd', '#198754', '#dc3545', '#ffc107'])
 
 const selectColor = (colorCode) => { subForm.value.color = colorCode }
@@ -336,7 +402,7 @@ const openSubModal = (mode, venNameId, sub = null) => {
     subForm.value = { id: '', ven_name_id: venNameId, name: '', price: 0, color: 'BlueViolet', srt: nextSrt }
   } else {
     isEditingSub.value = true
-    subForm.value = { ...sub }
+    subForm.value = { ...sub, ven_name_id: venNameId }
   }
   subModalInstance.show()
 }
@@ -345,7 +411,7 @@ const submitSubVen = async () => {
   try {
     const action = isEditingSub.value ? 'update_sub' : 'create_sub'
     await api.post(`?route=admin/setting&table=ven_name_sub&action=${action}`, subForm.value)
-    document.getElementById('closeSubModal').click()
+    subModalInstance.hide() // 🌟 ใช้คำสั่ง Hide ของ Bootstrap 
     Swal.fire('สำเร็จ', 'บันทึกข้อมูลหน้าที่ย่อยเรียบร้อย', 'success')
     fetchVenFullData()
   } catch (error) {
@@ -365,20 +431,16 @@ const onDragStartSub = (index, venId) => {
 }
 
 const onDropSub = async (dropIndex, venId) => {
-  // เช็คว่าลากข้ามกลุ่ม หรือ ปล่อยที่เดิมหรือไม่
   if (draggedVenId.value !== venId) return 
   if (draggedIndex.value === dropIndex) return 
 
   const ven = venData.value.find(v => v.id === venId)
   
-  // สลับตำแหน่งใน Array
   const draggedItem = ven.subs.splice(draggedIndex.value, 1)[0]
   ven.subs.splice(dropIndex, 0, draggedItem)
 
-  // จัดเลข srt ใหม่
   ven.subs.forEach((sub, i) => { sub.srt = i + 1 })
 
-  // เตรียมข้อมูล Payload
   const payload = ven.subs.map(sub => ({ id: sub.id, srt: sub.srt }))
 
   try {
@@ -410,11 +472,17 @@ const fetchAssignedUsers = async (subId) => {
   assignedUsers.value = res.data || []
 }
 
+// 🌟 ปรับปรุงระบบค้นหาให้ดักจับชื่อแบบเต็มและแบบประกอบ
 const filteredAllUsers = computed(() => {
   const assignedIds = assignedUsers.value.map(u => u.user_id)
   let available = allUsers.value.filter(u => !assignedIds.includes(u.id))
+  
   if (userSearchQuery.value) {
-    available = available.filter(u => u.full_name.includes(userSearchQuery.value))
+    const q = userSearchQuery.value.toLowerCase()
+    available = available.filter(u => {
+      const name = u.full_name || (`${u.prefix_name || ''}${u.first_name || ''} ${u.last_name || ''}`)
+      return name.toLowerCase().includes(q)
+    })
   }
   return available
 })
@@ -459,9 +527,7 @@ const moveUserDown = async (index) => {
   }
 }
 
-
-
-// 🌟 เพิ่มฟังก์ชันดึงข้อมูลเวลาจากฐานข้อมูล
+// 🌟 ดึงข้อมูลเวลา
 const fetchTimeOptions = async () => {
   try {
     const response = await api.get('?route=admin/ven_time')
@@ -470,6 +536,7 @@ const fetchTimeOptions = async () => {
     console.error('ไม่สามารถดึงข้อมูลเวลาเวรได้', error)
   }
 }
+
 // ==========================================
 // 🌟 Initialize เมื่อหน้าเว็บโหลดเสร็จ
 // ==========================================
@@ -516,4 +583,10 @@ onMounted(() => {
 .drag-handle:hover {
   opacity: 1;
 }
+
+/* Scrollbar เบาๆ สำหรับลิสต์ */
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #0d6efd; }
 </style>

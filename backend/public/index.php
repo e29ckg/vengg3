@@ -97,34 +97,26 @@ switch ($route) {
         break;
 
     // ใน switch ของ index.php
-    case 'admin/setting':
-        AuthMiddleware::checkDirector($connection); // 🔒 ยาม VIP
-        $table = $_GET['table'] ?? ''; // dep หรือ group
-        $action = $_GET['action'] ?? 'list';
-        
-        
-        $controller = new SettingController($connection);
-        $controller->handleRequest($action, $table);
-        break;
-
-    case 'admin/ven_user':
-        AuthMiddleware::checkDirector($connection);
+    // ==========================================
+    // ⚙️ ดึงข้อมูลการตั้งค่าระบบ (สำหรับพนักงานทั่วไปใช้อ่านกฎ)
+    // ==========================================
+    case 'system_settings':
+        AuthMiddleware::checkToken($connection); // เช็คแค่ว่าล็อกอินแล้วก็พอ
         require_once '../src/Models/Setting.php';
         $settingModel = new Setting($connection);
-        $action = $_GET['action'] ?? '';
-        $data = json_decode(file_get_contents("php://input"), true);
-
         
-        if ($action === 'get_by_sub') {
-            echo json_encode($settingModel->getUsersBySubId($_GET['sub_id']));
-        } elseif ($action === 'add') {
-            echo json_encode(["success" => $settingModel->addVenUser($data['sub_id'], $data['user_id'])]);
-        } elseif ($action === 'remove') {
-            echo json_encode(["success" => $settingModel->removeVenUser($data['vu_id'])]);
-        } elseif ($action === 'update_order') {
-            echo json_encode(["success" => $settingModel->updateVenUserOrder($data['ordered_ids'])]);
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            $settings = $settingModel->getSystemSettings();
+            echo json_encode($settings ?: [
+                'allow_swap' => 1,
+                'advance_swap_days' => 3,
+                'allow_retroactive_swap' => 0,
+                'check_24h_consecutive' => 1
+            ]);
         }
         break;
+
+   
 
     case 'admin/ven_com':
         AuthMiddleware::checkDirector($connection);
@@ -224,24 +216,7 @@ switch ($route) {
         echo json_encode($settingModel->getVenTimes());
         break;
 
-    case 'admin/agency_config':
-        AuthMiddleware::checkDirector($connection);
-        require_once '../src/Models/Setting.php';
-        $settingModel = new Setting($connection);
-        $action = $_GET['action'] ?? '';
-        $data = json_decode(file_get_contents("php://input"), true);
-
-        if ($action === 'get') {
-            echo json_encode($settingModel->getAgencyConfig());
-        } elseif ($action === 'update') {
-            if ($settingModel->updateAgencyConfig($data)) {
-                echo json_encode(["success" => true]);
-            } else {
-                http_response_code(500);
-                echo json_encode(["error" => "Update failed"]);
-            }
-        }
-        break;
+    
 
     case 'admin/ven_approve':
         // ตรวจสอบสิทธิ์ (ใช้ Middleware เดียวกับ admin)
@@ -280,6 +255,74 @@ switch ($route) {
             }
         }
         break;
+
+   // ==========================================
+        // 🌟 1. การตั้งค่าเวรหลัก และ หน้าที่ย่อย
+        // ==========================================
+        case 'admin/setting':
+            AuthMiddleware::checkAdmin($connection);
+            require_once '../src/Models/Setting.php';
+            $settingModel = new Setting($connection);
+            
+            $action = $_GET['action'] ?? '';
+            $data = json_decode(file_get_contents("php://input"), true);
+
+            // 1.1 โหลดข้อมูลทั้งหมด (เวรหลัก + หน้าที่ย่อยซ้อนกัน)
+            if ($action === 'ven_full') {
+                echo json_encode([
+                    "success" => true,
+                    "data" => $settingModel->getVenFullData()
+                ]);
+            }
+            // 1.2 ดึงข้อมูลเวรหลักตาม ID (ใช้ตอนกดแก้ไขเวรหลัก)
+            elseif ($action === 'get_by_id') {
+                echo json_encode($settingModel->getVenNameById($_GET['id']));
+            }
+            // 1.3 เพิ่ม/แก้ไข กลุ่มเวรหลัก
+            elseif ($action === 'create_venname' || $action === 'update_venname') {
+                echo json_encode(["success" => $settingModel->saveVenName($data)]);
+            }
+            // 1.4 ลบ กลุ่มเวรหลัก
+            elseif ($action === 'delete_ven_name') {
+                echo json_encode(["success" => $settingModel->deleteVenName($data['id'])]);
+            }
+            // 1.5 เพิ่ม/แก้ไข หน้าที่ย่อย
+            elseif ($action === 'create_sub' || $action === 'update_sub') {
+                echo json_encode(["success" => $settingModel->saveSubDuty($data)]);
+            }
+            // 1.6 ลบ หน้าที่ย่อย
+            elseif ($action === 'delete_sub_duty') {
+                echo json_encode(["success" => $settingModel->deleteSubDuty($data['id'])]);
+            }
+            // 1.7 บันทึกการจัดเรียงหน้าที่ย่อย (Drag & Drop)
+            elseif ($action === 'update_order') {
+                // $data ในที่นี้คือ array ของ {id, srt}
+                echo json_encode(["success" => $settingModel->updateSubDutyOrder($data)]);
+            }
+            break;
+
+        // ==========================================
+        // 🌟 2. การจัดการผู้อยู่เวร (ผูกคนเข้ากับหน้าที่ย่อย)
+        // ==========================================
+     case 'admin/ven_user':
+        AuthMiddleware::checkDirector($connection);
+        require_once '../src/Models/Setting.php';
+        $settingModel = new Setting($connection);
+        $action = $_GET['action'] ?? '';
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        
+        if ($action === 'get_by_sub') {
+            echo json_encode($settingModel->getUsersBySubId($_GET['sub_id']));
+        } elseif ($action === 'add') {
+            echo json_encode(["success" => $settingModel->addVenUser($data['sub_id'], $data['user_id'])]);
+        } elseif ($action === 'remove') {
+            echo json_encode(["success" => $settingModel->removeVenUser($data['vu_id'])]);
+        } elseif ($action === 'update_order') {
+            echo json_encode(["success" => $settingModel->updateVenUserOrder($data['ordered_ids'])]);
+        }
+        break;
+        
     
     case 'settings/update':
         // 🌟 ด่านตรวจ: ถ้าไม่ใช่ Admin ระบบจะส่ง 403 Forbidden กลับไปทันที
@@ -296,21 +339,7 @@ switch ($route) {
             
             echo json_encode(["success" => $success]);
         }
-        break;
-
-    case 'settings/app':
-        AuthMiddleware::checkToken($connection); // ต้องล็อกอินก่อน
-        
-        // ดึงการตั้งค่าทั้งหมดออกมาเป็น Array อัตโนมัติ
-        $stmt = $connection->query("SELECT setting_key, setting_value FROM app_settings");
-        $settings = [];
-        while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
-            $settings[$row['setting_key']] = $row['setting_value'];
-        }
-        
-        http_response_code(200);
-        echo json_encode($settings);
-        break;
+        break;    
     
     // ------------------------------------------------
     case 'ven/eligible_users':        
@@ -639,6 +668,41 @@ switch ($route) {
             } else {
                 http_response_code(404);
                 echo json_encode(["error" => "ไม่มีผู้ปฏิบัติหน้าที่ในตารางเวรของวันนี้ครับ"]);
+            }
+        }
+        break;
+
+    // ==========================================
+    // ⚙️ ตั้งค่าระบบ (System Settings)
+    // ==========================================
+    case 'admin/system_settings':
+        AuthMiddleware::checkAdmin($connection);
+        require_once '../src/Models/Setting.php';
+        $settingModel = new Setting($connection);
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            $settings = $settingModel->getSystemSettings();
+            if (!$settings) {
+                $settings = [
+                    'system_name' => 'ระบบบริหารจัดการเวรนอกเวลาทำการ', 
+                    'allow_swap' => 1, 
+                    'advance_swap_days' => 3, 
+                    'allow_retroactive_swap' => 0, // 🌟 เพิ่มใหม่
+                    'check_24h_consecutive' => 1,    // 🌟 เพิ่มใหม่
+                    'maintenance_mode' => 0
+                ];
+            }
+            echo json_encode($settings);
+        } 
+        elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $data = json_decode(file_get_contents("php://input"), true);
+            $result = $settingModel->updateSystemSettings($data);
+            
+            if ($result) {
+                echo json_encode(["success" => true, "message" => "อัปเดตการตั้งค่าระบบสำเร็จ"]);
+            } else {
+                http_response_code(500);
+                echo json_encode(["error" => "ไม่สามารถบันทึกข้อมูลได้"]);
             }
         }
         break;

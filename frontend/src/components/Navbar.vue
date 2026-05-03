@@ -51,8 +51,17 @@
             </a>
             <ul class="dropdown-menu shadow-sm" :class="{ 'show': isAdminMenuOpen }">
               <li><router-link class="dropdown-item" active-class="active fw-bold" to="/admin/users"><i class="bi bi-people"></i> จัดการผู้ใช้งาน</router-link></li>
-              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/admin/settings"><i class="bi bi-sliders"></i> ตั้งค่าระบบ</router-link></li>                
+              <li>
+                <router-link to="/admin/settings/system" class="dropdown-item" active-class="active fw-bold">
+                  <i class="bi bi-gear-wide-connected me-2 text-dark"></i> ตั้งค่าระบบ
+                </router-link>
+              </li>             
               <li>  <router-link to="/admin/settings/telegram" class="dropdown-item"><i class="bi bi-telegram me-2"></i> ตั้งค่า Telegram</router-link></li>
+              <li>
+                <router-link to="/admin/settings/agency" class="dropdown-item" active-class="active fw-bold">
+                  <i class="bi bi-building me-2 text-primary"></i> ตั้งค่าข้อมูลหน่วยงาน
+                </router-link>
+              </li>
             </ul>
           </li>
         </ul>

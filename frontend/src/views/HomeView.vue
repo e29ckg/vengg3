@@ -47,13 +47,13 @@
               <div class="day-body p-1 flex-grow-1 overflow-auto custom-scrollbar">
                 
                 <div v-for="sch in getSchedulesForDay(day)" :key="sch.id" 
-                    class="schedule-item mb-1 p-1 rounded-1 shadow-sm"
-                    :class="{ 'flashing-24h': is24HourShift(sch) }"
-                    :style="{ 
-                      backgroundColor: is24HourShift(sch) ? '' : (sch.user_id == currentUserId ? '#FFD700' : sch.backgroundColor), 
-                      color: is24HourShift(sch) ? 'white' : (sch.user_id == currentUserId ? '#000' : '#fff')
-                    }"
-                    @click="openShiftDetail(sch.id)">
+                     class="schedule-item mb-1 p-1 rounded-1 shadow-sm"
+                     :class="{ 'flashing-24h': is24HourShift(sch) }"
+                     :style="{ 
+                       backgroundColor: is24HourShift(sch) ? '' : (sch.user_id == currentUserId ? '#FFD700' : sch.backgroundColor), 
+                       color: is24HourShift(sch) ? 'white' : (sch.user_id == currentUserId ? '#000' : '#fff')
+                     }"
+                     @click="openShiftDetail(sch.id)">
                   
                   <div class="fw-bold" style="font-size: 0.7rem;">
                     <i class="bi bi-clock me-1"></i>{{ sch.ven_time.substring(0,5) }}
@@ -112,34 +112,41 @@
                         <i class="bi bi-file-earmark-check me-1"></i> รายงานการปฏิบัติหน้าที่
                       </button>
                       
-                      <template v-if="!isPastShift(selectedVen.ven_date, selectedVen.ven_time) || appSettings?.allow_retro_transfer">
+                      <template v-if="systemSettings.allow_swap">
+                        <template v-if="!isPastShift(selectedVen.ven_date, selectedVen.ven_time) || systemSettings.allow_retroactive_swap">
+                          
+                          <button v-if="!showRecipientList" 
+                                  class="btn btn-warning rounded-pill fw-bold text-dark shadow-sm py-2 w-100" 
+                                  @click="loadRecipients">
+                            <i class="bi bi-arrow-left-right me-1"></i> ยกเวรนี้ให้ผู้อื่น
+                          </button>
+      
+                          <div v-if="showRecipientList" class="mt-3 text-start border border-warning rounded-3 p-2 bg-white shadow-sm">
+                            <label class="form-label fw-bold small text-primary mb-2 px-1">เลือกผู้ที่ต้องการยกเวรให้:</label>
+                            <div class="list-group list-group-flush border rounded-3 overflow-auto custom-scrollbar" style="max-height: 180px;">
+                              <button v-for="user in recipients" :key="user.user_id" 
+                                      class="list-group-item list-group-item-action small py-2 d-flex align-items-center"
+                                      @click="confirmTransfer(user)">
+                                <i class="bi bi-person-plus-fill me-2 text-success fs-5"></i>
+                                <span class="fw-semibold">{{ user.full_name || (user.prefix_name + user.first_name + ' ' + user.last_name) }}</span>
+                              </button>
+                              <div v-if="recipients.length === 0" class="p-3 text-center text-muted small">ไม่พบผู้มีสิทธิ์ท่านอื่นในหน้าที่นี้</div>
+                            </div>
+                            <div class="text-center mt-2">
+                              <button class="btn btn-link btn-sm text-decoration-none text-muted" @click="showRecipientList = false">ยกเลิก</button>
+                            </div>
+                          </div>
+                        </template>
                         
-                        <button v-if="!showRecipientList" 
-                                class="btn btn-warning rounded-pill fw-bold text-dark shadow-sm py-2 w-100" 
-                                @click="loadRecipients">
-                          <i class="bi bi-arrow-left-right me-1"></i> ยกเวรนี้ให้ผู้อื่น
-                        </button>
-    
-                        <div v-if="showRecipientList" class="mt-3 text-start border border-warning rounded-3 p-2 bg-white shadow-sm">
-                          <label class="form-label fw-bold small text-primary mb-2 px-1">เลือกผู้ที่ต้องการยกเวรให้:</label>
-                          <div class="list-group list-group-flush border rounded-3 overflow-auto custom-scrollbar" style="max-height: 180px;">
-                            <button v-for="user in recipients" :key="user.user_id" 
-                                    class="list-group-item list-group-item-action small py-2 d-flex align-items-center"
-                                    @click="confirmTransfer(user)">
-                              <i class="bi bi-person-plus-fill me-2 text-success fs-5"></i>
-                              <span class="fw-semibold">{{ user.full_name || (user.prefix_name + user.first_name + ' ' + user.last_name) }}</span>
-                            </button>
-                            <div v-if="recipients.length === 0" class="p-3 text-center text-muted small">ไม่พบผู้มีสิทธิ์ท่านอื่นในหน้าที่นี้</div>
-                          </div>
-                          <div class="text-center mt-2">
-                            <button class="btn btn-link btn-sm text-decoration-none text-muted" @click="showRecipientList = false">ยกเลิก</button>
-                          </div>
+                        <div v-else class="alert alert-danger border-0 small text-center mt-2 shadow-sm rounded-3">
+                          <i class="bi bi-exclamation-triangle-fill me-1"></i> ระบบไม่อนุญาตให้เปลี่ยนเวรย้อนหลัง
                         </div>
                       </template>
                       
-                      <div v-else class="alert alert-danger border-0 small text-center mt-2 shadow-sm rounded-3">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i> ระบบไม่อนุญาตให้เปลี่ยนเวรย้อนหลัง
+                      <div v-else class="alert alert-secondary border-0 small text-center mt-2 shadow-sm rounded-3">
+                        <i class="bi bi-lock-fill me-1"></i> ระบบปิดรับคำขอแลกเปลี่ยนเวรชั่วคราว
                       </div>
+
                     </template>
                   </div>
                   
@@ -210,6 +217,31 @@ const currentUserId = ref(0)
 const currentUsername = ref('')
 const userRole = ref(0)
 
+// 🌟 ตัวแปรเก็บกฎการตั้งค่าระบบ (ดึงมาจาก Backend)
+const systemSettings = ref({
+  allow_swap: true,
+  advance_swap_days: 3,
+  allow_retroactive_swap: false,
+  check_24h_consecutive: true
+});
+
+// ฟังก์ชันดึงข้อมูลการตั้งค่าระบบ
+const fetchSystemSettings = async () => {
+  try {
+    const res = await api.get('?route=system_settings');
+    if (res.data) {
+      systemSettings.value = {
+        allow_swap: res.data.allow_swap == 1,
+        advance_swap_days: parseInt(res.data.advance_swap_days) || 0,
+        allow_retroactive_swap: res.data.allow_retroactive_swap == 1,
+        check_24h_consecutive: res.data.check_24h_consecutive == 1
+      };
+    }
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+  }
+};
+
 const fetchUserInfo = async () => {
   try {
     const response = await api.get('?route=auth/me')
@@ -218,6 +250,8 @@ const fetchUserInfo = async () => {
       currentUserId.value = response.data.user_id
       currentUsername.value = response.data.username
       userRole.value = response.data.role
+      
+      await fetchSystemSettings() // 🌟 ดึงข้อมูล Settings หลังจาก Login เสร็จ
       
       localStorage.setItem('user_id', response.data.user_id)
       localStorage.setItem('role', response.data.role)
@@ -348,9 +382,6 @@ const openShiftDetail = async (venId) => {
     Swal.close();
     detailModalInstance.show();
 
-    console.log("ID เวรนี้:", selectedVen.value.user_id);
-    console.log("ID ผู้ใช้ปัจจุบัน:", currentUserId.value);
-
   } catch (error) {
     console.error("Error fetching detail:", error);
     Swal.fire('ข้อผิดพลาด', 'ไม่สามารถดึงรายละเอียดเวรได้ หรือเซสชันหมดอายุ', 'error');
@@ -359,6 +390,7 @@ const openShiftDetail = async (venId) => {
 
 const loadRecipients = async () => {
   try {
+    // เช็คสิทธิ์และประวัติก่อนโอน
     if (selectedVen.value.com_status != 1) {
       return Swal.fire({
         title: 'ดำเนินการไม่ได้',
@@ -368,7 +400,6 @@ const loadRecipients = async () => {
     }
     if (selectedVen.value.history && selectedVen.value.history.length > 0) {
       const latestChange = selectedVen.value.history[0];
-      
       if (latestChange.status != 1) {
         return Swal.fire({
           title: 'ไม่สามารถดำเนินการได้',
@@ -376,6 +407,26 @@ const loadRecipients = async () => {
           icon: 'warning'
         });
       }
+    }
+
+    // 🌟 ดักจับกฎ: ตรวจสอบวันที่ล่วงหน้าและย้อนหลัง
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const shiftDate = new Date(selectedVen.value.ven_date);
+    shiftDate.setHours(0, 0, 0, 0);
+
+    const diffTime = shiftDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // กฎที่ 1: ตรวจสอบการเปลี่ยนเวรย้อนหลัง
+    if (!systemSettings.value.allow_retroactive_swap && diffDays < 0) {
+      return Swal.fire('ไม่สามารถทำรายการได้', 'ระบบไม่อนุญาตให้ส่งคำขอเปลี่ยนเวรย้อนหลังครับ', 'warning');
+    }
+
+    // กฎที่ 2: ตรวจสอบจำนวนวันล่วงหน้าขั้นต่ำ
+    if (diffDays >= 0 && diffDays < systemSettings.value.advance_swap_days) {
+      return Swal.fire('ไม่สามารถทำรายการได้', `ระเบียบของหน่วยงานระบุให้ต้องทำรายการล่วงหน้าอย่างน้อย ${systemSettings.value.advance_swap_days} วันครับ`, 'warning');
     }
 
     const sub_id = selectedVen.value.sub_id || selectedVen.value.ven_name_sub_id; 
@@ -390,20 +441,6 @@ const loadRecipients = async () => {
   }
 };
 
-const appSettings = ref({
-  allow_retro_transfer: false,
-  enable_24h_check: true
-});
-
-const fetchAppSettings = async () => {
-  try {
-    const res = await api.get('?route=settings/app');
-    appSettings.value.allow_retro_transfer = res.data.allow_retro_transfer === '1';
-    appSettings.value.enable_24h_check = res.data.enable_24h_check === '1';
-  } catch (error) {
-    console.error("โหลดการตั้งค่าไม่สำเร็จ");
-  }
-};
 
 const check24HourViolation = (targetUserId, shiftDate, shiftTime) => {
   const targetUserShifts = allSchedules.value.filter(s => s.user_id == targetUserId);
@@ -430,8 +467,10 @@ const check24HourViolation = (targetUserId, shiftDate, shiftTime) => {
   return false;
 };
 
+// 🌟 ปรับปรุงการตรวจสอบ 24 ชม. ให้ใช้ systemSettings
 const is24HourShift = (sch) => {
-  if (!appSettings.value.enable_24h_check || !allSchedules.value) return false;
+  if (!systemSettings.value.check_24h_consecutive || !allSchedules.value) return false;
+  
   const userShifts = allSchedules.value.filter(s => s.user_id == sch.user_id);
   const targetDate = new Date(sch.date);
   
@@ -454,7 +493,9 @@ const is24HourShift = (sch) => {
 
 const confirmTransfer = async (targetUser) => {
   let isViolated = false;
-  if (appSettings.value.enable_24h_check) {
+  
+  // 🌟 แจ้งเตือน 24 ชม. ตอนกดส่งคำขอ (ถ้าเปิดการตั้งค่าไว้)
+  if (systemSettings.value.check_24h_consecutive) {
     isViolated = check24HourViolation(targetUser.user_id, selectedVen.value.ven_date, selectedVen.value.ven_time);
   }
 
@@ -573,7 +614,6 @@ const isPastShift = (dateStr, timeStr) => {
 
 onMounted(async() => {
   await fetchUserInfo()
-  await fetchAppSettings();
   fetchVenData()
   detailModalInstance = new Modal(document.getElementById('venDetailModal'))
 })
