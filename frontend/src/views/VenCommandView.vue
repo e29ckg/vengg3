@@ -32,7 +32,7 @@
                 <button class="btn btn-sm btn-warning fw-bold text-dark rounded-3 px-3 me-2 shadow-sm" @click="openModal('edit', com)">
                   <i class="bi bi-pencil-square me-1"></i>แก้ไข
                 </button>
-                <button class="btn btn-sm btn-danger rounded-3 px-3 shadow-sm" @click="deleteCommand(com.id)">
+                <button class="btn btn-sm btn-danger rounded-3 px-3 shadow-sm" @click="deleteCommand(com)">
                   <i class="bi bi-trash me-1"></i>ลบ
                 </button>
               </div>
@@ -106,17 +106,33 @@
                       </div>
                     </div>
 
-                    <div class="col-md-6">
+                   <div class="col-md-6">
                       <label class="form-label fw-semibold text-muted small">ประจำเดือน (เวรเดือน) *</label>
                       <div class="input-group shadow-sm rounded-3 overflow-hidden">
-                        <select class="form-select border-0 text-center" v-model="selectedMonth" required>
+                        <select 
+                          class="form-select border-0 text-center" 
+                          v-model="selectedMonth" 
+                          :disabled="form.id" 
+                          required
+                        >
                           <option value="" disabled>เดือน</option>
                           <option v-for="(m, index) in thaiMonthsList" :key="index" :value="String(index + 1).padStart(2, '0')">{{ m }}</option>
                         </select>
-                        <select class="form-select border-0 border-start text-center bg-white" v-model="selectedYear" required>
+                        
+                        <select 
+                          class="form-select border-0 border-start text-center" 
+                          :class="{'bg-white': !form.id, 'bg-light': form.id}"
+                          v-model="selectedYear" 
+                          :disabled="form.id" 
+                          required
+                        >
                           <option value="" disabled>ปี พ.ศ.</option>
                           <option v-for="y in yearList" :key="y" :value="y">{{ y }}</option>
                         </select>
+                      </div>
+                      
+                      <div v-if="form.id" class="form-text text-danger mt-1" style="font-size: 0.85rem;">
+                        <i class="bi bi-lock-fill"></i> ไม่สามารถแก้ไขเดือน/ปีได้ เนื่องจากมีการจัดตารางเวรแล้ว
                       </div>
                     </div>
 
@@ -310,18 +326,60 @@ const toggleStatus = async (id, status) => {
 }
 
 // ลบคำสั่ง
-const deleteCommand = async (id) => {
-  const result = await Swal.fire({ 
-    title: 'ยืนยันการลบ?', 
-    text: 'หากลบคำสั่งนี้ ข้อมูลตารางการจัดเวรที่อ้างอิงถึงคำสั่งนี้จะถูกลบไปด้วย!', 
-    icon: 'warning', 
-    showCancelButton: true, 
-    confirmButtonColor: '#d33',
-    confirmButtonText: 'ลบข้อมูล'
-  })
-  if (result.isConfirmed) {
-    await api.post('?route=admin/ven_com&action=delete', { id })
-    fetchCommands()
+// ฟังก์ชันสำหรับกดปุ่มลบ
+const deleteCommand = async (com) => {
+  // ข้อความที่บังคับให้แอดมินพิมพ์ (เช่น 'ลบคำสั่ง 123/2567')
+  const expectedText = `ลบคำสั่ง ${com.com_num}`; 
+
+  const { value: typedText } = await Swal.fire({
+    title: '⚠️ ยืนยันการลบคำสั่งเวร',
+    html: `
+      <div class="text-start">
+        <p class="text-danger fw-bold mb-2">คำเตือนอันตราย!</p>
+        <p class="mb-3">การลบคำสั่งนี้จะทำการ <b class="text-danger">ลบรายชื่อเวรที่จัดไว้ทั้งหมด</b> ในคำสั่งนี้ด้วย และไม่สามารถกู้คืนได้!</p>
+        <p class="mb-1">กรุณาพิมพ์ข้อความด้านล่างเพื่อยืนยัน:</p>
+        <div class="p-2 bg-light border rounded text-center mb-2 user-select-none">
+          <strong class="text-primary fs-5">${expectedText}</strong>
+        </div>
+      </div>
+    `,
+    input: 'text',
+    inputPlaceholder: 'พิมพ์ข้อความยืนยันที่นี่...',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc3545',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: '<i class="bi bi-trash"></i> ลบทิ้งถาวร',
+    cancelButtonText: 'ยกเลิก',
+    // 🌟 ตัวตรวจสอบว่าพิมพ์ตรงไหม
+    inputValidator: (value) => {
+      if (!value) {
+        return 'กรุณาพิมพ์ข้อความเพื่อยืนยัน'
+      }
+      if (value !== expectedText) {
+        return 'พิมพ์ข้อความไม่ถูกต้อง กรุณาลองใหม่'
+      }
+    }
+  });
+
+  // ถ้าพิมพ์ถูกต้องและกดตกลง
+  if (typedText === expectedText) {
+    try {
+      // เรียก API ไปลบข้อมูล (ปรับ URL ให้ตรงกับโปรเจกต์ของคุณ)
+      await api.delete(`?route=admin/ven_com/delete&id=${com.id}`);
+      
+      Swal.fire(
+        'ลบสำเร็จ!',
+        'คำสั่งและตารางเวรที่เกี่ยวข้องถูกลบเรียบร้อยแล้ว',
+        'success'
+      );
+      
+      // ดึงข้อมูลคำสั่งใหม่เพื่อรีเฟรชตาราง
+      fetchCommands(); 
+      
+    } catch (error) {
+      Swal.fire('ผิดพลาด', 'ไม่สามารถลบข้อมูลได้', 'error');
+    }
   }
 }
 
