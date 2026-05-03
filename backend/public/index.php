@@ -140,9 +140,28 @@ switch ($route) {
         } elseif ($action === 'update') {
             echo json_encode(["success" => $settingModel->updateVenCommand($data)]);
         } elseif ($action === 'toggle_status') {
-            echo json_encode(["success" => $settingModel->toggleVenCommandStatus($data['id'], $data['status'])]);
-        } elseif ($action === 'delete') {
-            echo json_encode(["success" => $settingModel->deleteVenCommand($data['id'])]);
+            $result = $settingModel->toggleVenCommandStatus($data['id'], $data['status']);
+
+            if ($result) {
+                // 🌟 โค้ดที่ต้องเพิ่มเข้าไป (ถ้าสถานะคือ 2 = ยืนยันตารางแล้ว)
+                if ($data['status'] == 1) { 
+                    require_once '../src/Services/TelegramService.php';
+                    $telegram = new TelegramService($connection);
+                    
+                    $msg = "📢 <b>ประกาศจากระบบจัดเวร</b>\n";
+                    $msg .= "ตารางเวรประจำเดือนได้รับการยืนยันเรียบร้อยแล้ว!\n";
+                    $msg .= "สมาชิกสามารถเข้าสู่ระบบเพื่อตรวจสอบ หรือส่งคำขอแลกเปลี่ยนเวรได้เลยครับ";
+                    
+                    // ส่ง 'notify_confirmed' ไปเช็คสวิตช์
+                    $telegram->sendMessage($msg, 'notify_confirmed'); 
+                }
+                
+                echo json_encode(["success" => true]);
+            } else {
+                http_response_code(500);
+                echo json_encode(["error" => "ไม่สามารถอัปเดตสถานะได้"]);
+            }
+
         }elseif ($action === 'update_status') {
             if ($settingModel->updateCommandStatus($data['id'], $data['status'])) {
                 echo json_encode(["success" => true, "message" => "อัปเดตสถานะสำเร็จ"]);
@@ -151,6 +170,19 @@ switch ($route) {
                 echo json_encode(["error" => "ไม่สามารถอัปเดตสถานะได้"]);
             }
         }
+        break;
+    
+    case 'admin/ven_com/delete':
+        AuthMiddleware::checkDirector($connection);
+        require_once '../src/Models/Setting.php';
+        $settingModel = new Setting($connection);
+        $data = json_decode(file_get_contents("php://input"), true);
+        if (!isset($_GET['id'])) {
+            http_response_code(400);
+            echo json_encode(["error" => "Missing command ID"]);
+            exit;
+        }
+        echo json_encode(["success" => $settingModel->deleteVenCommand($_GET['id'])]);
         break;
 
     case 'admin/ven_schedule':
@@ -224,9 +256,24 @@ switch ($route) {
         elseif ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = json_decode(file_get_contents("php://input"), true);
             if (isset($data['id']) && isset($data['status'])) {
-                if ($settingModel->updateChangeStatus($data['id'], $data['status'])) {
+                $result = $settingModel->updateChangeStatus($data['id'], $data['status']);
+
+                if ($result) {
+                    // 🌟 โค้ดที่ต้องเพิ่มเข้าไป (ดักเฉพาะตอนอนุมัติสำเร็จ)
+                    if ($data['status'] == 1) {
+                        require_once '../src/Services/TelegramService.php';
+                        $telegram = new TelegramService($connection);
+                        
+                        $msg = "✅ <b>แจ้งผลการอนุมัติแลกเวร</b>\n";
+                        $msg .= "ผู้บริหารได้ <b>อนุมัติ</b> คำขอแลกเปลี่ยนเวร ". $data['change_no'] ." เรียบร้อยแล้ว!\n";
+                        $msg .= "ระบบได้ทำการอัปเดตตารางเวรให้โดยอัตโนมัติครับ";
+                        
+                        // ส่ง 'notify_approval' ไปเช็คสวิตช์
+                        $telegram->sendMessage($msg, 'notify_approval');
+                    }
+                    http_response_code(200);
                     echo json_encode(["success" => true, "message" => "อัปเดตสถานะเรียบร้อย"]);
-                } else {
+                }else {
                     http_response_code(500);
                     echo json_encode(["error" => "ไม่สามารถอัปเดตสถานะได้"]);
                 }
@@ -350,14 +397,29 @@ switch ($route) {
             require_once '../src/Models/Setting.php'; 
             $settingModel = new Setting($connection);
 
-            // 5. ทำการอัปเดตข้อมูล
-            if ($settingModel->transferShift($data['schedule_id'], $data['new_user_id'])) {
+            $result = $settingModel->transferShift($data['schedule_id'], $data['new_user_id']);
+
+            if ($result) {
+                // 🌟 โค้ดที่ต้องเพิ่มเข้าไป
+                require_once '../src/Services/TelegramService.php';
+                $telegram = new TelegramService($connection);
+                
+                $msg = "🔄 <b>มีการส่งคำขอแลกเปลี่ยนเวรใหม่</b>\n";
+                $msg .= "โปรดเข้าสู่ระบบเพื่อตรวจสอบรายละเอียดและดำเนินการครับ";
+                
+                /* 💡 Tips: ถ้าคุณดึงชื่อคนขอ หรือวันที่ขอ มาได้ สามารถนำมาต่อ String เพิ่มความสวยงามได้ครับ
+                เช่น: $msg .= "\nจาก: คุณ " . $data['user1_name'];
+                */
+                
+                // ส่ง 'notify_change_request' ไปเช็คสวิตช์
+                $telegram->sendMessage($msg, 'notify_change_request');
+                
                 http_response_code(200);
                 echo json_encode(["success" => true, "message" => "โอนเวรเรียบร้อย"]);
             } else {
                 http_response_code(500);
-                echo json_encode(["error" => "ไม่สามารถโอนเวรได้ เกิดข้อผิดพลาดที่ฐานข้อมูล"]);
-            }
+                echo json_encode(["error" => "ไม่สามารถส่งคำขอแลกเปลี่ยนได้ เกิดข้อผิดพลาดที่ฐานข้อมูล"]);
+            }           
         }
         break;
 
@@ -412,11 +474,11 @@ switch ($route) {
         break;
     
     // ==========================================
-        // 📢 ระบบตั้งค่าการแจ้งเตือน Telegram
-        // ==========================================
-        
-        // 1. API ดึงข้อมูลการตั้งค่ามาแสดงที่หน้าฟอร์ม
-        case 'admin/telegram_settings':
+    // 📢 ระบบตั้งค่าการแจ้งเตือน Telegram
+    // ==========================================
+    
+    // 1. API ดึงข้อมูลการตั้งค่ามาแสดงที่หน้าฟอร์ม
+    case 'admin/telegram_settings':
             AuthMiddleware::checkAdmin($connection); // ตรวจสอบสิทธิ์แอดมิน
             if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 require_once '../src/Models/Setting.php';
@@ -429,84 +491,157 @@ switch ($route) {
                         'bot_token' => '', 'chat_id' => '',
                         'notify_confirmed' => true, 
                         'notify_change_request' => true, 
-                        'notify_approval' => true
+                        'notify_approval' => true,
+                        'notify_times' => [] // 🌟 เตรียม Array ว่างไว้
                     ];
                 } else {
                     // แปลงค่า 1/0 กลับเป็น Boolean ให้ Vue.js เข้าใจง่าย
                     $settings['notify_confirmed'] = (bool)$settings['notify_confirmed'];
                     $settings['notify_change_request'] = (bool)$settings['notify_change_request'];
                     $settings['notify_approval'] = (bool)$settings['notify_approval'];
+                    
+                    // 🌟 ดึงข้อมูลเวลาแจ้งเตือนจาก DB มาแนบไปด้วย
+                    try {
+                        $stmtTime = $connection->prepare("SELECT send_time, notify_day, status FROM telegram_notify_times ORDER BY send_time ASC");
+                        $stmtTime->execute();
+                        $notifyTimes = $stmtTime->fetchAll(PDO::FETCH_ASSOC);
+                        
+                        // แปลงชนิดข้อมูลให้ Vue.js เข้าใจง่าย
+                        foreach ($notifyTimes as &$time) {
+                            $time['status'] = (bool)$time['status'];
+                            $time['notify_day'] = (int)$time['notify_day']; // ให้เป็น 0 หรือ 1
+                        }
+                        
+                        $settings['notify_times'] = $notifyTimes; // นำไปใส่ใน Array หลัก
+                        
+                    } catch (PDOException $e) {
+                        $settings['notify_times'] = [];
+                    }
                 }
                 
                 echo json_encode($settings);
             }
             break;
 
-        // 2. API บันทึกการตั้งค่าลง Database
-        case 'admin/telegram_settings/update':
-            AuthMiddleware::checkAdmin($connection); // ตรวจสอบสิทธิ์แอดมิน
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                // 1. รับค่าและแปลงเป็น Array (บังคับใส่ true)
-                $data = json_decode(file_get_contents("php://input"), true);
+    // 2. API บันทึกการตั้งค่าลง Database
+    case 'admin/telegram_settings/update':
+        AuthMiddleware::checkAdmin($connection); // ตรวจสอบสิทธิ์แอดมิน
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // 1. รับค่าและแปลงเป็น Array (บังคับใส่ true)
+            $data = json_decode(file_get_contents("php://input"), true);
+            
+            require_once '../src/Models/Setting.php'; 
+            $settingModel = new Setting($connection);
+            
+            // 3. ส่งข้อมูลไปอัปเดตที่ Model
+            $result = $settingModel->updateTelegramSettings($data);
+            
+            if ($result) {
+                echo json_encode(["success" => true, "message" => "อัปเดตข้อมูลสำเร็จ"]);
+            } else {
+                http_response_code(500);
+                echo json_encode(["error" => "ไม่สามารถบันทึกข้อมูลได้"]);
+            }
+        }
+        break;
+
+    // 3. API ทดสอบส่งข้อความ (ใช้ค่าจากฟอร์มชั่วคราว ไม่ต้องรอเซฟลงฐานข้อมูลก่อน)
+    case 'admin/telegram_settings/test':
+        AuthMiddleware::checkAdmin($connection);
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $data = json_decode(file_get_contents("php://input"), true);
+            
+            $botToken = $data['bot_token'];
+            $chatId = $data['chat_id'];
+            
+            if(empty($botToken) || empty($chatId)) {
+                http_response_code(400);
+                echo json_encode(["error" => "กรุณากรอก Token และ Chat ID ก่อนทดสอบ"]);
+                exit;
+            }
+
+            $message = "✅ <b>ทดสอบระบบแจ้งเตือน</b>\nข้อความนี้ถูกส่งจาก \"ระบบจัดเวรนอกเวลาทำการ\" เพื่อทดสอบการเชื่อมต่อ Telegram ครับ";
+            
+            // ยิง API ไปหา Telegram โดยตรง
+            $url = "https://api.telegram.org/bot" . $botToken . "/sendMessage";
+            $postData = [
+                'chat_id' => $chatId,
+                'text' => $message,
+                'parse_mode' => 'HTML'
+            ];
+            
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode == 200) {
+                echo json_encode(["success" => true, "message" => "ส่งข้อความสำเร็จ!"]);
+            } else {
+                http_response_code(400);
+                echo json_encode(["error" => "ส่งไม่สำเร็จ กรุณาตรวจสอบ Token และ Chat ID"]);
+            }
+        }
+        break;
+
+    // 4. API ส่งแจ้งเตือนเวรของวันนี้แบบ Manual
+    case 'admin/telegram_settings/manual_notify':
+        AuthMiddleware::checkAdmin($connection); // ตรวจสอบสิทธิ์
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            require_once '../src/Services/TelegramService.php';
+            $telegram = new TelegramService($connection);
+
+            // ดึงข้อมูลเวรของ "วันนี้"
+            $today = date('Y-m-d');
+            $sql = "SELECT vs.*, p.prefix_name, p.first_name as staff_name, p.last_name, vn.name as duty_name 
+                    FROM ven_schedule vs LEFT JOIN profile p ON vs.user_id = p.user_id 
+                    LEFT JOIN ven_com vc On vc.id = vs.ven_com_id 
+                    LEFT JOIN ven_name_sub vns ON vns.id = vs.ven_name_sub_id 
+                    LEFT JOIN ven_name vn ON vn.id = vns.ven_name_id 
+                    WHERE vs.ven_date = :today
+                    ORDER BY vn.srt ASC, vns.srt ASC;";
+
+            $stmt = $connection->prepare($sql);
+            $stmt->execute([':today' => $today]);
+            $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (count($schedules) > 0) {
+                $msg = "📢 <b>แจ้งเตือนเวรประจำวัน (ส่งโดยผู้ดูแลระบบ)</b>\n";
+                $msg .= "📅 วันที่: " . date('d/m/Y') . "\n";
+                $msg .= "➖➖➖➖➖➖➖➖➖➖\n";
                 
-                require_once '../src/Models/Setting.php'; 
-                $settingModel = new Setting($connection);
-               
-                // 3. ส่งข้อมูลไปอัปเดตที่ Model
-                $result = $settingModel->updateTelegramSettings($data);
+                $currentDuty = '';
+                foreach ($schedules as $row) {
+                    if ($currentDuty != $row['duty_name']) {
+                        $msg .= "📌 <b>" . $row['duty_name'] . "</b>\n";
+                        $currentDuty = $row['duty_name'];
+                    }
+                    $msg .= "   👤 " . $row['prefix_name'] . $row['staff_name'] . " " . $row['last_name'] . "\n";
+                }
+                
+                $msg .= "➖➖➖➖➖➖➖➖➖➖\n";
+                $msg .= "🙏 โปรดเตรียมความพร้อมในการปฏิบัติหน้าที่ครับ";
+
+                // สั่งส่งข้อความ
+                $result = $telegram->sendMessage($msg);
                 
                 if ($result) {
-                    echo json_encode(["success" => true, "message" => "อัปเดตข้อมูลสำเร็จ"]);
+                    echo json_encode(["success" => true, "message" => "ส่งแจ้งเตือนเวรของวันนี้เข้ากลุ่มสำเร็จ!"]);
                 } else {
                     http_response_code(500);
-                    echo json_encode(["error" => "ไม่สามารถบันทึกข้อมูลได้"]);
+                    echo json_encode(["error" => "ส่งไม่สำเร็จ โปรดตรวจสอบ Token และ Chat ID"]);
                 }
+            } else {
+                http_response_code(404);
+                echo json_encode(["error" => "ไม่มีผู้ปฏิบัติหน้าที่ในตารางเวรของวันนี้ครับ"]);
             }
-            break;
-
-        // 3. API ทดสอบส่งข้อความ (ใช้ค่าจากฟอร์มชั่วคราว ไม่ต้องรอเซฟลงฐานข้อมูลก่อน)
-        case 'admin/telegram_settings/test':
-            AuthMiddleware::checkAdmin($connection);
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                $data = json_decode(file_get_contents("php://input"), true);
-                
-                $botToken = $data['bot_token'];
-                $chatId = $data['chat_id'];
-                
-                if(empty($botToken) || empty($chatId)) {
-                    http_response_code(400);
-                    echo json_encode(["error" => "กรุณากรอก Token และ Chat ID ก่อนทดสอบ"]);
-                    exit;
-                }
-
-                $message = "✅ <b>ทดสอบระบบแจ้งเตือน</b>\nข้อความนี้ถูกส่งจาก \"ระบบจัดเวรนอกเวลาทำการ\" เพื่อทดสอบการเชื่อมต่อ Telegram ครับ";
-                
-                // ยิง API ไปหา Telegram โดยตรง
-                $url = "https://api.telegram.org/bot" . $botToken . "/sendMessage";
-                $postData = [
-                    'chat_id' => $chatId,
-                    'text' => $message,
-                    'parse_mode' => 'HTML'
-                ];
-                
-                $ch = curl_init($url);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_POST, true);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-                
-                $response = curl_exec($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                curl_close($ch);
-
-                if ($httpCode == 200) {
-                    echo json_encode(["success" => true, "message" => "ส่งข้อความสำเร็จ!"]);
-                } else {
-                    http_response_code(400);
-                    echo json_encode(["error" => "ส่งไม่สำเร็จ กรุณาตรวจสอบ Token และ Chat ID"]);
-                }
-            }
-            break;
+        }
+        break;
 
     default:
         http_response_code(404);

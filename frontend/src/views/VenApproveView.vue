@@ -37,10 +37,10 @@
                 </td>
                 <td class="text-center">
                   <div v-if="item.status == 0" class="btn-group btn-group-sm">
-                    <button class="btn btn-success" @click="handleApprove(item.id, 1)">
+                    <button class="btn btn-success" @click="handleApprove(item.id, 1, item.change_no)">
                       <i class="bi bi-check-lg"></i> อนุมัติ
                     </button>
-                    <button class="btn btn-danger" @click="handleApprove(item.id, 2)">
+                    <button class="btn btn-danger" @click="handleApprove(item.id, 2, item.change_no)">
                       <i class="bi bi-x-lg"></i> ไม่อนุมัติ
                     </button>
                   </div>
@@ -78,7 +78,7 @@ const fetchRequests = async () => {
   }
 }
 
-const handleApprove = async (id, status) => {
+const handleApprove = async (id, status, change_no) => {
   const actionText = status === 1 ? 'อนุมัติ' : 'ไม่อนุมัติ'
   const confirmColor = status === 1 ? '#198754' : '#dc3545'
 
@@ -94,7 +94,7 @@ const handleApprove = async (id, status) => {
 
   if (result.isConfirmed) {
     try {
-      const res = await api.post(`?route=admin/ven_approve&action=update`, { id, status })
+      const res = await api.post(`?route=admin/ven_approve&action=update`, { id, status, change_no })
       if (res.data.success) {
         Swal.fire('สำเร็จ', `ทำรายการ${actionText}เรียบร้อยแล้ว`, 'success')
         fetchRequests() // โหลดข้อมูลใหม่

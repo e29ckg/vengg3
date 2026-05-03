@@ -7,6 +7,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: vengg_db
+      TZ: Asia/Bangkok
     ports:
       - "3306:3306"
     volumes:
@@ -29,6 +30,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: vengg_web
+    environment:
+      TZ: Asia/Bangkok # 🌟 ตั้งเวลาให้เป็นประเทศไทย
     ports:
       - "80:80"
     volumes:
@@ -41,6 +44,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: vengg_frontend
+    environment:
+      TZ: Asia/Bangkok
     ports:
       - "5173:5173"
     volumes:
@@ -48,6 +53,27 @@ services:
       - /app/node_modules
     depends_on:
       - backend
+
+  # 🌟 Service ใหม่สำหรับแจ้งเตือน Telegram (ลบ services: ที่ซ้ำออกแล้ว)
+  cron-notifier:
+    # 1. ใช้ context และ dockerfile ให้เหมือน backend ตัวหลักเป๊ะๆ
+    build: 
+      context: . 
+      dockerfile: Dockerfile
+    container_name: ven_cron_notifier
+    environment:
+      TZ: Asia/Bangkok # 🌟 สำคัญมาก! เพื่อให้ Cron รันตรงกับเวลาไทย 06:00 และ 19:00
+    
+    # 2. โยง Volumes ให้เหมือน backend ตัวหลัก
+    volumes:
+      - .:/var/www/html/vengg3
+      
+    # 3. สั่งให้รันลูป (Loop) ทุกๆ 60 วินาที
+    command: sh -c "while true; do php /var/www/html/vengg3/backend/cron/daily_notify.php; sleep 60; done"
+    
+    # 4. รอให้ db พร้อมก่อน
+    depends_on:
+      - db
 
 volumes:
   db_data:

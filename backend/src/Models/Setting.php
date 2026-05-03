@@ -285,9 +285,30 @@ class Setting {
 
     // ลบคำสั่ง
     public function deleteVenCommand($id) {
-        $query = "DELETE FROM ven_com WHERE id = :id";
-        $stmt = $this->conn->prepare($query);
-        return $stmt->execute([':id' => $id]);
+        try {
+            // 🌟 1. เริ่ม Transaction (ถ้าลบพังกลางทาง ข้อมูลจะถูกย้อนกลับทั้งหมด)
+            $this->conn->beginTransaction();
+
+            // 🌟 2. ลบรายชื่อเวรที่จัดไว้ก่อน (ตารางลูก)
+            $stmtSchedule = $this->conn->prepare("DELETE FROM ven_schedule WHERE ven_com_id = :id");
+            $stmtSchedule->execute([':id' => $id]);
+
+            // 🌟 3. ค่อยลบคำสั่ง (ตารางแม่)
+            $stmtCom = $this->conn->prepare("DELETE FROM ven_com WHERE id = :id");
+            $stmtCom->execute([':id' => $id]);
+
+            // 🌟 4. ยืนยันการทำรายการทั้งหมด
+            $this->conn->commit();
+            return true;
+
+        } catch (PDOException $e) {
+            // ดักจับ Error และยกเลิกสิ่งที่ลบไปหากเกิดข้อผิดพลาด
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            error_log("Error deleting VenCommand: " . $e->getMessage());
+            return false;
+        }
     }
 
     // อัปเดตสถานะคำสั่งเวร (1=กำลังดำเนินการ, 2=ยืนยันแล้ว)
@@ -626,10 +647,11 @@ public function updateChangeStatus($id, $status) {
         // 3. จัดการตารางเวลาแจ้งเตือน
         $this->conn->prepare("DELETE FROM telegram_notify_times")->execute();
         if (!empty($data['notify_times'])) {
-            $stmtTime = $this->conn->prepare("INSERT INTO telegram_notify_times (send_time, status) VALUES (:t, :s)");
+            $stmtTime = $this->conn->prepare("INSERT INTO telegram_notify_times (send_time, notify_day, status) VALUES (:t, :d, :s)");
             foreach ($data['notify_times'] as $timeSlot) {
                 $stmtTime->execute([
                     ':t' => $timeSlot['send_time'],
+                    ':d' => $timeSlot['notify_day'], // 🌟 บันทึกค่าที่เลือก (0 หรือ 1)
                     ':s' => $timeSlot['status'] ? 1 : 0
                 ]);
             }
