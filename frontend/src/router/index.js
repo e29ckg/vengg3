@@ -80,7 +80,12 @@ const router = createRouter({
       name: 'TelegramSettings',
       component: () => import('../views/admin/TelegramSettingsView.vue'),
       meta: { requiresAuth: true, role: 9 } // เฉพาะ Admin
-    }
+    },
+    {
+      path: '/user/history',
+      name: 'ven-history',
+      component: () => import('../views/VenChangeHistoryView.vue'),
+    },
 
   ]
 })

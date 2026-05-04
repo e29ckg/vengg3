@@ -416,7 +416,7 @@ switch ($route) {
         // 1. ตรวจสอบสิทธิ์ (ต้องล็อกอินถึงจะโอนเวรได้)
         AuthMiddleware::checkToken($connection);
 
-        // 2. รับข้อมูล JSON ที่ Frontend ส่งมาด้วย axios/api.post
+        // 2. รับข้อมูล JSON
         $data = json_decode(file_get_contents("php://input"), true);
         $action = $_GET['action'] ?? '';
 
@@ -428,29 +428,55 @@ switch ($route) {
                 exit;
             }
 
-            // 4. เรียกใช้ Model (สมมติว่าคุณใช้ Setting Model หรือเปลี่ยนเป็น Model ที่คุณใช้จัดการเวร)
+            // 🌟 [เพิ่มใหม่] ดึงข้อมูลรายละเอียดเวรและชื่อคนโอน/คนรับโอน "ก่อน" ทำการสลับชื่อ
+            $stmtDetail = $connection->prepare("
+                SELECT 
+                    s.ven_date,
+                    sub.name AS duty_name,
+                    CONCAT(IFNULL(p1.prefix_name, ''), IFNULL(p1.first_name, ''), ' ', IFNULL(p1.last_name, '')) AS old_user_name,
+                    CONCAT(IFNULL(p2.prefix_name, ''), IFNULL(p2.first_name, ''), ' ', IFNULL(p2.last_name, '')) AS new_user_name
+                FROM ven_schedule s
+                LEFT JOIN ven_name_sub sub ON s.ven_name_sub_id = sub.id
+                LEFT JOIN profile p1 ON s.user_id = p1.user_id
+                LEFT JOIN profile p2 ON p2.user_id = :new_user_id
+                WHERE s.id = :schedule_id
+            ");
+            $stmtDetail->execute([
+                ':schedule_id' => $data['schedule_id'],
+                ':new_user_id' => $data['new_user_id']
+            ]);
+            $details = $stmtDetail->fetch(PDO::FETCH_ASSOC);
+
+            // 4. เรียกใช้ Model เพื่อสลับเวร
             require_once '../src/Models/Setting.php'; 
             $settingModel = new Setting($connection);
 
             $result = $settingModel->transferShift($data['schedule_id'], $data['new_user_id']);
 
             if ($result) {
-                // 🌟 โค้ดที่ต้องเพิ่มเข้าไป
+                // 5. ส่งการแจ้งเตือน Telegram
                 require_once '../src/Services/TelegramService.php';
                 $telegram = new TelegramService($connection);
                 
                 $msg = "🔄 <b>มีการส่งคำขอแลกเปลี่ยนเวรใหม่</b>\n";
-                $msg .= "โปรดเข้าสู่ระบบเพื่อตรวจสอบรายละเอียดและดำเนินการครับ";
                 
-                /* 💡 Tips: ถ้าคุณดึงชื่อคนขอ หรือวันที่ขอ มาได้ สามารถนำมาต่อ String เพิ่มความสวยงามได้ครับ
-                เช่น: $msg .= "\nจาก: คุณ " . $data['user1_name'];
-                */
+                // 🌟 [เพิ่มใหม่] นำข้อมูลที่ดึงไว้มาจัดเรียงข้อความให้สวยงาม
+                if ($details) {
+                    $thaiDate = date('d/m/Y', strtotime($details['ven_date']));
+                    $msg .= "📅 วันที่เวร: " . $thaiDate . "\n";
+                    $msg .= "📌 หน้าที่: " . $details['duty_name'] . "\n";
+                    $msg .= "📤 ผู้ขอ (ผู้โอน): " . $details['old_user_name'] . "\n";
+                    $msg .= "📥 ผู้แทน (ผู้รับโอน): " . $details['new_user_name'] . "\n";
+                    $msg .= "➖➖➖➖➖➖➖➖➖➖\n";
+                }
+                
+                $msg .= "โปรดเข้าสู่ระบบเพื่อตรวจสอบรายละเอียดและดำเนินการครับ";
                 
                 // ส่ง 'notify_change_request' ไปเช็คสวิตช์
                 $telegram->sendMessage($msg, 'notify_change_request');
                 
                 http_response_code(200);
-                echo json_encode(["success" => true, "message" => "โอนเวรเรียบร้อย"]);
+                echo json_encode(["success" => true, "message" => "โอนเวรเรียบร้อยรอการอนุมัติ"]);
             } else {
                 http_response_code(500);
                 echo json_encode(["error" => "ไม่สามารถส่งคำขอแลกเปลี่ยนได้ เกิดข้อผิดพลาดที่ฐานข้อมูล"]);
@@ -749,6 +775,53 @@ switch ($route) {
                     http_response_code(500);
                     echo json_encode(["error" => "ไม่สามารถบันทึกข้อมูลตั้งค่าหน่วยงานได้"]);
                 }
+            }
+            break;
+
+        // ดึงประวัติการเปลี่ยนเวรส่วนตัว
+        // ดึงประวัติการเปลี่ยนเวรส่วนตัว
+        case 'user/ven_change_history':
+            // 🌟 1. รับค่า userData จาก Token ที่ผ่านการตรวจสอบแล้ว
+            $userData = AuthMiddleware::checkToken($connection);
+            
+            // 🌟 2. ดึง user_id ออกมา (รองรับทั้งแบบ Array และ Object)
+            $user_id = is_array($userData) ? ($userData['id'] ?? null) : ($userData->id ?? null);
+            
+            if (!$user_id) {
+                http_response_code(401);
+                echo json_encode(["error" => "ไม่พบข้อมูลผู้ใช้ใน Token"]);
+                exit;
+            }
+            
+            require_once '../src/Models/Setting.php';
+            $settingModel = new Setting($connection);
+            echo json_encode($settingModel->getUserChangeHistory($user_id));
+            break;
+
+        // ยกเลิกคำขอเปลี่ยนเวร
+        case 'user/ven_change_cancel':
+            // 🌟 1. รับค่า userData จาก Token ที่ผ่านการตรวจสอบแล้ว
+            $userData = AuthMiddleware::checkToken($connection);
+            
+            // 🌟 2. ดึง user_id ออกมา 
+            $user_id = is_array($userData) ? ($userData['id'] ?? null) : ($userData->id ?? null);
+
+            if (!$user_id) {
+                http_response_code(401);
+                echo json_encode(["error" => "ไม่พบข้อมูลผู้ใช้ใน Token"]);
+                exit;
+            }
+
+            $data = json_decode(file_get_contents("php://input"), true);
+
+            require_once '../src/Models/Setting.php';
+            $settingModel = new Setting($connection);
+            
+            if ($settingModel->cancelChangeRequest($data['change_id'], $data['schedule_id'], $user_id)) {
+                echo json_encode(["success" => true, "message" => "ยกเลิกสำเร็จ"]);
+            } else {
+                http_response_code(500);
+                echo json_encode(["error" => "ไม่สามารถยกเลิกคำขอได้"]);
             }
             break;
 

@@ -92,9 +92,9 @@
                     </p>
                     <p class="mb-2"><i class="bi bi-moon-stars me-2 text-warning"></i> {{ selectedVen.duty_main }}</p>
                     
-                    <p v-if="selectedVen.order_no" class="mb-2 text-muted small">
-                      <i class="bi bi-file-earmark-text me-2"></i> คำสั่งเลขที่ {{ selectedVen.order_no }} 
-                      <span v-if="selectedVen.order_date">ลงวันที่ {{ formatDate(selectedVen.order_date) }}</span>
+                    <p v-if="selectedVen.command_num" class="mb-2 text-muted small">
+                      <i class="bi bi-file-earmark-text me-2"></i> คำสั่งเลขที่ {{ selectedVen.command_num }} 
+                      <span v-if="selectedVen.command_date">ลงวันที่ {{ formatDate(selectedVen.command_date) }}</span>
                     </p>
     
                     <p class="mb-0 text-success fw-bold fs-5"><i class="bi bi-cash-coin me-2"></i> {{ Number(selectedVen.price).toLocaleString() }} บาท</p>
@@ -494,7 +494,6 @@ const is24HourShift = (sch) => {
 const confirmTransfer = async (targetUser) => {
   let isViolated = false;
   
-  // 🌟 แจ้งเตือน 24 ชม. ตอนกดส่งคำขอ (ถ้าเปิดการตั้งค่าไว้)
   if (systemSettings.value.check_24h_consecutive) {
     isViolated = check24HourViolation(targetUser.user_id, selectedVen.value.ven_date, selectedVen.value.ven_time);
   }
@@ -507,18 +506,49 @@ const confirmTransfer = async (targetUser) => {
     icon: isViolated ? 'error' : 'warning',
     showCancelButton: true,
     confirmButtonText: 'ยืนยันการโอน',
+    cancelButtonText: 'ยกเลิก',
     confirmButtonColor: isViolated ? '#dc3545' : '#3085d6'
   });
 
   if (result.isConfirmed) {
     try {
+      Swal.fire({ 
+        title: 'กำลังส่งคำขอ...', 
+        allowOutsideClick: false, 
+        didOpen: () => Swal.showLoading() 
+      });
+
       await api.post('?route=user/transfer&action=perform', {
         schedule_id: selectedVen.value.ven_id, 
         new_user_id: targetUser.user_id
       });
+      
       detailModalInstance.hide();
       fetchVenData(); 
-      Swal.fire('สำเร็จ', 'ทำการโอนเวรเรียบร้อยแล้ว', 'success');
+      
+      // 🌟 ดักจับผลลัพธ์ (await) จากหน้าต่างแจ้งเตือนโอนสำเร็จ
+      const successResult = await Swal.fire({
+        title: 'ส่งคำขอสำเร็จ!',
+        html: `
+          <div class="mb-2">ทำการโอนเวรเรียบร้อยแล้ว</div>
+          สถานะปัจจุบัน: <span class="badge bg-warning text-dark fs-6"><i class="bi bi-printer"></i> รอพิมพ์เอกสาร</span>
+          <hr>
+          <div class="small text-muted text-start">
+            <b>คำแนะนำ:</b> โปรดไปที่หน้าประวัติเพื่อพิมพ์ใบเปลี่ยนเวร และนำไปเสนอผู้บังคับบัญชาลงนาม
+          </div>
+        `,
+        icon: 'success',
+        showCancelButton: true, // เพิ่มปุ่มปิดเผื่อผู้ใช้ยังไม่อยากไปตอนนี้
+        confirmButtonText: '<i class="bi bi-box-arrow-up-right"></i> ไปหน้าประวัติ',
+        cancelButtonText: 'ปิดหน้านี้',
+        confirmButtonColor: '#198754'
+      });
+
+      // 🌟 ถ้ายืนยัน ให้เด้งไปที่หน้า /user/history ทันที
+      if (successResult.isConfirmed) {
+        router.push('/user/history'); // *หมายเหตุ: ตรวจสอบให้แน่ใจว่า path นี้ตรงกับที่คุณตั้งใน router/index.js
+      }
+
     } catch (error) {
       Swal.fire('ผิดพลาด', 'ไม่สามารถโอนเวรได้', 'error');
     }
@@ -559,8 +589,12 @@ const downloadWordForm = async (historyItem) => {
       didOpen: () => Swal.showLoading()
     });
 
+    const director = getActiveSigner('directors');
     const venInfo = {
         ...selectedVen.value,
+        agency_name: agencyConfig.value.agency_name, // 🌟 ส่งชื่อหน่วยงาน
+        director_name: director.name,               // 🌟 ส่งชื่อผู้ลงนามอนุมัติ
+        director_position: director.position,   
         order_no: selectedVen.value.order_no,
         order_date: selectedVen.value.order_date,
         ven_name: selectedVen.value.ven_name,
@@ -612,9 +646,34 @@ const isPastShift = (dateStr, timeStr) => {
   return shiftDateTime < now;
 };
 
+
+const agencyConfig = ref({
+  agency_name: '',
+  directors: [],
+  admins: [],
+  finances: []
+})
+
+const getActiveSigner = (type) => {
+  if (!agencyConfig.value[type] || agencyConfig.value[type].length === 0) {
+    return { name: '.......................................', position: '..............................' }
+  }
+  return agencyConfig.value[type].find(s => s.is_active) || agencyConfig.value[type][0]
+}
+
+const fetchAgencyConfig = async () => {
+  try {
+    const res = await api.get('?route=admin/agency_settings')
+    if (res.data) agencyConfig.value = res.data
+  } catch (error) {
+    console.error("Error fetching agency config:", error)
+  }
+}
+
 onMounted(async() => {
   await fetchUserInfo()
   fetchVenData()
+  await fetchAgencyConfig()
   detailModalInstance = new Modal(document.getElementById('venDetailModal'))
 })
 </script>

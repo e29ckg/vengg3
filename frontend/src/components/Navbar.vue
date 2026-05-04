@@ -15,6 +15,11 @@
               <i class="bi bi-house"></i> หน้าแรก
             </router-link>
           </li>
+          <li>
+            <router-link class="nav-link" active-class="active fw-bold" to="/user/history">
+              <i class="bi bi-calendar3"></i> ประวัติการเปลี่ยนเวร
+            </router-link>
+          </li>
 
           <li class="nav-item dropdown" v-if="userRole === 9 || userRole === 2">
             <a class="nav-link dropdown-toggle" 
