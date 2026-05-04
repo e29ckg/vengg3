@@ -18,7 +18,7 @@ class Ven {
                     v.id, 
                     v.user_id,
                     v.ven_date AS date, 
-                    CONCAT(p.prefix_name, p.first_name, ' ', p.last_name) AS title,
+                    CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS title,
                     vns.color AS backgroundColor,
                     IF(vn.dn LIKE '%กลางคืน%', '16:30:00', '08:30:00') AS ven_time
                   FROM " . $this->table_name . " v
@@ -128,7 +128,7 @@ public function getChangeHistory($ven_id) {
     public function getDetail($id) {
     $query = "SELECT s.*, 
                 p.prefix_name, p.first_name, p.last_name,
-                CONCAT(p.prefix_name, p.first_name, ' ', p.last_name) as full_name,
+                CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS full_name,
                 sub.name as duty_role, sub.color, sub.price,
                 n.name as duty_main,
                 c.com_num as command_num,

@@ -29,10 +29,10 @@
     <select class="form-select" v-model="selectedCommand" @change="fetchFinanceReport" :disabled="loadingCommands">
       <option value="">-- ทั้งหมด / ไม่ระบุ --</option>
       <option v-for="cmd in commandList" :key="cmd.id" :value="cmd.id">
-        {{ cmd.name }} </option>
+        {{cmd.com_num}} {{cmd.name}}
+      </option>
     </select>
   </div>
-
   <div class="col-md-4 text-end">
     <button class="btn btn-outline-success me-2" @click="exportToExcel" :disabled="!reportData.length">
       <i class="bi bi-file-earmark-excel"></i> ส่งออก Excel
@@ -47,9 +47,9 @@
 
     <div class="printable-document" v-if="reportData.length > 0">
       <div class="text-center mb-3 doc-header">
-        <h5 class="fw-bold">หลักฐานการจ่ายเงินตอบแทนการปฏิบัติงานนอกเวลาราชการ</h5>
-        <h6 class="fw-bold">ส่วนราชการ ศาลจังหวัดประจวบคีรีขันธ์</h6>
-        <h6 class="fw-bold">ประจำเดือน {{ formattedMonth }}</h6>
+        <h5 class="fw-bold" contenteditable="true">หลักฐานการจ่ายเงินตอบแทนการปฏิบัติงานนอกเวลาราชการ</h5>
+        <h6 class="fw-bold" contenteditable="true">ส่วนราชการ {{agencyConfig.agency_name}} ประจำเดือน {{ formattedMonth }}</h6>
+        <h6 class="fw-bold" contenteditable="true"> คำสั่ง{{agencyConfig.agency_name}} ที่ {{  commandList.find(cmd => cmd.id === selectedCommand)?.com_num }} {{ commandList.find(cmd => cmd.id === selectedCommand)?.name }}</h6>
       </div>
 
       <table class="table table-bordered border-dark table-sm align-middle text-center print-table">
@@ -64,9 +64,9 @@
             <th colspan="3">ระยะเวลาปฏิบัติงาน</th>
 
             <th rowspan="2" width="8%">จำนวนเงิน<br>(บาท)</th>
-            <th rowspan="2" width="10%">วัน เดือน ปี<br>ที่รับเงิน</th>
-            <th rowspan="2" width="12%">ลายมือชื่อ<br>ผู้รับเงิน</th>
-            <th rowspan="2" width="10%">หมายเหตุ</th>
+            <th rowspan="2" width="8%">วัน เดือน ปี<br>ที่รับเงิน</th>
+            <th rowspan="2" width="5%">ลายมือชื่อ<br>ผู้รับเงิน</th>
+            <th rowspan="2" width="5%">หมายเหตุ</th>
           </tr>
           <tr class="align-middle bg-light text-center">
             <th v-for="index in monthInfo.total_days" :key="index" 
@@ -92,11 +92,11 @@
               <span v-if="checkWorkDay(item.work_dates, day)" class="fw-bold text-dark">&#10003;</span>
             </td>
             
-            <td>{{ countRegularDays(item.work_dates, item.total_days) || '-' }}</td>
-            <td>{{ countHolidays(item.work_dates) || '-' }}</td>
-            <td></td>
+            <td contenteditable="true">{{ countRegularDays(item.work_dates, item.total_days) || '-' }}</td>
+            <td contenteditable="true">{{ countHolidays(item.work_dates) || '-' }}</td>
+            <td contenteditable="true"></td>
             
-            <td class="fw-bold">{{ (item.total_days * item.rate_per_day).toLocaleString() }}</td>
+            <td class="fw-bold" contenteditable="true">{{ (item.total_days * item.rate_per_day).toLocaleString() }}</td>
             <td class="text-start px-2" style="font-size: 0.85rem;"></td>
             <td></td> <td>{{ item.remark || '' }}</td>
           </tr>
@@ -110,23 +110,19 @@
         </tfoot>
       </table>
 
-      <div class="row mt-5 text-center doc-footer">
-        <div class="col-4">
-          <p>ลงชื่อ......................................................ผู้จ่ายเงิน</p>
-          <p>(......................................................)</p>
-          <p>ตำแหน่ง......................................................</p>
+      <div class="row mt-5 pt-4 text-center">
+        <div class="col-6">
+          <p class="mb-2">(ลงชื่อ).......................................................ผู้จ่ายเงิน</p>
+          <p class="mb-1 fw-bold " contenteditable="true">({{ getActiveSigner('finances').name }})</p>
+          <p class="small text-muted " contenteditable="true">{{ getActiveSigner('finances').position }}</p>
         </div>
-        <div class="col-4">
-          <p>ลงชื่อ......................................................ผู้ตรวจสอบ</p>
-          <p>(......................................................)</p>
-          <p>ตำแหน่ง......................................................</p>
-        </div>
-        <div class="col-4">
-          <p>ลงชื่อ......................................................ผู้อนุมัติ</p>
-          <p>(......................................................)</p>
-          <p>ตำแหน่ง......................................................</p>
+        <div class="col-6">
+          <p class="mb-2">(ลงชื่อ).......................................................ผู้อนุมัติ</p>
+          <p class="mb-1 fw-bold " contenteditable="true">({{ getActiveSigner('admins').name }})</p>
+          <p class="small text-muted " contenteditable="true">{{ getActiveSigner('admins').position }}</p>
         </div>
       </div>
+
     </div>
     
     <div v-else-if="!loading" class="alert alert-warning text-center d-print-none mt-4">
@@ -159,6 +155,32 @@ const thaiMonths = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", 
   "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
 ];
+
+const agencyConfig = ref({
+  agency_name: '',
+  directors: [],
+  admins: [],
+  finances: []
+})
+
+const getActiveSigner = (type) => {
+  if (!agencyConfig.value[type] || agencyConfig.value[type].length === 0) {
+    return { name: '.......................................', position: '..............................' }
+  }
+  return agencyConfig.value[type].find(s => s.is_active) || agencyConfig.value[type][0]
+}
+
+// 3. ฟังก์ชันดึงข้อมูลหน่วยงานจาก Database
+const fetchAgencyConfig = async () => {
+  try {
+    const res = await api.get('?route=admin/agency_settings')
+    if (res.data) {
+      agencyConfig.value = res.data
+    }
+  } catch (error) {
+    console.error("Error fetching agency config:", error)
+  }
+}
 
 const availableYears = computed(() => {
   const currentYear = new Date().getFullYear();
@@ -231,6 +253,7 @@ onMounted(() => {
   selectedMonthValue.value = String(today.getMonth() + 1).padStart(2, '0');
   selectedYearValue.value = today.getFullYear();
   updateSelectedMonth();
+  fetchAgencyConfig();
 });
 
 // 4. อัปเดตการดึงข้อมูลรายงานให้แนบ command_id ไปด้วย
@@ -295,12 +318,16 @@ const exportToExcel = () => {
   const totalDays = monthInfo.value.total_days || 31;
   const aoa = []; // Array of Arrays สำหรับเก็บข้อมูลแต่ละแถว
 
+  const finance = getActiveSigner('finances');
+  const admin = getActiveSigner('admins');
+  const director = getActiveSigner('directors');
+
   // ==========================================
   // 1. ส่วนที่เพิ่มใหม่: หัวเอกสาร (แทรก 4 บรรทัด)
   // ==========================================
   aoa.push(['หลักฐานการจ่ายเงินตอบแทนการปฏิบัติงานนอกเวลาราชการ']);
-  aoa.push(['ส่วนราชการ ศาลจังหวัดประจวบคีรีขันธ์']); // แก้ไขชื่อหน่วยงานได้ตามต้องการ
-  aoa.push([`ประจำเดือน ${formattedMonth.value}`]);
+  aoa.push([`ส่วนราชการ ${agencyConfig.value.agency_name} ประจำเดือน ${formattedMonth.value}`]); // แก้ไขชื่อหน่วยงานได้ตามต้องการ
+  aoa.push([`คำสั่ง${agencyConfig.value.agency_name} ที่ ${commandList.value.find(cmd => cmd.id === selectedCommand.value)?.com_num } ${commandList.value.find(cmd => cmd.id === selectedCommand.value)?.name }`]);
   aoa.push([]); // บรรทัดว่าง 1 บรรทัดก่อนเริ่มตาราง
 
   // --- แถวที่ 1: หัวตารางชั้นบน ---
@@ -365,6 +392,28 @@ const exportToExcel = () => {
   footerRow.push(totalAmount.value, '', '', '');
   aoa.push(footerRow);
 
+  
+  // ต่อท้ายด้วยส่วนลงนาม (Footer)
+  aoa.push([]); // บรรทัดว่าง
+  aoa.push([
+    "", "", // ดันช่องให้ไปอยู่ตรงกลางตารางสวยๆ
+    `(ลงชื่อ).......................................................ผู้จ่ายเงิน`,
+    "", "",
+    `(ลงชื่อ).......................................................ผู้อนุมัติ`
+  ]);
+  aoa.push([
+    "", "",
+    `(${finance.name})`,
+    "", "",
+    `(${admin.name})`
+  ]);
+  aoa.push([
+    "", "",
+    `${finance.position}`,
+    "", "",
+    `${admin.position}`
+  ]);
+
   // --- สร้าง Worksheet ---
   const ws = XLSX.utils.aoa_to_sheet(aoa);
 
@@ -394,7 +443,9 @@ const exportToExcel = () => {
     // ผสานเซลล์แถว Footer "รวมเงินทั้งสิ้น"
     { s: { r: aoa.length - 1, c: 0 }, e: { r: aoa.length - 1, c: 3 + totalDays + 2 } } 
   ];
+
   ws['!merges'] = merges;
+
 
   // --- สร้าง Workbook และสั่งดาวน์โหลด ---
   const wb = XLSX.utils.book_new();

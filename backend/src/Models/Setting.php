@@ -333,7 +333,7 @@ class Setting {
     // 1. ดึงข้อมูลเวรทั้งหมดในเดือนที่เลือก เพื่อเอาไปลงปฏิทิน
     public function getSchedulesByMonth($year_month) {
         $query = "SELECT s.id, s.ven_date as date, DAY(s.ven_date) as day, 
-                         s.user_id, CONCAT(p.prefix_name, ' ', p.first_name, ' ', p.last_name) as user_name,
+                         s.user_id, CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS user_name,
                          s.ven_com_id as com_id, c.com_num,
                          s.ven_name_sub_id as sub_id, sub.name as sub_name, sub.color,
                          n.dn as shift_type
@@ -503,8 +503,8 @@ class Setting {
     public function getAllChangeRequests() {
         $query = "SELECT vc.id, vc.change_no, vc.status, vc.created_at, 
                          vs.ven_date, vn.name AS duty_main, vns.name AS duty_role,
-                         CONCAT_WS(' ', p1.prefix_name, p1.first_name, p1.last_name) AS user1_name,
-                         CONCAT_WS(' ', p2.prefix_name, p2.first_name, p2.last_name) AS user2_name
+                         CONCAT_WS(' ', CONCAT(IFNULL(p1.prefix_name, ''), IFNULL(p1.first_name, '')), p1.last_name) AS user1_name,
+                         CONCAT_WS(' ', CONCAT(IFNULL(p2.prefix_name, ''), IFNULL(p2.first_name, '')), p2.last_name) AS user2_name
                   FROM ven_change vc
                   JOIN ven_schedule vs ON vc.s1_id = vs.id
                   LEFT JOIN ven_name_sub vns ON vs.ven_name_sub_id = vns.id
