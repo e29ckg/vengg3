@@ -83,13 +83,13 @@
         <tbody>
           <tr v-for="(item, index) in reportData" :key="index">
             <td>{{ index + 1 }}</td>
-            <td class="text-start px-2">{{item.prefix_name }}{{ item.first_name }} {{ item.last_name }}</td>
-            <td>{{ item.rate_per_day }}</td>
+            <td contenteditable="true" class="text-start px-2">{{item.prefix_name }}{{ item.first_name }} {{ item.last_name }}</td>
+            <td contenteditable="true">{{ item.rate_per_day }}</td>
 
-            <td v-for="day in monthInfo.total_days" :key="day" 
+            <td contenteditable="true" v-for="day in monthInfo.total_days" :key="day" 
                 class="p-0 align-middle"
                 :class="{ 'table-secondary': monthInfo.holidays && monthInfo.holidays.includes(day) }">
-              <span v-if="checkWorkDay(item.work_dates, day)" class="fw-bold text-dark">&#10003;</span>
+              <span  v-if="checkWorkDay(item.work_dates, day)" class="fw-bold text-dark">&#10003;</span>
             </td>
             
             <td contenteditable="true">{{ countRegularDays(item.work_dates, item.total_days) || '-' }}</td>
@@ -97,14 +97,14 @@
             <td contenteditable="true"></td>
             
             <td class="fw-bold" contenteditable="true">{{ (item.total_days * item.rate_per_day).toLocaleString() }}</td>
-            <td class="text-start px-2" style="font-size: 0.85rem;"></td>
-            <td></td> <td>{{ item.remark || '' }}</td>
+            <td class="text-start px-2" style="font-size: 0.85rem;" contenteditable="true"></td>
+            <td contenteditable="true"></td> <td contenteditable="true">{{ item.remark || '' }}</td>
           </tr>
         </tbody>
         <tfoot>
           <tr class="fw-bold bg-light">
-            <td :colspan="6 + monthInfo.total_days" class="text-end pe-3">รวมเงินทั้งสิ้น</td>
-            <td>{{ totalAmount.toLocaleString() }}</td>
+            <td :colspan="6 + monthInfo.total_days" class="text-end pe-3">รวมเงินทั้งสิ้น ({{ numberToThaiBaht(totalAmount) }})</td>
+            <td contenteditable="true">{{ totalAmount.toLocaleString() }}</td>
             <td colspan="3"></td>
           </tr>
         </tfoot>
@@ -112,12 +112,12 @@
 
       <div class="row mt-5 pt-4 text-center">
         <div class="col-6">
-          <p class="mb-2">(ลงชื่อ).......................................................ผู้จ่ายเงิน</p>
+          <p class="mb-2" contenteditable="true">(ลงชื่อ).......................................................ผู้จ่ายเงิน</p>
           <p class="mb-1 fw-bold " contenteditable="true">({{ getActiveSigner('finances').name }})</p>
           <p class="small text-muted " contenteditable="true">{{ getActiveSigner('finances').position }}</p>
         </div>
         <div class="col-6">
-          <p class="mb-2">(ลงชื่อ).......................................................ผู้อนุมัติ</p>
+          <p class="mb-2" contenteditable="true">(ลงชื่อ).......................................................ผู้อนุมัติ</p>
           <p class="mb-1 fw-bold " contenteditable="true">({{ getActiveSigner('admins').name }})</p>
           <p class="small text-muted " contenteditable="true">{{ getActiveSigner('admins').position }}</p>
         </div>
@@ -307,6 +307,49 @@ const countRegularDays = (workDatesString, totalDays) => {
   return totalDays - holidaysCount;
 };
 
+// 🌟 ฟังก์ชันแปลงตัวเลขเป็นคำอ่านภาษาไทย (Thai Baht Text)
+const numberToThaiBaht = (number) => {
+  if (isNaN(number) || number === null || number === 0) return "ศูนย์บาทถ้วน";
+  
+  let numStr = Number(number).toFixed(2);
+  let [integerPart, decimalPart] = numStr.split(".");
+  
+  const numbers = ["ศูนย์", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
+  const units = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน", "ล้าน"];
+  
+  const convert = (str) => {
+    let text = "";
+    let len = str.length;
+    for (let i = 0; i < len; i++) {
+      let n = parseInt(str[i]);
+      let unit = len - i - 1;
+      if (n === 0) continue;
+      
+      if (unit === 1 && n === 1) {
+        text += "สิบ";
+      } else if (unit === 1 && n === 2) {
+        text += "ยี่สิบ";
+      } else if (unit === 0 && n === 1 && len > 1 && str[i-1] !== '0') {
+        text += "เอ็ด";
+      } else {
+        text += numbers[n] + units[unit % 6];
+      }
+    }
+    return text;
+  };
+
+  let bahtText = integerPart === "0" ? "ศูนย์" : convert(integerPart);
+  bahtText += "บาท";
+
+  if (decimalPart === "00") {
+    bahtText += "ถ้วน";
+  } else {
+    bahtText += convert(decimalPart) + "สตางค์";
+  }
+
+  return bahtText;
+};
+
 const printDocument = () => {
   // คำสั่งนี้จะเปิดหน้าต่าง Print ของ Browser (Chrome, Edge, Safari) ขึ้นมา
   window.print();
@@ -383,14 +426,28 @@ const exportToExcel = () => {
   });
 
   // --- แถวสรุปยอดรวมท้ายตาราง (Footer) ---
-  const footerRow = [];
-  footerRow.push('รวมเงินทั้งสิ้น');
-  // ดันคอลัมน์ไปให้ตรงกับ "จำนวนเงิน (บาท)"
+const footerRow = [];
+  
+  // 1. คอลัมน์แรก (ซ้ายสุด) ใส่ข้อความรวมเงินและคำอ่านภาษาไทย
+  footerRow.push(`รวมเงินทั้งสิ้น (${numberToThaiBaht(totalAmount.value)})`);
+
+  // 2. ดันช่องว่างไปจนถึงก่อนช่อง "จำนวนเงิน (บาท)"
+  // (สมมติว่าช่องจำนวนเงินอยู่คอลัมน์ที่ 3 + totalDays + 2)
   for (let i = 1; i < 3 + totalDays + 3; i++) {
     footerRow.push('');
   }
-  footerRow.push(totalAmount.value, '', '', '');
+
+  // 3. ใส่ยอดเงินตัวเลขในคอลัมน์ "จำนวนเงิน (บาท)"
+  footerRow.push(totalAmount.value);
+
+  // 4. ใส่ช่องว่างสำหรับคอลัมน์ที่เหลือ (วันที่รับเงิน, ลายมือชื่อ, หมายเหตุ)
+  footerRow.push('', '', '');
+
+  // นำแถวนี้ใส่เข้าไปในตาราง
   aoa.push(footerRow);
+
+  // 🌟 เก็บหมายเลขแถวสุดท้ายนี้ไว้ เพื่อนำไปผสานเซลล์ (Merge)
+  const footerRowIndex = aoa.length - 1;
 
   
   // ต่อท้ายด้วยส่วนลงนาม (Footer)
@@ -443,7 +500,11 @@ const exportToExcel = () => {
     // ผสานเซลล์แถว Footer "รวมเงินทั้งสิ้น"
     { s: { r: aoa.length - 1, c: 0 }, e: { r: aoa.length - 1, c: 3 + totalDays + 2 } } 
   ];
-
+// นำค่า footerRowIndex มาใช้กำหนดจุดผสานเซลล์
+  merges.push({ 
+    s: { r: footerRowIndex, c: 0 }, // เริ่มจากคอลัมน์ที่ 0 (ซ้ายสุด)
+    e: { r: footerRowIndex, c: 3 + totalDays + 2 } // ไปสิ้นสุดที่คอลัมน์ก่อนช่องจำนวนเงิน
+  });
   ws['!merges'] = merges;
 
 

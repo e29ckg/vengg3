@@ -425,16 +425,24 @@ class Setting {
     // โอนเวรให้ผู้อื่นโดยตรง พร้อมรันเลขที่เอกสาร
     public function transferShift($schedule_id, $new_user_id) {
         try {
+            // โค้ดส่วนนี้ยังไม่ได้เริ่ม Transaction (ถ้า Error ตรงนี้ จะโดดไป Catch)
             $stmtCheck = $this->conn->prepare("SELECT user_id, ven_date FROM ven_schedule WHERE id = :id");
             $stmtCheck->execute([':id' => $schedule_id]);
             $shift = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
             if (!$shift) return false;
 
-            $stmtSetting = $this->conn->prepare("SELECT setting_value FROM app_settings WHERE setting_key = 'allow_retro_transfer'");
+            // 🌟 แก้ไขการเช็คสวิตช์อนุญาตเปลี่ยนเวรย้อนหลัง
+            $stmtSetting = $this->conn->prepare("SELECT allow_retroactive_swap FROM system_settings WHERE id = 1");
             $stmtSetting->execute();
             $settingRow = $stmtSetting->fetch(PDO::FETCH_ASSOC);
-            $allow_retro_transfer = ($settingRow && $settingRow['setting_value'] === '1'); 
+            $allow_retro_transfer = ($settingRow && $settingRow['allow_retroactive_swap'] == 1); 
+
+            if (!$allow_retro_transfer) {
+                if (strtotime($shift['ven_date']) < strtotime(date('Y-m-d'))) {
+                    return false; // ถ้าไม่อนุญาต และเป็นเวรที่ผ่านมาแล้ว ให้ปฏิเสธการโอน
+                }
+            }
 
             if (!$allow_retro_transfer) {
                 if (strtotime($shift['ven_date']) < strtotime(date('Y-m-d'))) {
@@ -442,6 +450,7 @@ class Setting {
                 }
             }
 
+            // 🌟 เริ่ม Transaction ตรงนี้
             $this->conn->beginTransaction();
 
             $old_user_id = $shift['user_id'];
@@ -485,7 +494,10 @@ class Setting {
             return true;
 
         } catch(PDOException $e) {
-            $this->conn->rollBack();
+            // 🌟 แก้ไขบล็อก Catch ให้เช็คก่อนว่าอยู่ใน Transaction หรือไม่
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
             error_log("Transfer Shift Error: " . $e->getMessage());
             return false;
         }
@@ -773,6 +785,63 @@ class Setting {
             return true;
         } catch (Exception $e) {
             $this->conn->rollBack();
+            return false;
+        }
+    }
+
+    // ดึงประวัติการโอนเวร (เอาเฉพาะที่ตัวเองเป็นคนให้ หรือ ตัวเองเป็นคนรับ)
+    public function getUserChangeHistory($user_id) {
+        $query = "SELECT vc.id, vc.change_no, vc.status, vc.created_at, vc.s1_id,
+                         vs.ven_date, vn.name AS duty_main, vns.name AS duty_role,
+                         vc.user1_id, vc.user2_id,
+                         vcom.com_num AS com_num, 
+                         vcom.com_date AS com_date,
+                         CONCAT_WS(' ', p1.prefix_name, p1.first_name, p1.last_name) AS user1_name,
+                         CONCAT_WS(' ', p2.prefix_name, p2.first_name, p2.last_name) AS user2_name
+                  FROM ven_change vc
+                  JOIN ven_schedule vs ON vc.s1_id = vs.id
+                  LEFT JOIN ven_name_sub vns ON vs.ven_name_sub_id = vns.id
+                  LEFT JOIN ven_com vcom ON vs.ven_com_id = vcom.id
+                  LEFT JOIN ven_name vn ON vcom.ven_name_id = vn.id
+                  LEFT JOIN profile p1 ON vc.user1_id = p1.user_id
+                  LEFT JOIN profile p2 ON vc.user2_id = p2.user_id
+                  WHERE vc.user1_id = :u1 OR vc.user2_id = :u2
+                  ORDER BY vc.created_at DESC
+                  LIMIT 100";
+                  
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([':u1' => $user_id, ':u2' => $user_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // ฟังก์ชันยกเลิกการขอโอนเวร
+    public function cancelChangeRequest($change_id, $schedule_id, $current_user_id) {
+        try {
+            $this->conn->beginTransaction();
+
+            // 1. เช็คก่อนว่าสถานะเป็น 0 (รออนุมัติ) และคนที่ลบเป็นเจ้าของเวรจริงๆ ใช่ไหม
+            $stmtCheck = $this->conn->prepare("SELECT user1_id, status FROM ven_change WHERE id = :id");
+            $stmtCheck->execute([':id' => $change_id]);
+            $req = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+            if (!$req || $req['status'] != 0 || $req['user1_id'] != $current_user_id) {
+                throw new Exception("ไม่สามารถยกเลิกได้ (สถานะอาจเปลี่ยนไปแล้ว หรือคุณไม่ใช่ผู้ขอ)");
+            }
+
+            // 2. ดึงชื่อกลับมาเป็นของตัวเองในตาราง ven_schedule
+            $stmtRev = $this->conn->prepare("UPDATE ven_schedule SET user_id = :u_id WHERE id = :s_id");
+            $stmtRev->execute([':u_id' => $current_user_id, ':s_id' => $schedule_id]);
+
+            // 3. ลบคำขอออกจากตาราง ven_change
+            $stmtDel = $this->conn->prepare("DELETE FROM ven_change WHERE id = :id");
+            $stmtDel->execute([':id' => $change_id]);
+
+            $this->conn->commit();
+            return true;
+
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            error_log("Cancel Request Error: " . $e->getMessage());
             return false;
         }
     }
