@@ -46,25 +46,6 @@ INSERT INTO `agency_settings` (`id`, `agency_name`, `director_name`, `director_p
 
 -- --------------------------------------------------------
 
---
--- Table structure for table `app_settings`
---
-
-CREATE TABLE `app_settings` (
-  `setting_key` varchar(50) NOT NULL,
-  `setting_value` varchar(255) NOT NULL,
-  `description` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `app_settings`
---
-
-INSERT INTO `app_settings` (`setting_key`, `setting_value`, `description`) VALUES
-('allow_retro_transfer', '0', 'อนุญาตให้เปลี่ยนเวรย้อนหลังได้ (1=อนุญาต, 0=ไม่อนุญาต)'),
-('enable_24h_check', '1', 'เปิดใช้งานระบบแจ้งเตือนการเข้าเวรติดต่อกัน 24 ชม.');
-
--- --------------------------------------------------------
 
 --
 -- Table structure for table `dep`
