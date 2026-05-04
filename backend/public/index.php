@@ -734,15 +734,14 @@ switch ($route) {
         // 🌟 ตั้งค่าหน่วยงานและผู้ลงนาม (Agency Settings)
         // ==========================================
         case 'admin/agency_settings':
-            AuthMiddleware::checkAdmin($connection);
             require_once '../src/Models/Setting.php';
             $settingModel = new Setting($connection);
 
             if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-                // โหลดข้อมูลไปแสดงที่หน้าเว็บ
+                AuthMiddleware::checkToken($connection); 
                 echo json_encode($settingModel->getAgencySettings());
             } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                // รับข้อมูลจากหน้าเว็บมาบันทึก
+                AuthMiddleware::checkAdmin($connection);
                 $data = json_decode(file_get_contents("php://input"), true);
                 if ($settingModel->updateAgencySettings($data)) {
                     echo json_encode(["success" => true, "message" => "บันทึกข้อมูลสำเร็จ"]);

@@ -742,12 +742,6 @@ ALTER TABLE `agency_settings`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `app_settings`
---
-ALTER TABLE `app_settings`
-  ADD PRIMARY KEY (`setting_key`);
-
---
 -- Indexes for table `dep`
 --
 ALTER TABLE `dep`

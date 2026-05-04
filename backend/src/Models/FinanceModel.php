@@ -45,8 +45,7 @@ class FinanceModel {
                 
                 -- เพิ่ม p.dep และ vns.price เข้าไปใน GROUP BY ตามแบบที่ 1
                 GROUP BY p.user_id, p.first_name, p.last_name, p.dep, vns.price
-                 
-                ORDER BY p.user_id ASC";
+                ORDER BY p.srt ASC";
 
         $stmt = $this->db->prepare($sql);        
         $stmt->bindParam(':command_id', $command_id);

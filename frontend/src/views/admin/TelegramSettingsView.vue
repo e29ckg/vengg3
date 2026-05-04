@@ -11,13 +11,18 @@
               
               <div class="mb-4">
                 <label class="form-label fw-bold">Telegram Bot Token</label>
-                <input 
-                  type="text" 
-                  class="form-control" 
-                  v-model="settings.bot_token" 
-                  placeholder="เช่น 123456:ABC-DEF..."
-                  required
-                >
+                <div class="input-group shadow-sm">
+                  <input 
+                    :type="showToken ? 'text' : 'password'" 
+                    class="form-control border-end-0" 
+                    v-model="settings.bot_token" 
+                    placeholder="เช่น 123456:ABC-DEF..."
+                    required
+                  >
+                  <button class="btn btn-outline-secondary bg-white border-start-0 border" type="button" @click="showToken = !showToken" tabindex="-1">
+                    <i class="bi" :class="showToken ? 'bi-eye-slash text-danger' : 'bi-eye text-primary'"></i>
+                  </button>
+                </div>
                 <div class="form-text text-muted">ได้จาก @BotFather ใน Telegram</div>
               </div>
 
@@ -131,6 +136,7 @@ const settings = ref({
 })
 
 const notifyTimes = ref([])
+const showToken = ref(false)
 
 // 🌟 ดึงข้อมูลการตั้งค่าเดิมจาก DB
 const fetchSettings = async () => {
