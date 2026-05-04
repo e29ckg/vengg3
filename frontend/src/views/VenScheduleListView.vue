@@ -70,23 +70,23 @@
           <table v-if="viewMode === '1'" class="table table-bordered align-middle">
             <thead class="table-primary text-center">
               <tr>
-                <th>ลำดับ</th>
+                <!-- <th>ลำดับ</th> -->
                 <th>วันที่</th>
                 <th>ชื่อ-สกุล</th>
                 <th>ตำแหน่ง/หน้าที่</th>
                 <th>กลุ่มเวร</th>
-                <th>สถานะ</th>
+                <th>หมายเหตุ</th>
               </tr>
             </thead>
             <tbody>
               <template v-for="(group, gIndex) in schedules" :key="group.ven_date">
                 <tr v-for="(person, pIndex) in group.staff_list" :key="person.id">
-                  <td v-if="pIndex === 0" :rowspan="group.staff_list.length" class="text-center bg-light">{{ gIndex + 1 }}</td>
+                  <!-- <td v-if="pIndex === 0" :rowspan="group.staff_list.length" class="text-center bg-light">{{ gIndex + 1 }}</td> -->
                   <td v-if="pIndex === 0" :rowspan="group.staff_list.length" class="text-center fw-bold bg-light">{{ formatDateThai(group.ven_date) }}</td>
                   <td>{{ person.full_name }}</td>
                   <td>{{ person.dep || '-' }}</td>
                   <td>{{ person.sub_name ? person.sub_name : person.ven_name }}</td>
-                  <td class="text-center">{{ person.status || 'ปกติ' }}</td>
+                  <td class="text-center"></td>
                 </tr>
               </template>
             </tbody>
@@ -194,10 +194,10 @@ const exportToExcel = () => {
 
   let tableData = []
   if (viewMode.value === '1') {
-    tableData.push(["ลำดับ", "วันที่", "ชื่อ-สกุล", "ตำแหน่ง/หน้าที่", "กลุ่มเวร", "สถานะ"])
+    tableData.push(["วันที่", "ชื่อ-สกุล", "ตำแหน่ง/หน้าที่", "กลุ่มเวร", "หมายเหตุ"])
     schedules.value.forEach((group, index) => {
       group.staff_list.forEach(p => {
-        tableData.push([index + 1, formatDateThai(group.ven_date), p.full_name, p.dep || '', p.sub_name || p.ven_name, p.status || 'ปกติ'])
+        tableData.push([formatDateThai(group.ven_date), p.full_name, p.dep || '', p.sub_name || p.ven_name, ''])
       })
     })
   } else {

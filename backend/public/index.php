@@ -274,6 +274,12 @@ switch ($route) {
                     "data" => $settingModel->getVenFullData()
                 ]);
             }
+            elseif ($action === 'list_venname') {
+                echo json_encode([
+                    "success" => true,
+                    "data" => $settingModel->getVenNames()
+                ]);
+            }
             // 1.2 ดึงข้อมูลเวรหลักตาม ID (ใช้ตอนกดแก้ไขเวรหลัก)
             elseif ($action === 'get_by_id') {
                 echo json_encode($settingModel->getVenNameById($_GET['id']));
@@ -558,7 +564,7 @@ switch ($route) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // 1. รับค่าและแปลงเป็น Array (บังคับใส่ true)
             $data = json_decode(file_get_contents("php://input"), true);
-            
+
             require_once '../src/Models/Setting.php'; 
             $settingModel = new Setting($connection);
             
@@ -619,29 +625,45 @@ switch ($route) {
         break;
 
     // 4. API ส่งแจ้งเตือนเวรของวันนี้แบบ Manual
-    case 'admin/telegram_settings/manual_notify':
+   case 'admin/telegram_settings/manual_notify':
         AuthMiddleware::checkAdmin($connection); // ตรวจสอบสิทธิ์
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             require_once '../src/Services/TelegramService.php';
             $telegram = new TelegramService($connection);
 
-            // ดึงข้อมูลเวรของ "วันนี้"
-            $today = date('Y-m-d');
+            // 🌟 1. รับค่าจาก Vue Frontend (day_offset)
+            $data = json_decode(file_get_contents("php://input"), true);
+            $day_offset = isset($data['day_offset']) ? (int)$data['day_offset'] : 0;
+
+            // 🌟 2. กำหนดวันที่เป้าหมายและข้อความตาม day_offset
+            if ($day_offset === 1) {
+                $target_date = date('Y-m-d', strtotime('+1 day')); // วันพรุ่งนี้
+                $display_date = date('d/m/Y', strtotime('+1 day'));
+                $day_text = "วันพรุ่งนี้";
+            } else {
+                $target_date = date('Y-m-d'); // วันนี้
+                $display_date = date('d/m/Y');
+                $day_text = "วันนี้";
+            }
+
+            // 🌟 3. ดึงข้อมูลเวรตามวันที่เป้าหมาย
             $sql = "SELECT vs.*, p.prefix_name, p.first_name as staff_name, p.last_name, vn.name as duty_name 
-                    FROM ven_schedule vs LEFT JOIN profile p ON vs.user_id = p.user_id 
+                    FROM ven_schedule vs 
+                    LEFT JOIN profile p ON vs.user_id = p.user_id 
                     LEFT JOIN ven_com vc On vc.id = vs.ven_com_id 
                     LEFT JOIN ven_name_sub vns ON vns.id = vs.ven_name_sub_id 
                     LEFT JOIN ven_name vn ON vn.id = vns.ven_name_id 
-                    WHERE vs.ven_date = :today
+                    WHERE DATE(vs.ven_date) = :target_date
                     ORDER BY vn.srt ASC, vns.srt ASC;";
 
             $stmt = $connection->prepare($sql);
-            $stmt->execute([':today' => $today]);
+            $stmt->execute([':target_date' => $target_date]);
             $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             if (count($schedules) > 0) {
-                $msg = "📢 <b>แจ้งเตือนเวรประจำวัน (ส่งโดยผู้ดูแลระบบ)</b>\n";
-                $msg .= "📅 วันที่: " . date('d/m/Y') . "\n";
+                // 🌟 4. ปรับข้อความหัวจดหมายให้ตรงกับวันที่
+                $msg = "📢 <b>แจ้งเตือนเวรปฏิบัติงาน ($day_text)</b>\n";
+                $msg .= "📅 วันที่: " . $display_date . "\n";
                 $msg .= "➖➖➖➖➖➖➖➖➖➖\n";
                 
                 $currentDuty = '';
@@ -660,14 +682,15 @@ switch ($route) {
                 $result = $telegram->sendMessage($msg);
                 
                 if ($result) {
-                    echo json_encode(["success" => true, "message" => "ส่งแจ้งเตือนเวรของวันนี้เข้ากลุ่มสำเร็จ!"]);
+                    echo json_encode(["success" => true, "message" => "ส่งแจ้งเตือนเวรของ{$day_text}เข้ากลุ่มสำเร็จ!"]);
                 } else {
                     http_response_code(500);
                     echo json_encode(["error" => "ส่งไม่สำเร็จ โปรดตรวจสอบ Token และ Chat ID"]);
                 }
             } else {
                 http_response_code(404);
-                echo json_encode(["error" => "ไม่มีผู้ปฏิบัติหน้าที่ในตารางเวรของวันนี้ครับ"]);
+                // 🌟 5. แจ้งเตือนกลับกรณีไม่มีเวร
+                echo json_encode(["error" => "ไม่มีผู้ปฏิบัติหน้าที่ในตารางเวรของ{$day_text}ครับ"]);
             }
         }
         break;

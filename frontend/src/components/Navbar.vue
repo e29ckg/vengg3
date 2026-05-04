@@ -1,5 +1,5 @@
 <template>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm" v-if="isLoggedIn">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm d-print-none"  v-if="isLoggedIn">
     <div class="container-fluid">
       <router-link class="navbar-brand fw-bold" to="/home">
         <i class="bi bi-calendar2-check"></i> ระบบจัดเวร

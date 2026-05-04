@@ -233,8 +233,8 @@ const fetchCommands = async () => {
 
 // ดึงรายชื่อเวรหลัก
 const fetchVenNames = async () => {
-  const res = await api.get('?route=admin/setting&table=ven_name&action=list')
-  venNames.value = res.data || []
+  const res = await api.get('?route=admin/setting&action=list_venname')
+      venNames.value = res.data.data || []
 }
 
 // จัดกลุ่มคำสั่งตามเดือน (ven_month)
