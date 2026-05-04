@@ -27,38 +27,73 @@ class Setting {
     }
 
     // ฟังก์ชันพิเศษสำหรับดึงข้อมูลหน่วยงาน (ดึงแค่แถวแรก)
+    // ============================================================
+    // 🏢 การตั้งค่าหน่วยงานและผู้ลงนาม (Agency Settings)
+    // ============================================================
+
     // 1. ดึงข้อมูลตั้งค่าหน่วยงาน
-    public function getAgencyConfig() {
-        $query = "SELECT * FROM agency_config WHERE id = 1 LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+    public function getAgencySettings() {
+        try {
+            $query = "SELECT * FROM agency_settings WHERE id = 1 LIMIT 1";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($row) {
+                // แปลงข้อมูล JSON String จากฐานข้อมูล กลับเป็น Array ให้ Vue.js นำไปลูปได้
+                $row['directors'] = !empty($row['directors']) ? json_decode($row['directors'], true) : [];
+                $row['admins']    = !empty($row['admins']) ? json_decode($row['admins'], true) : [];
+                $row['finances']  = !empty($row['finances']) ? json_decode($row['finances'], true) : [];
+            } else {
+                // ถ้าฐานข้อมูลยังไม่มีแถว id=1 ให้คืนค่าว่างเปล่ากลับไป
+                $row = [
+                    'agency_name' => '',
+                    'directors' => [],
+                    'admins' => [],
+                    'finances' => []
+                ];
+            }
+
+            return $row;
+        } catch (PDOException $e) {
+            error_log("Get Agency Settings Error: " . $e->getMessage());
+            return false;
+        }
     }
 
-    // 2. อัปเดตข้อมูลหน่วยงาน
-   public function updateAgencySettings($data) {
+    // 2. อัปเดตข้อมูลหน่วยงาน (แพ็ค Array เป็น JSON ลง Database)
+    public function updateAgencySettings($data) {
         try {
-            $sql = "UPDATE agency_settings SET 
-                        agency_name = :agency_name, 
-                        director_name = :director_name, 
-                        director_position = :director_position,
-                        admin_name = :admin_name,
-                        admin_position = :admin_position,
-                        finance_name = :finance_name,
-                        finance_position = :finance_position
-                    WHERE id = 1";
+            // เช็คก่อนว่ามีแถว id=1 หรือยัง
+            $checkStmt = $this->conn->query("SELECT id FROM agency_settings WHERE id = 1");
+            $exists = $checkStmt->fetch();
+
+            if ($exists) {
+                // อัปเดตข้อมูลเดิม
+                $sql = "UPDATE agency_settings SET 
+                            agency_name = :agency_name, 
+                            directors = :directors, 
+                            admins = :admins, 
+                            finances = :finances 
+                        WHERE id = 1";
+            } else {
+                // สร้างใหม่ (กรณีเพิ่งติดตั้งระบบครั้งแรก)
+                $sql = "INSERT INTO agency_settings (id, agency_name, directors, admins, finances) 
+                        VALUES (1, :agency_name, :directors, :admins, :finances)";
+            }
+
             $stmt = $this->conn->prepare($sql);
+            
+            // ใช้ JSON_UNESCAPED_UNICODE เพื่อให้ภาษาไทยในฐานข้อมูลยังอ่านออก ไม่เป็นรหัสต่างดาว
             return $stmt->execute([
                 ':agency_name' => $data['agency_name'] ?? '',
-                ':director_name' => $data['director_name'] ?? '',
-                ':director_position' => $data['director_position'] ?? '',
-                ':admin_name' => $data['admin_name'] ?? '',
-                ':admin_position' => $data['admin_position'] ?? '',
-                ':finance_name' => $data['finance_name'] ?? '',
-                ':finance_position' => $data['finance_position'] ?? ''
+                ':directors'   => json_encode($data['directors'] ?? [], JSON_UNESCAPED_UNICODE),
+                ':admins'      => json_encode($data['admins'] ?? [], JSON_UNESCAPED_UNICODE),
+                ':finances'    => json_encode($data['finances'] ?? [], JSON_UNESCAPED_UNICODE)
             ]);
+
         } catch (PDOException $e) {
-            error_log("Agency Settings Error: " . $e->getMessage());
+            error_log("Update Agency Settings Error: " . $e->getMessage());
             return false;
         }
     }
@@ -741,4 +776,7 @@ class Setting {
             return false;
         }
     }
+
+    
+    
 }
