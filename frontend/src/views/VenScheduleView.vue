@@ -52,11 +52,9 @@
             </div>
           </div>
 
-          <div v-if="activeCommand" class="d-flex flex-column gap-2">
-            <button class="btn btn-xs btn-primary fw-bold px-3" @click="printSchedule">
-                <i class="bi bi-printer-fill me-1"></i> พิมพ์รายงาน
-              </button>
+          <div v-if="activeCommand" class="d-flex flex-column gap-2">            
             <label class="form-label small fw-bold text-muted mb-0">3. เลือกหน้าที่เพื่อจัดคน</label>
+            {{  main}}
             <select class="form-select form-select-sm border-primary" v-model="activeSubDuty" @change="loadEligibleUsers">
               <option value="">-- เลือกหน้าที่ย่อย --</option>
               <option v-for="sub in subDuties" :key="sub.id" :value="sub">{{ sub.name }}</option>
@@ -66,12 +64,12 @@
               <button v-if="eligibleUsers.length > 0" class="btn btn-xs btn-outline-success flex-grow-1 fw-bold" @click="openAutoAssignModal">
                 <i class="bi bi-robot"></i> จัด Auto
               </button>
-              <button class="btn btn-xs btn-outline-danger flex-grow-1 fw-bold" @click="clearAllCommandSchedules" :disabled="!hasSchedulesInActiveCommand">
-                <i class="bi bi-trash"></i> ล้าง
-              </button>
               
+              <button class="btn btn-xs btn-outline-danger flex-grow-1 fw-bold" @click="clearSubDutySchedules" :disabled="!hasSchedulesInActiveSubDuty">
+                <i class="bi bi-trash"></i> ล้างหน้าที่นี้
+              </button>
+            </div>            
 
-            </div>
             
             <div v-if="activeCommand && activeCommand.status == 1" class="alert alert-success py-2 mt-2 mb-0 text-center small fw-bold">
               <i class="bi bi-lock-fill me-1"></i> คำสั่งนี้ยืนยันแล้ว ไม่สามารถแก้ไขได้
@@ -283,6 +281,10 @@ const blankDays = computed(() => {
 const filteredCommands = computed(() => commands.value.filter(com => com.ven_month === currentMonth.value))
 const getSchedulesForDay = (day) => allSchedules.value.filter(s => parseInt(s.day) === day)
 const hasSchedulesInActiveCommand = computed(() => activeCommand.value && allSchedules.value.some(s => s.com_id === activeCommand.value.id))
+const hasSchedulesInActiveSubDuty = computed(() => {
+  if (!activeCommand.value || !activeSubDuty.value) return false;
+  return allSchedules.value.some(s => s.com_id === activeCommand.value.id && s.sub_id === activeSubDuty.value.id);
+})
 
 const isDayEnabled = (day) => {
   if (!activeCommand.value || !activeCommand.value.ven_com_days) return true 
@@ -318,7 +320,7 @@ const onMonthChange = () => {
 const onCommandChange = async () => {
   if (!activeCommand.value) return
   const res = await api.get(`?route=admin/setting&action=ven_full`)
-  const main = res.data.find(v => v.id === activeCommand.value.ven_name_id)
+  const main = res.data.data.find(v => v.id === activeCommand.value.ven_name_id)
   subDuties.value = main?.subs?.sort((a, b) => a.srt - b.srt) || []
   activeSubDuty.value = ''; eligibleUsers.value = []
 }
@@ -439,11 +441,35 @@ const removeSchedule = async (id) => {
   } 
 }
 
-const clearAllCommandSchedules = async () => {
-  if ((await Swal.fire({ title: 'ลบเวรทั้งหมด?', text: 'ล้างชื่อทั้งหมดในคำสั่งนี้', icon: 'warning', showCancelButton: true })).isConfirmed) {
-    const toDel = allSchedules.value.filter(s => s.com_id === activeCommand.value.id)
-    await Promise.all(toDel.map(s => api.post('?route=admin/ven_schedule&action=remove', { id: s.id })))
-    fetchMonthSchedules()
+// 🌟 ฟังก์ชันล้างเฉพาะหน้าที่ย่อยที่เลือก
+const clearSubDutySchedules = async () => {
+  if (!activeCommand.value || !activeSubDuty.value) return;
+
+  const result = await Swal.fire({ 
+    title: 'ล้างเวรหน้าที่นี้?', 
+    text: `ต้องการลบรายชื่อผู้เข้าเวรในหน้าที่ "${activeSubDuty.value.name}" ทั้งหมดในคำสั่งนี้ใช่หรือไม่?`, 
+    icon: 'warning', 
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    confirmButtonText: 'ใช่, ล้างเลย',
+    cancelButtonText: 'ยกเลิก'
+  });
+
+  if (result.isConfirmed) {
+    Swal.fire({ title: 'กำลังลบข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    // 🌟 กรองเอาเฉพาะข้อมูลที่มี com_id และ sub_id ตรงกับที่เลือกอยู่
+    const toDel = allSchedules.value.filter(s => 
+      s.com_id === activeCommand.value.id && 
+      s.sub_id === activeSubDuty.value.id
+    );
+    
+    // สั่งลบ
+    await Promise.all(toDel.map(s => api.post('?route=admin/ven_schedule&action=remove', { id: s.id })));
+    
+    // โหลดข้อมูลใหม่
+    fetchMonthSchedules();
+    Swal.fire('สำเร็จ', `ล้างข้อมูลหน้าที่ "${activeSubDuty.value.name}" เรียบร้อยแล้ว`, 'success');
   }
 }
 

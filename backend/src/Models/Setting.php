@@ -113,6 +113,12 @@ class Setting {
 
         return $venNames;
     }
+
+    public function getVenNames() {
+        $query = "SELECT * FROM ven_name WHERE status = 1 ORDER BY srt ASC";
+        $stmt = $this->conn->query($query);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
    
     // ==========================================
     // 4. ลบ ข้อมูลผ่าน DeleteTable (อัปเดตเป็น Soft Delete สำหรับเวร)

@@ -8,6 +8,7 @@
           </div>
           <div class="card-body p-4">
             <form @submit.prevent="saveSettings">
+              
               <div class="mb-4">
                 <label class="form-label fw-bold">Telegram Bot Token</label>
                 <input 
@@ -34,17 +35,17 @@
 
               <hr class="my-4">
 
-              <h6 class="fw-bold mb-3">ประเภทการแจ้งเตือน</h6>
+              <h6 class="fw-bold mb-3">ประเภทการแจ้งเตือน (Auto Save)</h6>
               <div class="form-check form-switch mb-2">
-                <input class="form-check-input" type="checkbox" v-model="settings.notify_confirmed">
+                <input class="form-check-input" type="checkbox" v-model="settings.notify_confirmed" @change="autoSaveSettings">
                 <label class="form-check-label">แจ้งเมื่อ "ยืนยันตารางเวร" ประจำเดือน</label>
               </div>
               <div class="form-check form-switch mb-2">
-                <input class="form-check-input" type="checkbox" v-model="settings.notify_change_request">
+                <input class="form-check-input" type="checkbox" v-model="settings.notify_change_request" @change="autoSaveSettings">
                 <label class="form-check-label">แจ้งเมื่อมีการ "ส่งคำขอแลกเวร"</label>
               </div>
               <div class="form-check form-switch mb-4">
-                <input class="form-check-input" type="checkbox" v-model="settings.notify_approval">
+                <input class="form-check-input" type="checkbox" v-model="settings.notify_approval" @change="autoSaveSettings">
                 <label class="form-check-label">แจ้งเมื่อคำขอแลกเวร "ได้รับการอนุมัติ"</label>
               </div>
 
@@ -52,7 +53,7 @@
 
               <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>กำหนดเวลาแจ้งเตือนเวรประจำวัน</h6>
-                <button type="button" class="btn btn-sm btn-success" @click="addTimeSlot">
+                <button type="button" class="btn btn-sm btn-success shadow-sm" @click="addTimeSlot">
                     <i class="bi bi-plus-lg"></i> เพิ่มเวลา
                 </button>
               </div>
@@ -61,7 +62,7 @@
                 <div class="card-body p-2">
                     <div class="row align-items-center g-2">
                         <div class="col-md-3">
-                            <input type="time" class="form-control form-control-sm" v-model="item.send_time" required>
+                            <input type="time" class="form-control form-control-sm" v-model="item.send_time" lang="th-TH" required>
                         </div>
                         <div class="col-md-4">
                             <select class="form-select form-select-sm" v-model="item.notify_day">
@@ -85,17 +86,27 @@
 
               <hr class="my-4">
 
-              <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                <button type="button" class="btn btn-warning me-auto" @click="sendManualNotify" :disabled="loading">
-                  <i class="bi bi-bell-fill me-1"></i> แจ้งเตือนเวรวันนี้ (Manual)
-                </button>
-                <button type="button" class="btn btn-outline-secondary" @click="testMessage" :disabled="loading">
-                  <i class="bi bi-send me-1"></i> ทดสอบส่งข้อความ
-                </button>
-                <button type="submit" class="btn btn-primary px-4" :disabled="loading">
-                  <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span>
-                  บันทึกการตั้งค่า
-                </button>
+              <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mt-4">
+                
+                <div class="d-flex flex-column flex-sm-row gap-2">
+                  <button type="button" class="btn btn-warning fw-bold shadow-sm" @click="sendManualNotify(0)" :disabled="loading">
+                    <i class="bi bi-bell-fill me-1"></i> แจ้งเวรวันนี้
+                  </button>
+                  <button type="button" class="btn btn-info text-dark fw-bold shadow-sm" @click="sendManualNotify(1)" :disabled="loading">
+                    <i class="bi bi-brightness-alt-high-fill me-1"></i> แจ้งเวรพรุ่งนี้
+                  </button>
+                </div>
+
+                <div class="d-flex flex-column flex-sm-row gap-2">
+                  <button type="button" class="btn btn-outline-secondary" @click="testMessage" :disabled="loading">
+                    <i class="bi bi-send me-1"></i> ทดสอบส่งข้อความ
+                  </button>
+                  <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm" :disabled="loading">
+                    <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span>
+                    <i v-else class="bi bi-save me-1"></i> บันทึกการตั้งค่า
+                  </button>
+                </div>
+
               </div>
             </form>
           </div>
@@ -107,7 +118,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import api from '../../services/api'
+import api from '../../services/api' // ตรวจสอบ path ให้ตรงกับโปรเจกต์ของคุณ
 import Swal from 'sweetalert2'
 
 const loading = ref(false)
@@ -119,15 +130,13 @@ const settings = ref({
   notify_approval: true
 })
 
-// 🌟 เพิ่มตัวแปรสำหรับเก็บเวลาแจ้งเตือน
 const notifyTimes = ref([])
 
-// ดึงข้อมูลการตั้งค่าเดิมจาก DB
+// 🌟 ดึงข้อมูลการตั้งค่าเดิมจาก DB
 const fetchSettings = async () => {
   try {
     const res = await api.get('?route=admin/telegram_settings')
     if (res.data) {
-      // ดึงข้อมูลหลัก
       settings.value = {
         bot_token: res.data.bot_token || '',
         chat_id: res.data.chat_id || '',
@@ -136,11 +145,10 @@ const fetchSettings = async () => {
         notify_approval: res.data.notify_approval ?? true,
       }
       
-      // 🌟 ดึงข้อมูลเวลา (ถ้า Backend ส่งกลับมาด้วย)
       if (res.data.notify_times) {
         notifyTimes.value = res.data.notify_times.map(t => ({
           send_time: t.send_time.substring(0, 5),
-          notify_day: parseInt(t.notify_day) || 0, // 🌟 ดึงค่า notify_day มาด้วย
+          notify_day: parseInt(t.notify_day) || 0,
           status: t.status === 1 || t.status === true || t.status === "1"
         }))
       }
@@ -150,13 +158,13 @@ const fetchSettings = async () => {
   }
 }
 
-// บันทึกการตั้งค่า
+// 🌟 บันทึกการตั้งค่า (กดปุ่ม)
 const saveSettings = async () => {
   loading.value = true
   try {
     await api.post('?route=admin/telegram_settings/update', {
       ...settings.value,
-      notify_times: notifyTimes.value // ส่งรายการเวลาไปด้วย
+      notify_times: notifyTimes.value
     });
     Swal.fire('สำเร็จ', 'บันทึกการตั้งค่าเรียบร้อยแล้ว', 'success')
   } catch (err) {
@@ -166,7 +174,30 @@ const saveSettings = async () => {
   }
 }
 
-// ทดสอบส่งข้อความหา Telegram
+// 🌟 ฟังก์ชันบันทึกอัตโนมัติ (ไม่แสดง Popup กวนใจ ใช้ Toast แทน)
+const autoSaveSettings = async () => {
+  try {
+    await api.post('?route=admin/telegram_settings/update', {
+      ...settings.value,
+      notify_times: notifyTimes.value
+    });
+    
+    // แสดงแจ้งเตือนเล็กๆ มุมขวาบน (Toast)
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true
+    });
+    Toast.fire({ icon: 'success', title: 'อัปเดตการตั้งค่าแล้ว' });
+    
+  } catch (err) {
+    Swal.fire('ผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error')
+  }
+}
+
+// 🌟 ทดสอบส่งข้อความหา Telegram
 const testMessage = async () => {
   loading.value = true
   try {
@@ -187,12 +218,13 @@ const removeTimeSlot = (index) => {
   notifyTimes.value.splice(index, 1);
 };
 
-// ฟังก์ชันส่งแจ้งเตือนแบบ Manual
-const sendManualNotify = async () => {
-  // ถามเพื่อความแน่ใจก่อนกดส่ง
+// 🌟 ฟังก์ชันส่งแจ้งเตือนแบบ Manual (รองรับทั้งวันนี้ 0 และพรุ่งนี้ 1)
+const sendManualNotify = async (dayOffset = 0) => {
+  const dayText = dayOffset === 0 ? 'วันนี้' : 'วันพรุ่งนี้'
+  
   const result = await Swal.fire({
-    title: 'ส่งแจ้งเตือน?',
-    text: "ระบบจะดึงรายชื่อเวรของ 'วันนี้' และส่งเข้ากลุ่ม Telegram ทันที",
+    title: `ส่งแจ้งเตือนเวร${dayText}?`,
+    text: `ระบบจะดึงรายชื่อเวรของ '${dayText}' และส่งเข้ากลุ่ม Telegram ทันที`,
     icon: 'question',
     showCancelButton: true,
     confirmButtonText: 'ใช่, ส่งเลย!',
@@ -202,10 +234,9 @@ const sendManualNotify = async () => {
   if (result.isConfirmed) {
     loading.value = true
     try {
-      const res = await api.post('?route=admin/telegram_settings/manual_notify')
+      const res = await api.post('?route=admin/telegram_settings/manual_notify', { day_offset: dayOffset })
       Swal.fire('สำเร็จ', res.data.message, 'success')
     } catch (err) {
-      // ดึงข้อความ Error จากที่ Backend ส่งมา (เช่น ไม่มีเวรวันนี้)
       const errorMsg = err.response?.data?.error || 'เกิดข้อผิดพลาดในการเชื่อมต่อ'
       Swal.fire('แจ้งเตือน', errorMsg, 'info')
     } finally {
@@ -216,3 +247,7 @@ const sendManualNotify = async () => {
 
 onMounted(fetchSettings)
 </script>
+
+<style scoped>
+/* ปรับแต่งความสวยงามเพิ่มเติมได้ที่นี่ */
+</style>

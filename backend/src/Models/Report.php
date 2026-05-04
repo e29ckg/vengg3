@@ -38,7 +38,7 @@ class Report  {
             LEFT JOIN ven_name vn ON vn.id = vc.ven_name_id
             LEFT JOIN ven_name_sub vns ON vns.id = s.ven_name_sub_id          
             WHERE s.ven_com_id = :commandId 
-            ORDER BY vns.srt ASC
+            ORDER BY s.ven_date ASC, vns.srt ASC
         ";
         
         $stmt = $this->conn->prepare($query);

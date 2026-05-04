@@ -54,6 +54,11 @@ const router = createRouter({
       component: () => import('../views/VenScheduleView.vue') 
     },
     {
+      path: '/director/schedule-list',
+      name: 'ven-schedule-list',
+      component: () => import('../views/VenScheduleListView.vue')
+    },
+    {
       path: '/director/approvals',
       name: 'ven-approvals',
       component: () => import('../views/VenApproveView.vue'),
@@ -63,11 +68,6 @@ const router = createRouter({
         path: '/staff/swap',
         name: 'staff-swap',
         component: () => import('../views/VenSwapView.vue')
-    },
-    {
-      path: '/director/schedule-list',
-      name: 'ven-schedule-list',
-      component: () => import('../views/VenScheduleListView.vue')
     },
     {
       path: '/finance/report',
