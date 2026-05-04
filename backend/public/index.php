@@ -730,9 +730,33 @@ switch ($route) {
         }
         break;
 
+    // ==========================================
+        // 🌟 ตั้งค่าหน่วยงานและผู้ลงนาม (Agency Settings)
+        // ==========================================
+        case 'admin/agency_settings':
+            AuthMiddleware::checkAdmin($connection);
+            require_once '../src/Models/Setting.php';
+            $settingModel = new Setting($connection);
+
+            if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+                // โหลดข้อมูลไปแสดงที่หน้าเว็บ
+                echo json_encode($settingModel->getAgencySettings());
+            } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                // รับข้อมูลจากหน้าเว็บมาบันทึก
+                $data = json_decode(file_get_contents("php://input"), true);
+                if ($settingModel->updateAgencySettings($data)) {
+                    echo json_encode(["success" => true, "message" => "บันทึกข้อมูลสำเร็จ"]);
+                } else {
+                    http_response_code(500);
+                    echo json_encode(["error" => "ไม่สามารถบันทึกข้อมูลตั้งค่าหน่วยงานได้"]);
+                }
+            }
+            break;
+
     default:
         http_response_code(404);
         echo json_encode(["error" => "Endpoint not found."]);
         break;
 }
+
 ?>
