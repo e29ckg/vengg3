@@ -90,7 +90,7 @@ const getCurrentUserId = () => {
     
     // พยายาม Parse เป็น JSON ก่อน
     const parsed = JSON.parse(userStr);
-    return parsed?.id || parsed?.user_id || '';
+    return parsed || '';
   } catch (error) {
     // ถ้า Parse ไม่ได้ (อาจจะเก็บเป็น String ธรรมดา) ให้คืนค่าเป็นข้อความไปเลย
     return localStorage.getItem('user_id') || '';
@@ -197,8 +197,9 @@ const downloadWord = async (historyData) => {
       user1_name: historyData.user1_name,
       user2_name: historyData.user2_name,
       user1_dep: historyData.user1_dep || "", // ถ้าคุณมีฟิลด์แผนก ให้ใส่ตรงนี้
-      user2_dep: historyData.user2_dep || ""
-    };
+      user2_dep: historyData.user2_dep || "",
+      ref_change_no: historyData.ref_change_no ? `(อ้างถึงใบเปลี่ยนเวรเลขที่ ${historyData.ref_change_no})` : ""
+    }
 
     // 🌟 เรียกใช้ฟังก์ชันที่ import มา
     await exportShiftChangeToWord(changeDataObj, venDetail);

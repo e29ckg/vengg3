@@ -31,9 +31,9 @@ class UserController {
                 "prefix_name" => $row['prefix_name'],
                 "first_name" => $row['first_name'],
                 "last_name" => $row['last_name'],
-                "dep" => $row['dep'],
+                "position" => $row['position'],
                 "srt" => $row['srt'],
-                "workgroup" => $row['workgroup'],
+                "department" => $row['department'],
                 "phone" => $row['phone'],
                 "bank_account" => $row['bank_account'],
                 "bank_comment" => $row['bank_comment'],
@@ -117,15 +117,7 @@ class UserController {
             http_response_code(500);
             echo json_encode(["error" => $result['message']]);
         }
-    }
-    // ส่งข้อมูล Dropdown กลับไปให้หน้าเว็บ
-    public function getOptions() {
-        $userModel = new User($this->db);
-        $options = $userModel->getFormOptions();
-        
-        http_response_code(200);
-        echo json_encode($options);
-    }
+    }   
 
     public function deleteUser() {
         $data = json_decode(file_get_contents("php://input"), true);

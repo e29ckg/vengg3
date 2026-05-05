@@ -18,6 +18,7 @@ require_once '../src/Controllers/AuthController.php';
 require_once '../src/Controllers/UserController.php';
 require_once '../src/Controllers/SettingController.php';
 require_once '../src/Controllers/FinanceController.php';
+require_once '../src/Controllers/OptionController.php';
 require_once '../src/Middleware/AuthMiddleware.php';
 
 
@@ -33,7 +34,6 @@ switch ($route) {
         break;
 
     case 'auth/login':
-        // บังคับให้เป็น POST method เท่านั้น
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $controller = new AuthController($connection);
             $controller->login();
@@ -43,10 +43,71 @@ switch ($route) {
         }
         break;
 
+    // 🌟 ดึงข้อมูลโปรไฟล์
+        case 'user/profile':
+            $userData = AuthMiddleware::checkToken($connection);
+            $userId = is_array($userData) ? $userData['id'] : $userData->id;
+            
+            // เพิ่มการดึง position, department, bank_account, bank_name
+            $stmt = $connection->prepare("SELECT prefix_name, first_name, last_name, position, department, phone, bank_account, bank_comment FROM profile WHERE user_id = ?");
+            $stmt->execute([$userId]);
+            echo json_encode($stmt->fetch(PDO::FETCH_ASSOC));
+            break;
+
+        // 🌟 อัปเดตข้อมูลโปรไฟล์
+        case 'user/profile/update':
+            $userData = AuthMiddleware::checkToken($connection);
+            $userId = is_array($userData) ? $userData['id'] : $userData->id;
+            $data = json_decode(file_get_contents("php://input"), true);
+
+            // เพิ่มฟิลด์ใหม่ในคำสั่ง UPDATE
+            $stmt = $connection->prepare("UPDATE profile SET prefix_name=?, first_name=?, last_name=?, position=?, department=?, phone=?, bank_account=?, bank_comment=? WHERE user_id=?");
+            
+            if ($stmt->execute([
+                $data['prefix_name'] ?? null, 
+                $data['first_name'] ?? null, 
+                $data['last_name'] ?? null, 
+                $data['position'] ?? null, 
+                $data['department'] ?? null, 
+                $data['phone'] ?? null, 
+                $data['bank_account'] ?? null, 
+                $data['bank_comment'] ?? null, 
+                $userId
+            ])) {
+                echo json_encode(["success" => true]);
+            } else {
+                http_response_code(500);
+                echo json_encode(["error" => "Update failed"]);
+            }
+            break;
+
+    // 🌟 เปลี่ยนรหัสผ่าน
+    case 'user/profile/password':
+        $userData = AuthMiddleware::checkToken($connection);
+        $userId = is_array($userData) ? $userData['id'] : $userData->id;
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        // 1. ดึงรหัสเดิมมาเช็ค
+        $stmt = $connection->prepare("SELECT password_hash FROM user WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($user && password_verify($data['old_password'], $user['password_hash'])) {
+            // 2. ถ้ารหัสเดิมถูก ให้อัปเดตเป็นรหัสใหม่ (เข้ารหัสด้วย)
+            $newHash = password_hash($data['new_password'], PASSWORD_DEFAULT);
+            $stmtUpdate = $connection->prepare("UPDATE user SET password_hash = ? WHERE id = ?");
+            $stmtUpdate->execute([$newHash, $userId]);
+            
+            echo json_encode(["success" => true, "message" => "Password changed"]);
+        } else {
+            http_response_code(400);
+            echo json_encode(["error" => "รหัสผ่านปัจจุบันไม่ถูกต้อง"]);
+        }
+        break;
+
     case 'admin/user/list':
         // 🔒 เรียกใช้ยาม VIP (ต้องเป็น Admin เท่านั้นถึงผ่านได้)
-        AuthMiddleware::checkDirector($connection);
-        
+        AuthMiddleware::checkDirector($connection);        
         $controller = new UserController($connection);
         $controller->listUsers();
         break;
@@ -88,20 +149,32 @@ switch ($route) {
         }
         break;
 
-    case 'admin/user/options':
-        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            AuthMiddleware::checkAdmin($connection); // 🔒 ยาม VIP
-            $controller = new UserController($connection);
-            $controller->getOptions();
-        }
-        break;
+    // 🌟 1. ดึงข้อมูลไปแสดงใน Dropdown และหน้าตั้งค่า (เปิดให้ทุกคนเข้าถึงได้)
+        case 'admin/user/options':
+            $optionController = new OptionController($connection);
+            $optionController->getOptions();
+            break;
+
+        // 🌟 2. แอดมินกดปุ่มเพิ่มข้อมูล
+        case 'admin/options/add':
+            AuthMiddleware::checkAdmin($connection); // ล็อกสิทธิ์เฉพาะแอดมิน
+            $optionController = new OptionController($connection);
+            $optionController->addOption();
+            break;
+
+        // 🌟 3. แอดมินกดปุ่มถังขยะลบข้อมูล
+        case 'admin/options/delete':
+            AuthMiddleware::checkAdmin($connection); // ล็อกสิทธิ์เฉพาะแอดมิน
+            $optionController = new OptionController($connection);
+            $optionController->deleteOption();
+            break;
 
     // ใน switch ของ index.php
     // ==========================================
     // ⚙️ ดึงข้อมูลการตั้งค่าระบบ (สำหรับพนักงานทั่วไปใช้อ่านกฎ)
     // ==========================================
     case 'system_settings':
-        AuthMiddleware::checkToken($connection); // เช็คแค่ว่าล็อกอินแล้วก็พอ
+        //AuthMiddleware::checkToken($connection); // เช็คแค่ว่าล็อกอินแล้วก็พอ
         require_once '../src/Models/Setting.php';
         $settingModel = new Setting($connection);
         

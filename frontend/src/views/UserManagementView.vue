@@ -23,6 +23,7 @@
                   <th class="ps-4">#</th>
                   <th>ชื่อผู้ใช้งาน</th>
                   <th>ชื่อ-นามสกุล</th>
+                  <th>ตำแหน่ง</th>
                   <th>สิทธิ์การใช้งาน</th>
                   <th>สถานะระบบ</th>
                   <th class="text-center pe-4">จัดการ</th>
@@ -38,6 +39,9 @@
                   <td>
                     {{ user.full_name !== 'null null' ? user.full_name : '-' }}
                     <span v-if="user.status == 0" class="badge bg-secondary ms-1" style="font-size: 0.65rem;">ย้าย/ระงับเวร</span>
+                  </td>
+                  <td>
+                    {{ user.position !== 'null null' ? user.position : '-' }}
                   </td>
                   <td>
                     <span class="badge rounded-pill" :class="getRoleColor(user.role)">
@@ -89,7 +93,7 @@
                     <label class="form-label fw-semibold text-muted small mb-1">คำนำหน้าชื่อ</label>
                     <select class="form-select" v-model="newUser.prefix_name">
                       <option value="">เลือก</option>
-                      <option v-for="f in options.fnames" :key="f.id" :value="f.name">{{ f.name }}</option>
+                      <option v-for="f in prefixes" :key="f" :value="f">{{ f }}</option>
                     </select>
                   </div>
                   <div class="col-md-4">
@@ -103,16 +107,16 @@
 
                   <div class="col-md-4">
                     <label class="form-label fw-semibold text-muted small mb-1">ตำแหน่ง</label>
-                    <select class="form-select" v-model="newUser.dep" required>
+                    <select class="form-select" v-model="newUser.position" required>
                       <option value="">เลือก</option>
-                      <option v-for="d in options.deps" :key="d.id" :value="d.name">{{ d.name }}</option>
+                      <option v-for="po in positions" :key="po" :value="po">{{ po }}</option>
                     </select>
                   </div>
                   <div class="col-md-5">
                     <label class="form-label fw-semibold text-muted small mb-1">กลุ่มงาน</label>
-                    <select class="form-select" v-model="newUser.workgroup" required>
+                    <select class="form-select" v-model="newUser.departments" required>
                       <option value="">เลือก</option>
-                      <option v-for="g in options.groups" :key="g.id" :value="g.name">{{ g.name }}</option>
+                      <option v-for="d in departments" :key="d" :value="d">{{ d }}</option>
                     </select>
                   </div>
                   <div class="col-md-3">
@@ -191,7 +195,7 @@
                     <label class="form-label fw-semibold text-muted small mb-1">คำนำหน้าชื่อ</label>
                     <select class="form-select" v-model="editingUser.prefix_name">
                       <option value="">เลือก</option>
-                      <option v-for="f in options.fnames" :key="f.id" :value="f.name">{{ f.name }}</option>
+                      <option v-for="f in prefixes" :key="f" :value="f">{{ f}}</option>
                     </select>
                   </div>
                   <div class="col-md-4">
@@ -205,16 +209,16 @@
 
                   <div class="col-md-4">
                     <label class="form-label fw-semibold text-muted small mb-1">ตำแหน่ง</label>
-                    <select class="form-select" v-model="editingUser.dep">
+                    <select class="form-select" v-model="editingUser.position">
                       <option value="">เลือก</option>
-                      <option v-for="d in options.deps" :key="d.id" :value="d.name">{{ d.name }}</option>
+                      <option v-for="d in positions" :key="d" :value="d">{{ d }}</option>
                     </select>
                   </div>
                   <div class="col-md-5">
                     <label class="form-label fw-semibold text-muted small mb-1">กลุ่มงาน</label>
-                    <select class="form-select" v-model="editingUser.workgroup">
+                    <select class="form-select" v-model="editingUser.department">
                       <option value="">เลือก</option>
-                      <option v-for="g in options.groups" :key="g.id" :value="g.name">{{ g.name }}</option>
+                      <option v-for="g in departments" :key="g" :value="g">{{ g }}</option>
                     </select>
                   </div>
                   <div class="col-md-3">
@@ -314,13 +318,15 @@ const filteredUsers = computed(() => {
 })
 
 // ตัวเลือก Dropdown
-const options = ref({ fnames: [], deps: [], groups: [] })
+const prefixes = ref({})
+const positions = ref({})
+const departments = ref({})
 
 // 🌟 ข้อมูลสร้างใหม่ (ปรับค่าเริ่มต้น st=1, srt=999 ให้ตรงกับตอนเคลียร์ค่า)
 const newUser = ref({
   username: '', password: '', role: 1,
   prefix_name: '', first_name: '', last_name: '',
-  dep: '', workgroup: '', phone: '', status: 10,
+  position: '', department: '', phone: '', status: 10,
   bank_account: '', bank_comment: '', st: 1, srt: 999
 })
 
@@ -328,7 +334,7 @@ const newUser = ref({
 const editingUser = ref({
   id: '', username: '', role: 1, password: '',
   prefix_name: '', first_name: '', last_name: '',
-  dep: '', workgroup: '', phone: '', status: '',
+  position: '', department: '', phone: '', status: '',
   bank_account: '', bank_comment: '', st: 1, srt: 999
 })
 
@@ -336,7 +342,9 @@ const editingUser = ref({
 const fetchOptions = async () => {
   try {
     const response = await api.get('?route=admin/user/options')
-    options.value = response.data
+    prefixes.value = response.data.prefixes
+    positions.value = response.data.positions
+    departments.value = response.data.departments
   } catch (error) {
     console.error("โหลดข้อมูลตัวเลือกไม่สำเร็จ", error)
   }
@@ -404,7 +412,7 @@ const submitCreateUser = async () => {
     newUser.value = {
       username: '', password: '', role: 1,
       prefix_name: '', first_name: '', last_name: '',
-      dep: '', workgroup: '', phone: '',
+      position: '', department: '', phone: '',
       bank_account: '', bank_comment: '', st: 1, srt: 999 
     }
     
@@ -426,8 +434,8 @@ const openEditModal = (user) => {
     prefix_name: user.prefix_name || '',
     first_name: user.first_name || '',
     last_name: user.last_name || '',
-    dep: user.dep || '',             
-    workgroup: user.workgroup || '', 
+    position: user.position || '',             
+    department: user.department || '', 
     phone: user.phone || '',
     bank_account: user.bank_account || '',
     bank_comment: user.bank_comment || '',

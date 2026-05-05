@@ -63,11 +63,12 @@ const handleLogin = async () => {
     // 2. ถ้า Backend ตอบกลับมาว่า Login สำเร็จ
     if (response.status === 200) {
       const userData = response.data.user
+      const userToken = response.data.token;
       
       // บันทึก Token และสิทธิ์ไว้ในเบราว์เซอร์
-      localStorage.setItem('token', userData.token)
       localStorage.setItem('role', userData.role)
       localStorage.setItem('username', userData.username)
+      localStorage.setItem('token', userToken)
 
       // แสดง Popup สำเร็จ
       Swal.fire({

@@ -30,7 +30,7 @@ class FinanceModel {
     // ฟังก์ชันดึงข้อมูลสรุปการเงิน
     public function getFinanceReportByMonth($month, $command_id = null) {
         $sql = "SELECT 
-                    p.prefix_name, p.first_name, p.last_name, p.dep,
+                    p.prefix_name, p.first_name, p.last_name, p.position,
                     COUNT(v.id) as total_days,
                     vns.price as rate_per_day, 
                     GROUP_CONCAT(DAY(v.ven_date) ORDER BY v.ven_date ASC SEPARATOR ', ') as work_dates,
@@ -41,10 +41,8 @@ class FinanceModel {
                 JOIN ven_name_sub vns ON v.ven_name_sub_id = vns.id
                 JOIN ven_name vn ON vns.ven_name_id = vn.id 
 
-                WHERE v.ven_com_id = :command_id AND DATE_FORMAT(v.ven_date, '%Y-%m') = :month         
-                
-                -- เพิ่ม p.dep และ vns.price เข้าไปใน GROUP BY ตามแบบที่ 1
-                GROUP BY p.user_id, p.first_name, p.last_name, p.dep, vns.price
+                WHERE v.ven_com_id = :command_id AND DATE_FORMAT(v.ven_date, '%Y-%m') = :month    
+                GROUP BY p.user_id, p.first_name, p.last_name, p.position, vns.price
                 ORDER BY p.srt ASC";
 
         $stmt = $this->db->prepare($sql);        

@@ -42,6 +42,7 @@ export const exportShiftChangeToWord = async (changeData, venDetail) => {
         // เตรียมข้อมูลส่งออก
         doc.render({
             change_no: changeData.change_no || changeData.change_id,
+            ref_change_no: changeData.ref_change_no || "",
 
             // 🌟 ข้อมูลหน่วยงานและผู้บริหาร (เพิ่มใหม่)
             agency_name: venDetail.agency_name || "-",

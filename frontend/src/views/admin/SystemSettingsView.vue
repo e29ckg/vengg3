@@ -1,7 +1,7 @@
 <template>
   <div class="container-fluid py-4">
     <div class="row justify-content-center">
-      <div class="col-md-9 col-lg-7">
+      <div class="col-md-9 col-lg-6">
         <div class="card shadow-sm border-0">
           <div class="card-header bg-dark text-white py-3">
             <h5 class="mb-0"><i class="bi bi-gear-wide-connected me-2"></i>ตั้งค่าระบบ (System Settings)</h5>
