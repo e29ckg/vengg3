@@ -82,6 +82,17 @@ const handleLogin = async () => {
       router.push('/home')
     }
   } catch (error) {
+    if (error.response?.data?.error === 'MAINTENANCE') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'ปิดปรับปรุงระบบ',
+        html: `<b>ขออภัยในความไม่สะดวก</b><br><br>${error.response.data.message}`,
+        confirmButtonText: 'ตกลง',
+        confirmButtonColor: '#f39c12',
+        allowOutsideClick: false // บังคับให้ต้องกดปุ่มตกลง
+      });
+      return; // หยุดการทำงานทันที
+    }
     // 3. ถ้าผิดพลาด (เช่น รหัสผิด, ไม่มี user)
     Swal.fire({
       icon: 'error',
