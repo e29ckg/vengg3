@@ -825,6 +825,22 @@ switch ($route) {
             }
             break;
 
+    case 'admin/settings/update_toggle':
+        AuthMiddleware::checkAdmin($connection); // ตรวจสอบว่าเป็น Admin หรือไม่
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        require_once '../src/Models/Setting.php';
+        $settingModel = new Setting($connection);
+        
+        // อัปเดตฟิลด์ในตาราง system_settings (สมมติว่าตารางมีแถวเดียว id=1)
+        if ($settingModel->updateSystemSetting($data['setting_key'], $data['setting_value'])) {
+            echo json_encode(["success" => true]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["error" => "Failed to update"]);
+        }
+        break;
+
     default:
         http_response_code(404);
         echo json_encode(["error" => "Endpoint not found."]);
