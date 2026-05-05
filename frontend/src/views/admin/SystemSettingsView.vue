@@ -40,7 +40,7 @@
                       type="number" 
                       class="form-control" 
                       v-model="settings.advance_swap_days" 
-                      @change="updateSingleSetting('advance_swap_days', systemSettings.advance_swap_days)"
+                      @change="updateSingleSetting('advance_swap_days', settings.advance_swap_days)"
                       min="0" 
                       placeholder="เช่น 3"
                     >
@@ -173,14 +173,14 @@ const updateSingleSetting = async (key, value) => {
     console.error(error);
     Swal.fire('ผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error');
     // หากบันทึกไม่สำเร็จ ให้คืนค่าสวิตช์กลับเป็นค่าเดิม (Rollback UI)
-    systemSettings.value[key] = !value;
+    settings.value[key] = !value;
   }
 };
 
 // ในส่วน <script setup> ของหน้าตั้งค่า
 const updateSystemName = async () => {
   try {
-    const name = systemSettings.value.system_name
+    const name = settings.value.system_name
     
     // 1. บันทึกลงฐานข้อมูล
     await api.post('?route=admin/settings/update_toggle', {

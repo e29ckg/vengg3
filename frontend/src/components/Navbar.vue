@@ -88,6 +88,7 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import api from '../services/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -102,6 +103,7 @@ const isAdminMenuOpen = ref(false)
 const isDirectorMenuOpen = ref(false)
 const isFinanceMenuOpen = ref(false) // เพิ่มตัวแปรสำหรับเมนูการเงิน
 const isMobileMenuOpen = ref(false)
+const systemName = ref('ระบบเวรนอกเวลาทำการ') // ชื่อระบบที่จะแสดงใน Navbar
 
 // ฟังก์ชันเช็คว่าล็อกอินอยู่หรือไม่
 const checkAuth = () => {
@@ -164,9 +166,10 @@ const closeDropdowns = (event) => {
 
 const fetchSystemSettings = async () => {
   try {
-    const res = await api.get('?route=admin/settings') // ปรับ Route ให้ตรงกับ API ของคุณ
+    const res = await api.get('?route=system_settings') // ปรับ Route ให้ตรงกับ API ของคุณ
+    console.log("Fetched system settings:", res) // Debug log
     if (res.data && res.data.system_name) {
-      systemName.ref = res.data.system_name
+      systemName.value = res.data.system_name
       // 🌟 ปรับชื่อหัวเว็บ (Browser Title)
       document.title = res.data.system_name
     }
@@ -178,6 +181,7 @@ const fetchSystemSettings = async () => {
 // เริ่มดักจับการคลิกเมื่อโหลดคอมโพเนนต์
 onMounted(() => {
   document.addEventListener('click', closeDropdowns)
+  fetchSystemSettings()
 })
 
 // ยกเลิกดักจับเมื่อคอมโพเนนต์ถูกทำลาย ป้องกันค้างในหน่วยความจำ
@@ -189,6 +193,5 @@ onBeforeUnmount(() => {
 const logout = () => {
   localStorage.clear()
   router.push('/login')
-  fetchSystemSettings()
 }
 </script>
