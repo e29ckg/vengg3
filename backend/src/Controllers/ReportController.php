@@ -51,7 +51,7 @@ class ReportController {
             $groupedData[$date]['staff_list'][] = [
                 'id' => $row['id'],
                 'full_name' => $row['full_name'],
-                'dep' => $row['dep'],
+                'position' => $row['position'],
                 'ven_name' => $row['ven_name'],
                 'sub_name' => $row['sub_name'],
                 'status' => isset($row['status']) ? $row['status'] : 'ปกติ'

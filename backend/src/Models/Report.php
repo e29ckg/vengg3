@@ -27,7 +27,7 @@ class Report  {
             SELECT 
                 s.*,
                 CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS full_name,
-                p.dep AS dep,
+                p.position AS position,
                 vn.name AS ven_name,
                 vn.srt AS ven_srt,
                 vns.name AS sub_name,
@@ -38,7 +38,7 @@ class Report  {
             LEFT JOIN ven_name vn ON vn.id = vc.ven_name_id
             LEFT JOIN ven_name_sub vns ON vns.id = s.ven_name_sub_id          
             WHERE s.ven_com_id = :commandId 
-            ORDER BY p.srt ASC, s.ven_date ASC, vns.srt ASC
+            ORDER BY s.ven_date ASC, vn.srt ASC, vns.srt ASC
         ";
         
         $stmt = $this->conn->prepare($query);

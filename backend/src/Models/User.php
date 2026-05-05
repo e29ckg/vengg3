@@ -37,11 +37,10 @@ class User {
                 return [
                     "success" => true,
                     "user" => [
-                        "id" => $row['id'],
                         "username" => $row['username'],
-                        "role" => $row['role'],
-                        "token" => $token
-                    ]
+                        "role" => $row['role']
+                    ],
+                    "token" => $token
                 ];
             } else {
                 return ["success" => false, "message" => "Invalid password."];
@@ -78,26 +77,23 @@ class User {
     // ฟังก์ชันดึงรายชื่อผู้ใช้ทั้งหมดสำหรับ Admin
     // ฟังก์ชันดึงรายชื่อผู้ใช้ทั้งหมด (อัปเดตให้ดึงข้อมูลครบทุกฟิลด์)
     public function getAllUsers() {
-        // ใช้ LEFT JOIN ดึง fname มาเพื่อเอาคำนำหน้าไปต่อกับชื่อ
         $query = "SELECT 
                     u.id, 
                     u.username, 
                     u.role, 
                     u.status,
-                    p.fname_id,
                     p.prefix_name AS prefix_name,
                     p.first_name AS first_name, 
                     p.last_name AS last_name,
-                    p.dep AS dep,
+                    p.position AS position,
                     p.srt AS srt,
-                    p.workgroup AS workgroup,
+                    p.department AS department,
                     p.phone,
                     p.bank_account,
                     p.bank_comment,
                     p.st
                   FROM " . $this->table_name . " u
                   LEFT JOIN profile p ON u.id = p.user_id
-                  LEFT JOIN fname f ON p.fname_id = f.id
                   WHERE u.is_deleted = 0
                   ORDER BY p.srt ASC";
                   
@@ -142,16 +138,16 @@ class User {
             $stmt->bindParam(':role', $data['role']);
             $stmt->execute();
             // 3. บันทึกลงตาราง profile
-            $queryProfile = "INSERT INTO profile (user_id, prefix_name, first_name, last_name, srt, dep, workgroup, phone, bank_account, bank_comment, st) 
-                             VALUES (:user_id, :prefix_name, :first_name, :last_name, :srt, :dep, :workgroup, :phone, :bank_account, :bank_comment, :st)";   
+            $queryProfile = "INSERT INTO profile (user_id, prefix_name, first_name, last_name, srt, position, department, phone, bank_account, bank_comment, st) 
+                             VALUES (:user_id, :prefix_name, :first_name, :last_name, :srt, :position, :department, :phone, :bank_account, :bank_comment, :st)";   
             $stmtProfile = $this->conn->prepare($queryProfile);
             $stmtProfile->bindParam(':user_id', $newUserId);
             $stmtProfile->bindParam(':prefix_name', $data['prefix_name']);
             $stmtProfile->bindParam(':first_name', $data['first_name']);
             $stmtProfile->bindParam(':last_name', $data['last_name']);
             $stmtProfile->bindParam(':srt', $data['srt']);
-            $stmtProfile->bindParam(':dep', $data['dep']);
-            $stmtProfile->bindParam(':workgroup', $data['workgroup']);
+            $stmtProfile->bindParam(':position', $data['position']);
+            $stmtProfile->bindParam(':department', $data['department']);
             $stmtProfile->bindParam(':phone', $data['phone']);
             $stmtProfile->bindParam(':bank_account', $data['bank_account']);
             $stmtProfile->bindParam(':bank_comment', $data['bank_comment']);
@@ -208,8 +204,8 @@ class User {
         $prefix_name = !empty($data['prefix_name']) ? $data['prefix_name'] : null;
         $first_name  = !empty($data['first_name']) ? $data['first_name'] : null;
         $last_name   = !empty($data['last_name']) ? $data['last_name'] : null;
-        $dep         = !empty($data['dep']) ? $data['dep'] : null;
-        $workgroup   = !empty($data['workgroup']) ? $data['workgroup'] : null;
+        $position    = !empty($data['position']) ? $data['position'] : null;
+        $department   = !empty($data['department']) ? $data['department'] : null;
         $phone       = !empty($data['phone']) ? $data['phone'] : null;
         $bank_acc    = !empty($data['bank_account']) ? $data['bank_account'] : null;
         $bank_com    = !empty($data['bank_comment']) ? $data['bank_comment'] : null;
@@ -221,8 +217,8 @@ class User {
                             first_name = :first_name, 
                             last_name = :last_name, 
                             srt = :srt, 
-                            dep = :dep,                                 
-                            workgroup = :workgroup, 
+                            position = :position,                                 
+                            department = :department, 
                             phone = :phone, 
                             bank_account = :bank_account, 
                             bank_comment = :bank_comment, 
@@ -234,8 +230,8 @@ class User {
         $stmtProfile->bindParam(':first_name', $first_name);
         $stmtProfile->bindParam(':last_name', $last_name);
         $stmtProfile->bindParam(':srt', $srt);
-        $stmtProfile->bindParam(':dep', $dep);
-        $stmtProfile->bindParam(':workgroup', $workgroup);
+        $stmtProfile->bindParam(':position', $position);
+        $stmtProfile->bindParam(':department', $department);
         $stmtProfile->bindParam(':phone', $phone);
         $stmtProfile->bindParam(':bank_account', $bank_acc);
         $stmtProfile->bindParam(':bank_comment', $bank_com);
@@ -267,29 +263,7 @@ class User {
         return false;
     }
 
-    // ฟังก์ชันดึงข้อมูลสำหรับทำ Dropdown (คำนำหน้า, ตำแหน่ง, กลุ่มงาน)
-    public function getFormOptions() {
-        $options = [
-            "fnames" => [],
-            "deps" => [],
-            "groups" => []
-        ];
-
-        // ดึงคำนำหน้า
-        $stmtFname = $this->conn->query("SELECT id, name FROM fname ORDER BY id ASC");
-        $options['fnames'] = $stmtFname->fetchAll(PDO::FETCH_ASSOC);
-
-        // ดึงตำแหน่ง
-        $stmtDep = $this->conn->query("SELECT id, name FROM dep ORDER BY id ASC");
-        $options['deps'] = $stmtDep->fetchAll(PDO::FETCH_ASSOC);
-
-        // ดึงกลุ่มงาน
-        $stmtGroup = $this->conn->query("SELECT id, name FROM `group` ORDER BY id ASC");
-        $options['groups'] = $stmtGroup->fetchAll(PDO::FETCH_ASSOC);
-
-        return $options;
-    }
-
+    
     public function deleteUser($id) {
         // 🌟 เปลี่ยนเป็นการอัปเดตสถานะ is_deleted = 1 แทนการลบข้อมูลจริง
         $query = "UPDATE user SET is_deleted = 1 WHERE id = :id";

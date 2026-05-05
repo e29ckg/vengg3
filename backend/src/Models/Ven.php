@@ -55,7 +55,7 @@ class Ven {
                     p.user_id,
 
                     CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS full_name,
-                    p.dep AS dep,
+                    p.position AS position,
                     p.img  AS profile_image,
                     vns.id AS sub_id,
                     vns.name AS duty_role,
@@ -111,10 +111,20 @@ public function getChangeHistory($ven_id) {
                 vch.created_at AS change_date, -- วันที่ทำรายการ
                 vch.user1_id, -- 🌟 สำคัญ: ดึงไอดีคนโอน (เพื่อใช้เช็คสิทธิ์ปุ่มยกเลิก)
                 vch.user2_id,
-                p1.dep as user1_dep,
-                p2.dep as user2_dep,
+                p1.position as user1_dep,
+                p2.position as user2_dep,
                 CONCAT_WS(' ', CONCAT(IFNULL(p1.prefix_name, ''), IFNULL(p1.first_name, '')), p1.last_name) AS user1_name,
-                CONCAT_WS(' ', CONCAT(IFNULL(p2.prefix_name, ''), IFNULL(p2.first_name, '')), p2.last_name) AS user2_name
+                CONCAT_WS(' ', CONCAT(IFNULL(p2.prefix_name, ''), IFNULL(p2.first_name, '')), p2.last_name) AS user2_name,
+                
+                /* 🌟 แก้ไข vc. เป็น vch. ให้ตรงกับตารางหลักด้านล่าง */
+                (SELECT prev.change_no 
+                 FROM ven_change prev 
+                 WHERE prev.s1_id = vch.s1_id 
+                   AND prev.status = 1 
+                   AND prev.created_at < vch.created_at 
+                 ORDER BY prev.created_at DESC 
+                 LIMIT 1) AS ref_change_no
+
               FROM ven_change vch
               LEFT JOIN profile p1 ON vch.user1_id = p1.user_id
               LEFT JOIN profile p2 ON vch.user2_id = p2.user_id

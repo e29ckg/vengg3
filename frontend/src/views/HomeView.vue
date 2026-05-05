@@ -403,7 +403,7 @@ const loadRecipients = async () => {
       if (latestChange.status != 1) {
         return Swal.fire({
           title: 'ไม่สามารถดำเนินการได้',
-          text: `ใบเปลี่ยนเวรเลขที่ #${latestChange.change_id} ยังไม่ได้รับการอนุมัติ จึงไม่สามารถนำไปเปลี่ยนต่อได้`,
+          text: `ใบเปลี่ยนเวรเลขที่ #${latestChange.change_no} ยังไม่ได้รับการอนุมัติ จึงไม่สามารถนำไปเปลี่ยนต่อได้`,
           icon: 'warning'
         });
       }
@@ -671,9 +671,9 @@ const fetchAgencyConfig = async () => {
 }
 
 onMounted(async() => {
-  await fetchUserInfo()
   fetchVenData()
   await fetchAgencyConfig()
+  await fetchUserInfo()
   detailModalInstance = new Modal(document.getElementById('venDetailModal'))
 })
 </script>

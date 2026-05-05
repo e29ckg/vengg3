@@ -10,7 +10,7 @@ class Setting {
     
     // ในไฟล์ Setting.php เพิ่มชื่อตารางที่อนุญาต
     public function getAll($table) {
-        $allowed = ['dep', 'group', 'fname', 'ven_name', 'ven_name_sub', 'ven_com', 'sign_name', 'agency_config'];
+        $allowed = ['ven_name', 'ven_name_sub', 'ven_com', 'sign_name', 'agency_config'];
         if (!in_array($table, $allowed)) return [];
 
         $query = "SELECT * FROM `$table`";
@@ -215,11 +215,10 @@ class Setting {
 
         // ดึงข้อมูลการจับคู่ (ven_user) พร้อมชื่อจริงจากตาราง profile
         foreach ($subs as &$sub) {
-            $queryUser = "SELECT vu.id as vu_id, u.id as user_id, p.fname_id, f.name as prefix, p.name, p.sname 
+            $queryUser = "SELECT vu.id as vu_id, u.id as user_id, p.prefix_name, p.first_name, p.last_name 
                           FROM ven_user vu
                           JOIN user u ON vu.user_id = u.id
                           JOIN profile p ON u.id = p.user_id
-                          LEFT JOIN fname f ON p.fname_id = f.id
                           WHERE vu.ven_name_sub_id = :sub_id
                           ORDER BY vu.order ASC";
             $stmtUser = $this->conn->prepare($queryUser);
@@ -231,7 +230,14 @@ class Setting {
     }
 
     public function getUsersBySubId($sub_id) {
-        $query = "SELECT vu.id as vu_id, vu.order_num, u.id as user_id, p.prefix_name, p.first_name, p.last_name, CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, ''), ' ', IFNULL(p.last_name, '')) AS full_name
+        $query = "SELECT 
+                        vu.id as vu_id, 
+                        vu.order_num, 
+                        u.id as user_id, 
+                        p.prefix_name, 
+                        p.first_name, 
+                        p.last_name, 
+                        CONCAT_WS(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, ''), ' ', IFNULL(p.last_name, '')) AS full_name
                   FROM ven_user vu
                   JOIN user u ON vu.user_id = u.id
                   JOIN profile p ON u.id = p.user_id
@@ -333,14 +339,14 @@ class Setting {
     // 1. ดึงข้อมูลเวรทั้งหมดในเดือนที่เลือก เพื่อเอาไปลงปฏิทิน
     public function getSchedulesByMonth($year_month) {
         $query = "SELECT s.id, s.ven_date as date, DAY(s.ven_date) as day, 
-                         s.user_id, CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS user_name,
+                         s.user_id, 
+                         CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS user_name,
                          s.ven_com_id as com_id, c.com_num,
                          s.ven_name_sub_id as sub_id, sub.name as sub_name, sub.color,
                          n.dn as shift_type
                   FROM ven_schedule s
                   JOIN user u ON s.user_id = u.id
                   JOIN profile p ON u.id = p.user_id
-                  LEFT JOIN fname f ON p.fname_id = f.id
                   JOIN ven_com c ON s.ven_com_id = c.id
                   JOIN ven_name_sub sub ON s.ven_name_sub_id = sub.id
                   JOIN ven_name n ON c.ven_name_id = n.id
@@ -744,11 +750,10 @@ class Setting {
     // ==========================================
 
     public function getAssignedUsersBySub($sub_id) {
-        $query = "SELECT vu.id as vu_id, vu.user_id, vu.srt, f.name as prefix_name, p.first_name, p.last_name 
+        $query = "SELECT vu.id as vu_id, vu.user_id, vu.srt, p.prefix_name, p.first_name, p.last_name 
                   FROM ven_user vu
                   JOIN user u ON vu.user_id = u.id
                   JOIN profile p ON u.id = p.user_id
-                  LEFT JOIN fname f ON p.fname_id = f.id
                   WHERE vu.ven_name_sub_id = :sub_id 
                   ORDER BY vu.srt ASC";
         $stmt = $this->conn->prepare($query);
@@ -797,7 +802,16 @@ class Setting {
                          vcom.com_num AS com_num, 
                          vcom.com_date AS com_date,
                          CONCAT_WS(' ', p1.prefix_name, p1.first_name, p1.last_name) AS user1_name,
-                         CONCAT_WS(' ', p2.prefix_name, p2.first_name, p2.last_name) AS user2_name
+                         CONCAT_WS(' ', p2.prefix_name, p2.first_name, p2.last_name) AS user2_name,
+
+                         (SELECT prev.change_no 
+                            FROM ven_change prev 
+                            WHERE prev.s1_id = vc.s1_id 
+                            AND prev.status = 1 
+                            AND prev.created_at < vc.created_at
+                            ORDER BY prev.created_at DESC 
+                            LIMIT 1) AS ref_change_no
+
                   FROM ven_change vc
                   JOIN ven_schedule vs ON vc.s1_id = vs.id
                   LEFT JOIN ven_name_sub vns ON vs.ven_name_sub_id = vns.id
@@ -858,6 +872,31 @@ class Setting {
     $stmt = $this->conn->prepare($query);
     return $stmt->execute([':val' => $value]);
 }
+
+// 🌟 ดึงข้อมูลตัวเลือกทั้งหมด (หรือส่งค่าเริ่มต้นถ้ายังไม่มีข้อมูล)
+    public function getUserOptions() {
+        $stmt = $this->conn->prepare("SELECT user_options FROM system_settings WHERE id = 1");
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($row && !empty($row['user_options'])) {
+            return json_decode($row['user_options'], true);
+        }
+
+        // ค่าเริ่มต้น (เผื่อฐานข้อมูลยังว่างเปล่า)
+        return [
+            "prefixes" => ["นาย", "นาง", "นางสาว"],
+            "positions" => ["ผู้พิพากษา", "ผู้อำนวยการฯ", "นิติกร", "เจ้าพนักงานศาลยุติธรรม"],
+            "departments" => ["กลุ่มงานอำนวยการ", "กลุ่มงานคลัง", "กลุ่มงานบริการประชาชนฯ"]
+        ];
+    }
+
+    // 🌟 บันทึกข้อมูลตัวเลือกกลับลงฐานข้อมูล
+    public function saveUserOptions($optionsArray) {
+        $json = json_encode($optionsArray, JSON_UNESCAPED_UNICODE);
+        $stmt = $this->conn->prepare("UPDATE system_settings SET user_options = :val WHERE id = 1");
+        return $stmt->execute([':val' => $json]);
+    }
     
     
 }

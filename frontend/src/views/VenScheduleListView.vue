@@ -84,7 +84,7 @@
                   <!-- <td v-if="pIndex === 0" :rowspan="group.staff_list.length" class="text-center bg-light">{{ gIndex + 1 }}</td> -->
                   <td v-if="pIndex === 0" :rowspan="group.staff_list.length" class="text-center fw-bold bg-light">{{ formatDateThai(group.ven_date) }}</td>
                   <td>{{ person.full_name }}</td>
-                  <td>{{ person.dep || '-' }}</td>
+                  <td>{{ person.position || '-' }}</td>
                   <td>{{ person.sub_name ? person.sub_name : person.ven_name }}</td>
                   <td class="text-center"></td>
                 </tr>

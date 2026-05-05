@@ -50,6 +50,25 @@ class AuthMiddleware {
             exit();
         }
 
+        // 🌟 5. [ส่วนที่เพิ่มใหม่] ตรวจสอบสถานะระบบ (Maintenance Mode)
+        // ดึง Role ของผู้ใช้ออกมา (รองรับทั้งแบบ Array และ Object)
+        $role = is_array($userData) ? ($userData['role'] ?? null) : ($userData->role ?? null);
+
+        // ดึงสถานะระบบปัจจุบัน
+        $stmt = $db->prepare("SELECT maintenance_mode FROM system_settings WHERE id = 1");
+        $stmt->execute();
+        $setting = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // ถ้าสถานะ = 0 (ปิดระบบ) และไม่ใช่ Admin (role != 9) ให้เตะออกด้วยรหัส 403
+        if ($setting && isset($setting['maintenance_mode']) && $setting['maintenance_mode'] == 1 && $role != 9) {
+            http_response_code(403); 
+            echo json_encode([
+                "error" => "MAINTENANCE",
+                "message" => "ระบบกำลังปิดปรับปรุงชั่วคราว ผู้ดูแลระบบกำลังดำเนินการแก้ไข โปรดเข้าใช้งานใหม่ในภายหลัง"
+            ]);
+            exit();
+        }
+
         // ถ้าผ่านทุกด่าน คืนค่าข้อมูลผู้ใช้กลับไป (เผื่อเอาไปเช็คสิทธิ์ Role ต่อ)
         return $userData;
     }

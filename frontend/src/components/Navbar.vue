@@ -56,13 +56,23 @@
               <i class="bi bi-shield-lock"></i> ผู้ดูแลระบบ
             </a>
             <ul class="dropdown-menu shadow-sm" :class="{ 'show': isAdminMenuOpen }">
-              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/admin/users"><i class="bi bi-people"></i> จัดการผู้ใช้งาน</router-link></li>
+              <li>
+                <router-link class="dropdown-item" active-class="active fw-bold" to="/admin/users">
+                  <i class="bi bi-people"></i> จัดการผู้ใช้งาน
+                </router-link>
+              </li>
+              <li>
+                <router-link class="dropdown-item" to="/admin/options" active-class="active fw-bold">
+                  <i class="bi bi-card-list"></i> จัดการคำนำหน้า ตำแหน่ง กลุ่มงาน
+                </router-link>
+              </li>
+              <li><hr class="dropdown-divider"></li>            
+              <li>  <router-link to="/admin/settings/telegram" class="dropdown-item"><i class="bi bi-telegram me-2"></i> ตั้งค่า Telegram</router-link></li>
               <li>
                 <router-link to="/admin/settings/system" class="dropdown-item" active-class="active fw-bold">
                   <i class="bi bi-gear-wide-connected me-2 text-dark"></i> ตั้งค่าระบบ
                 </router-link>
               </li>             
-              <li>  <router-link to="/admin/settings/telegram" class="dropdown-item"><i class="bi bi-telegram me-2"></i> ตั้งค่า Telegram</router-link></li>
               <li>
                 <router-link to="/admin/settings/agency" class="dropdown-item" active-class="active fw-bold">
                   <i class="bi bi-building me-2 text-primary"></i> ตั้งค่าข้อมูลหน่วยงาน
@@ -73,9 +83,11 @@
         </ul>
 
         <div class="d-flex align-items-center text-white mt-2 mt-lg-0">
-          <div class="me-3">
-            <i class="bi bi-person-circle"></i> {{ userName }}
-          </div>
+          <router-link to="/profile" class="text-white text-decoration-none me-3 profile-link" title="จัดการโปรไฟล์">
+            <i class="bi bi-person-circle fs-5 align-middle me-1"></i> 
+            <span class="align-middle">{{ userName }}</span>
+          </router-link>
+          
           <button class="btn btn-light btn-sm rounded-pill fw-bold text-danger px-3 shadow-sm" @click="logout">
             <i class="bi bi-box-arrow-right"></i> ออกจากระบบ
           </button>

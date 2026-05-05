@@ -22,7 +22,9 @@ const router = createRouter({
     { 
       path: '/admin/users', 
       name: 'admin-users', 
-      component: () => import('../views/UserManagementView.vue') 
+      component: () => import('../views/UserManagementView.vue'),
+      meta: { requiresAuth: true, role: 9 } // เฉพาะ Admin
+
     },
     {
       path: '/admin/settings/system',
@@ -40,23 +42,27 @@ const router = createRouter({
     { 
       path: '/director/ven-settings', 
       name: 'ven-settings', 
-      component: () => import('../views/VenSettingView.vue') 
+      component: () => import('../views/VenSettingView.vue') ,
+      meta: { requiresAuth: true }
     },
     
     { 
       path: '/director/commands', 
       name: 'commands', 
-      component: () => import('../views/VenCommandView.vue') 
+      component: () => import('../views/VenCommandView.vue'), 
+      meta: { requiresAuth: true } // ต้องล็อกอินก่อนถึงใช้งานได้
     },
     { 
       path: '/director/schedule', 
       name: 'schedule', 
-      component: () => import('../views/VenScheduleView.vue') 
+      component: () => import('../views/VenScheduleView.vue'), 
+      meta: { requiresAuth: true }
     },
     {
       path: '/director/schedule-list',
       name: 'ven-schedule-list',
-      component: () => import('../views/VenScheduleListView.vue')
+      component: () => import('../views/VenScheduleListView.vue'),
+      meta: { requiresAuth: true }
     },
     {
       path: '/director/approvals',
@@ -67,7 +73,8 @@ const router = createRouter({
     {
         path: '/staff/swap',
         name: 'staff-swap',
-        component: () => import('../views/VenSwapView.vue')
+        component: () => import('../views/VenSwapView.vue'),
+        meta: { requiresAuth: true } // ต้องล็อกอินก่อนถึงใช้งานได้
     },
     {
       path: '/finance/report',
@@ -85,6 +92,19 @@ const router = createRouter({
       path: '/user/history',
       name: 'ven-history',
       component: () => import('../views/VenChangeHistoryView.vue'),
+      meta: { requiresAuth: true } // ต้องล็อกอินก่อนถึงดูประวัติได้
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/ProfileView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/admin/options',
+      name: 'options',
+      component: () => import('../views/AdminOptionsView.vue'),
+      meta: { requiresAuth: true }
     },
 
   ]
