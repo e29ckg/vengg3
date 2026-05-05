@@ -1,8 +1,9 @@
 <template>
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm d-print-none"  v-if="isLoggedIn">
     <div class="container-fluid">
-      <router-link class="navbar-brand fw-bold" to="/home">
-        <i class="bi bi-calendar2-check"></i> ระบบจัดเวร
+      
+      <router-link class="navbar-brand d-flex align-items-center" to="/home">
+        <span class="fw-bold"><i class="bi bi-calendar2-check"></i> {{ systemName || 'ระบบเวรนอกเวลาทำการ' }}</span>
       </router-link>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" @click="toggleMobileMenu">
         <span class="navbar-toggler-icon"></span>
@@ -161,6 +162,19 @@ const closeDropdowns = (event) => {
   }
 }
 
+const fetchSystemSettings = async () => {
+  try {
+    const res = await api.get('?route=admin/settings') // ปรับ Route ให้ตรงกับ API ของคุณ
+    if (res.data && res.data.system_name) {
+      systemName.ref = res.data.system_name
+      // 🌟 ปรับชื่อหัวเว็บ (Browser Title)
+      document.title = res.data.system_name
+    }
+  } catch (error) {
+    console.error("Fetch settings error:", error)
+  }
+}
+
 // เริ่มดักจับการคลิกเมื่อโหลดคอมโพเนนต์
 onMounted(() => {
   document.addEventListener('click', closeDropdowns)
@@ -175,5 +189,6 @@ onBeforeUnmount(() => {
 const logout = () => {
   localStorage.clear()
   router.push('/login')
+  fetchSystemSettings()
 }
 </script>
