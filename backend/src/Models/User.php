@@ -12,7 +12,11 @@ class User {
     // ฟังก์ชันตรวจสอบการล็อกอิน
     public function login($username, $password) {
         // ดึงข้อมูลผู้ใช้จากชื่อผู้ใช้
-        $query = "SELECT id, username, password_hash, role, status FROM " . $this->table_name . " WHERE username = :username LIMIT 0,1";
+        $query = "SELECT u.id, u.username, u.password_hash, u.role, u.status, 
+                         p.prefix_name, p.first_name, p.last_name, p.avatar 
+                  FROM " . $this->table_name . " u 
+                  LEFT JOIN profile p ON u.id = p.user_id 
+                  WHERE u.username = :username LIMIT 0,1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':username', $username);
         $stmt->execute();
@@ -33,12 +37,16 @@ class User {
                 // บันทึก Token ลงในช่อง auth_key
                 $this->updateAuthKey($row['id'], $token);
 
+                $fullName = trim(($row['prefix_name'] ?? '').($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
+
                 // ส่งข้อมูลผู้ใช้และ Token กลับไป
                 return [
                     "success" => true,
                     "user" => [
                         "username" => $row['username'],
-                        "role" => $row['role']
+                        "role" => $row['role'],
+                        "fullname" => $fullName,               
+                        "avatar" => $row['avatar']
                     ],
                     "token" => $token
                 ];
@@ -61,7 +69,7 @@ class User {
 
     // ฟังก์ชันตรวจสอบ Token ว่าถูกต้องและมีอยู่จริงหรือไม่ (สำหรับ Middleware)
     public function validateToken($token) {
-        $query = "SELECT id, username, role FROM " . $this->table_name . " WHERE auth_key = :token AND status = 10 LIMIT 0,1";
+        $query = "SELECT u.id, u.username, u.role, p.avatar FROM user u LEFT JOIN profile p ON u.id = p.user_id   WHERE u.auth_key = :token AND u.status = 10 LIMIT 0,1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':token', $token);
         $stmt->execute();
@@ -82,6 +90,7 @@ class User {
                     u.username, 
                     u.role, 
                     u.status,
+                    p.avatar,
                     p.prefix_name AS prefix_name,
                     p.first_name AS first_name, 
                     p.last_name AS last_name,
@@ -92,7 +101,7 @@ class User {
                     p.bank_account,
                     p.bank_comment,
                     p.st
-                  FROM " . $this->table_name . " u
+                  FROM user u
                   LEFT JOIN profile p ON u.id = p.user_id
                   WHERE u.is_deleted = 0
                   ORDER BY p.srt ASC";

@@ -56,7 +56,7 @@ class Ven {
 
                     CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS full_name,
                     p.position AS position,
-                    p.img  AS profile_image,
+                    p.avatar  AS profile_image,
                     vns.id AS sub_id,
                     vns.name AS duty_role,
                     vns.price,
