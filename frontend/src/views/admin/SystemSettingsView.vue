@@ -25,14 +25,19 @@
 
               <hr class="my-4">
               <h6 class="fw-bold mb-3 text-success"><i class="bi bi-arrow-left-right me-2"></i>กฎการเปลี่ยน/แลกเวร</h6>
-              
+                            
               <div class="card bg-light border-0 mb-3">
                 <div class="card-body p-3">
                   <div class="form-check form-switch mb-3">
                     <input class="form-check-input" type="checkbox" v-model="settings.allow_swap" @change="updateSingleSetting('allow_swap', settings.allow_swap)" id="allowSwap">
-                    <label class="form-check-label fw-bold" for="allowSwap">อนุญาตให้เจ้าหน้าที่ส่งคำขอแลก/ยกเวรได้</label>
-                    <div class="small text-muted mt-1">หากปิดสวิตช์นี้ เมนูขอแลกเวรจะถูกซ่อนจากผู้ใช้งานทั่วไป</div>
+                    <label class="form-check-label" for="allowSwapToggle" style="cursor: pointer;">
+                      <span class="fw-bold d-block text-dark">อนุญาตให้ใช้งานฟังก์ชัน "สลับเปลี่ยนเวร"</span>
+                      <small class="text-muted">
+                        หาก <b>ปิด</b> ผู้ใช้งานจะสามารถ <u>ยกเวรให้ผู้อื่น (โอนขาด)</u> ได้เพียงอย่างเดียว ไม่สามารถนำเวรมาแลกกันได้
+                      </small>
+                    </label>
                   </div>
+
                   
                   <div>
                     <label class="form-label text-muted small fw-bold">จำนวนวันล่วงหน้าขั้นต่ำในการขอแลกเวร (วัน)</label>
@@ -40,7 +45,7 @@
                       type="number" 
                       class="form-control" 
                       v-model="settings.advance_swap_days" 
-                      @change="updateSingleSetting('advance_swap_days', settings.advance_swap_days)"
+                      @change="updateSingleSetting2('advance_swap_days', settings.advance_swap_days)"
                       min="0" 
                       placeholder="เช่น 3"
                     >
@@ -178,6 +183,34 @@ const updateSingleSetting = async (key, value) => {
     await api.post('?route=admin/settings/update_toggle', {
       setting_key: key,
       setting_value: value ? 1 : 0
+    });
+
+    Toast.fire({
+      icon: 'success',
+      title: 'บันทึกการตั้งค่าแล้ว'
+    });
+  } catch (error) {
+    console.error(error);
+    Swal.fire('ผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+    // หากบันทึกไม่สำเร็จ ให้คืนค่าสวิตช์กลับเป็นค่าเดิม (Rollback UI)
+    settings.value[key] = !value;
+  }
+};
+const updateSingleSetting2 = async (key, value) => {
+  try {
+    // แสดง Loading ขนาดเล็กที่มุมจอ (Optional)
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 2000,
+      timerProgressBar: true
+    });
+
+    // ส่งข้อมูลไปบันทึกที่ Backend
+    await api.post('?route=admin/settings/update_toggle', {
+      setting_key: key,
+      setting_value: value 
     });
 
     Toast.fire({

@@ -27,7 +27,10 @@ class VenController {
                 'title' => $row['title'],
                 'date' => $row['date'],
                 'backgroundColor' => $row['backgroundColor'],
-                'ven_time' => $row['ven_time']
+                'ven_time' => $row['ven_time'],
+                'ven_com_id' => $row['ven_com_id'],
+                'sub_id' => $row['sub_id'],
+
             ];
         }
 
@@ -70,6 +73,7 @@ class VenController {
                 "duty_main_full" => $row['duty_main_full'],
                 "duty_role" => $row['duty_role'],
                 "sub_id" => $row['sub_id'],
+                "ven_com_id" => $row['ven_com_id'],
                 "price" => $row['price'],
                 "command_num" => $row['command_num'] ? $row['command_num'] : 'ไม่มีคำสั่ง',
                 "command_date" => $row['command_date'] ? $row['command_date'] : '-',

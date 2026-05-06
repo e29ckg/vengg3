@@ -292,42 +292,51 @@ switch ($route) {
     
 
     case 'admin/ven_approve':
-        // ตรวจสอบสิทธิ์ (ใช้ Middleware เดียวกับ admin)
-        AuthMiddleware::checkDirector($connection);
-        $settingModel = new Setting($connection);
-        $action = $_GET['action'] ?? '';
-        $data = json_decode(file_get_contents("php://input"), true);
-        
-        if ($action === 'list') {
-            echo json_encode($settingModel->getAllChangeRequests());
-        } 
-        elseif ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        AuthMiddleware::checkAdmin($connection); 
+            
             $data = json_decode(file_get_contents("php://input"), true);
-            if (isset($data['id']) && isset($data['status'])) {
-                $result = $settingModel->updateChangeStatus($data['id'], $data['status']);
-
-                if ($result) {
-                    // 🌟 โค้ดที่ต้องเพิ่มเข้าไป (ดักเฉพาะตอนอนุมัติสำเร็จ)
-                    if ($data['status'] == 1) {
-                        require_once '../src/Services/TelegramService.php';
-                        $telegram = new TelegramService($connection);
-                        
-                        $msg = "✅ <b>แจ้งผลการอนุมัติแลกเวร</b>\n";
-                        $msg .= "ผู้บริหารได้ <b>อนุมัติ</b> คำขอแลกเปลี่ยนเวร ". $data['change_no'] ." เรียบร้อยแล้ว!\n";
-                        $msg .= "ระบบได้ทำการอัปเดตตารางเวรให้โดยอัตโนมัติครับ";
-                        
-                        // ส่ง 'notify_approval' ไปเช็คสวิตช์
-                        $telegram->sendMessage($msg, 'notify_approval');
-                    }
-                    http_response_code(200);
-                    echo json_encode(["success" => true, "message" => "อัปเดตสถานะเรียบร้อย"]);
-                }else {
-                    http_response_code(500);
-                    echo json_encode(["error" => "ไม่สามารถอัปเดตสถานะได้"]);
-                }
+            $change_id = $data['change_id'] ?? null;
+            
+            if (!$change_id) {
+                http_response_code(400); echo json_encode(['error' => 'ไม่พบรหัสการเปลี่ยนเวร']); break;
             }
-        }
-        break;
+            
+            try {
+                // 1. ดึงข้อมูลใบคำขอเปลี่ยนเวร
+                $stmt = $connection->prepare("SELECT * FROM ven_change WHERE id = ?");
+                $stmt->execute([$change_id]);
+                $changeReq = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($changeReq) {
+                    $tableName = "ven_name"; // ตรวจสอบชื่อตารางให้ตรงกับของคุณ
+                    
+                    // 🌟 2. อัปเดตตารางเวร ให้สถานะกลับมาเป็น 1 (อนุมัติสมบูรณ์)
+                    if ($changeReq['is_swap'] == 1) {
+                        // อัปเดตกลับเป็น 1 ทั้งคู่
+                        $stmt1 = $connection->prepare("UPDATE $tableName SET status = 1 WHERE id = ?");
+                        $stmt1->execute([$changeReq['s1_id']]);
+                        $stmt2 = $connection->prepare("UPDATE $tableName SET status = 1 WHERE id = ?");
+                        $stmt2->execute([$changeReq['s2_id']]);
+                    } else {
+                        // อัปเดตกลับเป็น 1 แค่เวรเดียว
+                        $stmt1 = $connection->prepare("UPDATE $tableName SET status = 1 WHERE id = ?");
+                        $stmt1->execute([$changeReq['s1_id']]);
+                    }
+                    
+                    // 3. เปลี่ยนสถานะใบคำขอเป็น "อนุมัติแล้ว"
+                    $stmtUpdate = $connection->prepare("UPDATE ven_change SET status = 1 WHERE id = ?");
+                    $stmtUpdate->execute([$change_id]);
+                    
+                    echo json_encode(['success' => true, 'message' => 'อนุมัติการเปลี่ยนเวรเรียบร้อยแล้ว']);
+                } else {
+                    http_response_code(404); echo json_encode(['error' => 'ไม่พบข้อมูลใบคำขอนี้']);
+                }
+            } catch (PDOException $e) {
+                http_response_code(500); echo json_encode(['error' => 'Database Error: ' . $e->getMessage()]);
+            }
+            break;
+
+    
 
    // ==========================================
         // 🌟 1. การตั้งค่าเวรหลัก และ หน้าที่ย่อย
@@ -461,21 +470,46 @@ switch ($route) {
         break;
 
     // 🌟 เพิ่มเคสใหม่ สำหรับยกเลิกใบเปลี่ยนเวร
-        case 'ven/cancel_change':
-            $data = json_decode(file_get_contents("php://input"), true);
-            
-            if (isset($data['change_id'])) {
-                $ven = new Ven($connection); // ปรับชื่อ Class ให้ตรงกับที่คุณใช้เก็บฟังก์ชัน
-                $success = $ven->cancelShiftChange($data['change_id']);
-                
-                if ($success) {
-                    echo json_encode(["success" => true]);
-                } else {
-                    http_response_code(400);
-                    echo json_encode(["error" => "ไม่สามารถยกเลิกได้ (ใบเปลี่ยนนี้อาจถูกอนุมัติไปแล้ว)"]);
+    case 'ven/cancel_change':
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        if (isset($data['change_id'])) {
+            $change_id = $data['change_id'];
+           try {
+                // 1. ดึงข้อมูลว่าสลับเวรใครไปบ้าง
+                $stmt = $connection->prepare("SELECT * FROM ven_change WHERE id = ?");
+                $stmt->execute([$change_id]);
+                $changeReq = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($changeReq) {
+                    $tableName = "ven_schedule";
+                    
+                    // 🌟 2. คืนค่าชื่อเดิมกลับมา และตั้งสถานะเป็น 1
+                    if ($changeReq['is_swap'] == 1) {
+                        // เอา user1_id กลับไปใส่ s1_id เหมือนเดิม
+                        $stmt1 = $connection->prepare("UPDATE $tableName SET user_id = ?, status = 1 WHERE id = ?");
+                        $stmt1->execute([$changeReq['user1_id'], $changeReq['s1_id']]);
+                        
+                        // เอา user2_id กลับไปใส่ s2_id เหมือนเดิม
+                        $stmt2 = $connection->prepare("UPDATE $tableName SET user_id = ?, status = 1 WHERE id = ?");
+                        $stmt2->execute([$changeReq['user2_id'], $changeReq['s2_id']]);
+                    } else {
+                        // เอา user1_id กลับไปใส่ s1_id เหมือนเดิม
+                        $stmt1 = $connection->prepare("UPDATE $tableName SET user_id = ?, status = 1 WHERE id = ?");
+                        $stmt1->execute([$changeReq['user1_id'], $changeReq['s1_id']]);
+                    }
+
+                    // 3. เปลี่ยนสถานะใบคำขอเป็น "ยกเลิกแล้ว" (สมมติใช้ status = 2 แทนการลบทิ้ง หรือจะใช้คำสั่ง DELETE ก็ได้)
+                    $stmtDel = $connection->prepare("DELETE FROM ven_change WHERE id = ?");
+                    $stmtDel->execute([$change_id]);
+
+                    echo json_encode(['success' => true, 'message' => 'ยกเลิกการเปลี่ยนเวรเรียบร้อยแล้ว']);
                 }
+            }catch (PDOException $e) {
+                http_response_code(500); echo json_encode(['error' => 'Database Error: ' . $e->getMessage()]);
             }
-            break;
+        }
+        break;
 
     case 'auth/me':
         require_once '../src/Controllers/AuthController.php';
@@ -486,76 +520,72 @@ switch ($route) {
     
 
     case 'user/transfer':
-        // 1. ตรวจสอบสิทธิ์ (ต้องล็อกอินถึงจะโอนเวรได้)
-        AuthMiddleware::checkToken($connection);
-
-        // 2. รับข้อมูล JSON
-        $data = json_decode(file_get_contents("php://input"), true);
-        $action = $_GET['action'] ?? '';
-
-        if ($action === 'perform') {
-            // 3. ตรวจสอบว่าส่ง id มาครบหรือไม่
-            if (empty($data['schedule_id']) || empty($data['new_user_id'])) {
-                http_response_code(400);
-                echo json_encode(["error" => "ข้อมูลไม่ครบถ้วน (ต้องการ schedule_id และ new_user_id)"]);
-                exit;
-            }
-
-            // 🌟 [เพิ่มใหม่] ดึงข้อมูลรายละเอียดเวรและชื่อคนโอน/คนรับโอน "ก่อน" ทำการสลับชื่อ
-            $stmtDetail = $connection->prepare("
-                SELECT 
-                    s.ven_date,
-                    sub.name AS duty_name,
-                    CONCAT(IFNULL(p1.prefix_name, ''), IFNULL(p1.first_name, ''), ' ', IFNULL(p1.last_name, '')) AS old_user_name,
-                    CONCAT(IFNULL(p2.prefix_name, ''), IFNULL(p2.first_name, ''), ' ', IFNULL(p2.last_name, '')) AS new_user_name
-                FROM ven_schedule s
-                LEFT JOIN ven_name_sub sub ON s.ven_name_sub_id = sub.id
-                LEFT JOIN profile p1 ON s.user_id = p1.user_id
-                LEFT JOIN profile p2 ON p2.user_id = :new_user_id
-                WHERE s.id = :schedule_id
-            ");
-            $stmtDetail->execute([
-                ':schedule_id' => $data['schedule_id'],
-                ':new_user_id' => $data['new_user_id']
-            ]);
-            $details = $stmtDetail->fetch(PDO::FETCH_ASSOC);
-
-            // 4. เรียกใช้ Model เพื่อสลับเวร
-            require_once '../src/Models/Setting.php'; 
-            $settingModel = new Setting($connection);
-
-            $result = $settingModel->transferShift($data['schedule_id'], $data['new_user_id']);
-
-            if ($result) {
-                // 5. ส่งการแจ้งเตือน Telegram
-                require_once '../src/Services/TelegramService.php';
-                $telegram = new TelegramService($connection);
+            $userData = AuthMiddleware::checkToken($connection);
+            $currentUserId = is_array($userData) ? $userData['id'] : $userData->id;
+            
+            $action = $_GET['action'] ?? '';
+            
+            if ($action === 'perform') {
+                $data = json_decode(file_get_contents("php://input"), true);
                 
-                $msg = "🔄 <b>มีการส่งคำขอแลกเปลี่ยนเวรใหม่</b>\n";
+                // รับค่าจาก Payload ของ Vue.js
+                $s1_id = $data['schedule_id'] ?? null; // ID เวรตั้งต้น
+                $user2_id = $data['new_user_id'] ?? null; // คนที่จะโอน/สลับด้วย
+                $is_swap = isset($data['is_swap']) ? (int)$data['is_swap'] : 0;
+                $s2_id = $data['s2_id'] ?? null; // ID เวรของคนที่จะสลับด้วย (ถ้ามี)
                 
-                // 🌟 [เพิ่มใหม่] นำข้อมูลที่ดึงไว้มาจัดเรียงข้อความให้สวยงาม
-                if ($details) {
-                    $thaiDate = date('d/m/Y', strtotime($details['ven_date']));
-                    $msg .= "📅 วันที่เวร: " . $thaiDate . "\n";
-                    $msg .= "📌 หน้าที่: " . $details['duty_name'] . "\n";
-                    $msg .= "📤 ผู้ขอ (ผู้โอน): " . $details['old_user_name'] . "\n";
-                    $msg .= "📥 ผู้แทน (ผู้รับโอน): " . $details['new_user_name'] . "\n";
-                    $msg .= "➖➖➖➖➖➖➖➖➖➖\n";
+                if (!$s1_id || !$user2_id) {
+                    http_response_code(400); echo json_encode(['error' => 'ข้อมูลไม่ครบถ้วน']); break;
                 }
                 
-                $msg .= "โปรดเข้าสู่ระบบเพื่อตรวจสอบรายละเอียดและดำเนินการครับ";
-                
-                // ส่ง 'notify_change_request' ไปเช็คสวิตช์
-                $telegram->sendMessage($msg, 'notify_change_request');
-                
-                http_response_code(200);
-                echo json_encode(["success" => true, "message" => "โอนเวรเรียบร้อยรอการอนุมัติ"]);
-            } else {
-                http_response_code(500);
-                echo json_encode(["error" => "ไม่สามารถส่งคำขอแลกเปลี่ยนได้ เกิดข้อผิดพลาดที่ฐานข้อมูล"]);
-            }           
-        }
-        break;
+                try {
+                    $connection->beginTransaction(); // 🌟 เริ่ม Transaction ป้องกันข้อมูลพัง
+
+                    // 1. เช็คว่าเวรนี้กำลังรออนุมัติเปลี่ยนเวรอยู่หรือไม่
+                    $stmtCheck = $connection->prepare("SELECT id FROM ven_change WHERE (s1_id = ? OR s2_id = ?) AND status = 0");
+                    $stmtCheck->execute([$s1_id, $s1_id]);
+                    if ($stmtCheck->fetch()) {
+                        $connection->rollBack();
+                        http_response_code(400); echo json_encode(['error' => 'เวรนี้อยู่ระหว่างดำเนินการรออนุมัติอยู่แล้ว']); break;
+                    }
+
+                    // 2. รันเลขที่ใบเปลี่ยนเวร
+                    $changeNo = "CH-" . date('Ym') . "-" . rand(1000, 9999);
+
+                    // 3. บันทึกคำขอลงตาราง ven_change
+                    $sql = "INSERT INTO ven_change (change_no, s1_id, user1_id, user2_id, is_swap, s2_id, status, created_at) 
+                            VALUES (?, ?, ?, ?, ?, ?, 0, NOW())";
+                    $stmt = $connection->prepare($sql);
+                    $stmt->execute([ $changeNo, $s1_id, $currentUserId, $user2_id, $is_swap, ($is_swap == 1) ? $s2_id : null ]);
+
+                    // 🌟 4. ย้ายชื่อในตารางเวร และปรับสถานะเป็น 2 ทันที!
+                    $tableName = "ven_schedule"; // ตรวจสอบชื่อตารางให้ตรงกับของคุณ
+                    
+                    if ($is_swap == 1) {
+                        // กรณีสลับเวร (เปลี่ยนชื่อทั้ง 2 วัน และปรับสถานะ=2)
+                        $stmt1 = $connection->prepare("UPDATE $tableName SET user_id = ?, status = 2 WHERE id = ?");
+                        $stmt1->execute([$user2_id, $s1_id]);
+                        
+                        $stmt2 = $connection->prepare("UPDATE $tableName SET user_id = ?, status = 2 WHERE id = ?");
+                        $stmt2->execute([$currentUserId, $s2_id]);
+                    } else {
+                        // กรณียกให้ (โอนขาด) (เปลี่ยนชื่อแค่เวรเดียว และปรับสถานะ=2)
+                        $stmt1 = $connection->prepare("UPDATE $tableName SET user_id = ?, status = 2 WHERE id = ?");
+                        $stmt1->execute([$user2_id, $s1_id]);
+                    }
+
+                    $connection->commit(); // 🌟 บันทึก Transaction
+
+                    echo json_encode([ 'success' => true, 'message' => 'บันทึกคำขอเปลี่ยนเวรสำเร็จ', 'change_no' => $changeNo ]);
+                    
+                } catch (PDOException $e) {
+                    $connection->rollBack();
+                    http_response_code(500); echo json_encode(['error' => 'Database Error: ' . $e->getMessage()]);
+                }
+            }
+            break;
+
+
 
     case 'report/monthly':
         // ตรวจสอบ Token ก่อนเข้าถึง API
@@ -852,51 +882,20 @@ switch ($route) {
             break;
 
         // ดึงประวัติการเปลี่ยนเวรส่วนตัว
-        // ดึงประวัติการเปลี่ยนเวรส่วนตัว
         case 'user/ven_change_history':
-            // 🌟 1. รับค่า userData จาก Token ที่ผ่านการตรวจสอบแล้ว
             $userData = AuthMiddleware::checkToken($connection);
-            
-            // 🌟 2. ดึง user_id ออกมา (รองรับทั้งแบบ Array และ Object)
             $user_id = is_array($userData) ? ($userData['id'] ?? null) : ($userData->id ?? null);
-            
             if (!$user_id) {
                 http_response_code(401);
                 echo json_encode(["error" => "ไม่พบข้อมูลผู้ใช้ใน Token"]);
                 exit;
             }
-            
             require_once '../src/Models/Setting.php';
             $settingModel = new Setting($connection);
             echo json_encode($settingModel->getUserChangeHistory($user_id));
             break;
 
-        // ยกเลิกคำขอเปลี่ยนเวร
-        case 'user/ven_change_cancel':
-            // 🌟 1. รับค่า userData จาก Token ที่ผ่านการตรวจสอบแล้ว
-            $userData = AuthMiddleware::checkToken($connection);
-            
-            // 🌟 2. ดึง user_id ออกมา 
-            $user_id = is_array($userData) ? ($userData['id'] ?? null) : ($userData->id ?? null);
-
-            if (!$user_id) {
-                http_response_code(401);
-                echo json_encode(["error" => "ไม่พบข้อมูลผู้ใช้ใน Token"]);
-                exit;
-            }
-
-            $data = json_decode(file_get_contents("php://input"), true);
-
-            require_once '../src/Models/Setting.php';
-            $settingModel = new Setting($connection);
-            
-            if ($settingModel->cancelChangeRequest($data['change_id'], $data['schedule_id'], $user_id)) {
-                echo json_encode(["success" => true, "message" => "ยกเลิกสำเร็จ"]);
-            } else {
-                http_response_code(500);
-                echo json_encode(["error" => "ไม่สามารถยกเลิกคำขอได้"]);
-            }
-            break;
+        
 
     case 'admin/settings/update_toggle':
         AuthMiddleware::checkAdmin($connection); // ตรวจสอบว่าเป็น Admin หรือไม่

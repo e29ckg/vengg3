@@ -511,6 +511,9 @@ const runAutoAssign = async () => {
 }
 
 const isClashing = (sch) => {
+
+  if (Number(sch.price) === 0) {return false; }
+
   const userShifts = allSchedules.value.filter(s => s.user_id === sch.user_id)
   const sameDay = userShifts.filter(s => parseInt(s.day) === parseInt(sch.day))
   if (sameDay.length > 1 && sameDay.some(s => s.shift_type.includes('กลางวัน')) && sameDay.some(s => s.shift_type.includes('กลางคืน'))) return true

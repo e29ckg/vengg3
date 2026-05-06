@@ -20,7 +20,9 @@ class Ven {
                     v.ven_date AS date, 
                     CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS title,
                     vns.color AS backgroundColor,
-                    IF(vn.dn LIKE '%กลางคืน%', '16:30:00', '08:30:00') AS ven_time
+                    IF(vn.dn LIKE '%กลางคืน%', '16:30:00', '08:30:00') AS ven_time,
+                    vc.id AS ven_com_id,
+                    vns.id AS sub_id
                   FROM " . $this->table_name . " v
                   LEFT JOIN profile p ON v.user_id = p.user_id
                   LEFT JOIN ven_name_sub vns ON v.ven_name_sub_id = vns.id
@@ -65,7 +67,7 @@ class Ven {
                     vn.name AS duty_main,
                     vn.name_full AS duty_main_full,
                     IF(vn.dn LIKE '%กลางคืน%', '16:30:00', '08:30:00') AS ven_time,
-                    
+                    vc.id AS ven_com_id,
                     vc.com_num AS command_num,
                     vc.com_date AS command_date,
                     vc.ven_month AS command_month,
@@ -108,9 +110,12 @@ public function getChangeHistory($ven_id) {
                 vch.id AS change_id,
                 vch.change_no,
                 vch.status,
-                vch.created_at AS change_date, -- วันที่ทำรายการ
-                vch.user1_id, -- 🌟 สำคัญ: ดึงไอดีคนโอน (เพื่อใช้เช็คสิทธิ์ปุ่มยกเลิก)
+                vch.created_at AS change_date,  -- วันที่ทำรายการ
+                vch.user1_id,                   -- สำคัญ: ดึงไอดีคนโอน (เพื่อใช้เช็คสิทธิ์ปุ่มยกเลิก)
                 vch.user2_id,
+                vch.is_swap,                    -- 🌟 ดึงสถานะว่าเป็นสลับเวรหรือไม่ (1=สลับ, 0=ยกให้)
+                vs1.ven_date AS s1_date,        -- 🌟 ดึงวันที่ของเวรที่ 1 (เวรหลัก)
+                vs2.ven_date AS s2_date,        -- 🌟 ดึงวันที่ของเวรที่ 2 (กรณีสลับเวร)
                 p1.position as user1_dep,
                 p2.position as user2_dep,
                 CONCAT_WS(' ', CONCAT(IFNULL(p1.prefix_name, ''), IFNULL(p1.first_name, '')), p1.last_name) AS user1_name,
@@ -128,8 +133,10 @@ public function getChangeHistory($ven_id) {
               FROM ven_change vch
               LEFT JOIN profile p1 ON vch.user1_id = p1.user_id
               LEFT JOIN profile p2 ON vch.user2_id = p2.user_id
+              LEFT JOIN ven_schedule vs1 ON vch.s1_id = vs1.id  -- 🌟 เชื่อมตารางเวรเพื่อเอาวันที่ของเวรหลัก
+              LEFT JOIN ven_schedule vs2 ON vch.s2_id = vs2.id  -- 🌟 เชื่อมตารางเวรเพื่อเอาวันที่ของเวรสลับ (ถ้ามี)
               WHERE (vch.s1_id = :id OR vch.s2_id = :id)
-              ORDER BY vch.id DESC"; // 🌟 ล่าสุดอยู่บนสุด
+              ORDER BY vch.id DESC"; // ล่าสุดอยู่บนสุด
     
     $stmt = $this->conn->prepare($query);
     $stmt->execute(['id' => $ven_id]);
