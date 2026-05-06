@@ -49,7 +49,7 @@ switch ($route) {
             $userId = is_array($userData) ? $userData['id'] : $userData->id;
             
             // เพิ่มการดึง position, department, bank_account, bank_name
-            $stmt = $connection->prepare("SELECT prefix_name, first_name, last_name, position, department, phone, bank_account, bank_comment FROM profile WHERE user_id = ?");
+            $stmt = $connection->prepare("SELECT avatar, prefix_name, first_name, last_name, position, department, phone, bank_account, bank_comment FROM profile WHERE user_id = ?");
             $stmt->execute([$userId]);
             echo json_encode($stmt->fetch(PDO::FETCH_ASSOC));
             break;
@@ -913,6 +913,167 @@ switch ($route) {
             echo json_encode(["error" => "Failed to update"]);
         }
         break;
+
+    // 🌟 อัปโหลดรูปโปรไฟล์
+        case 'user/profile/upload_avatar':
+            $userData = AuthMiddleware::checkToken($connection);
+            $userId = is_array($userData) ? $userData['id'] : $userData->id;
+
+            if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
+                // สร้างโฟลเดอร์ถ้ายังไม่มี
+                $uploadDir = __DIR__ . '/uploads/avatars/';
+                if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+
+                $fileTmpPath = $_FILES['avatar']['tmp_name'];
+                $fileName = $_FILES['avatar']['name'];
+                $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+                // ตรวจสอบนามสกุลไฟล์
+                $allowedfileExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                if (in_array($fileExtension, $allowedfileExtensions)) {
+                    
+                    // 🌟 1. ดึงชื่อไฟล์รูปเดิมจากฐานข้อมูลก่อน
+                    $stmtOld = $connection->prepare("SELECT avatar FROM profile WHERE user_id = ?");
+                    $stmtOld->execute([$userId]);
+                    $oldAvatar = $stmtOld->fetchColumn();
+
+                    // ตั้งชื่อไฟล์ใหม่เพื่อป้องกันชื่อซ้ำ
+                    $newFileName = 'user_' . $userId . '_' . time() . '.' . $fileExtension;
+                    $dest_path = $uploadDir . $newFileName;
+
+                    // ทำการย้ายไฟล์ใหม่เข้าไปเก็บ
+                    if (move_uploaded_file($fileTmpPath, $dest_path)) {
+                        
+                        // 🌟 2. ถ้าย้ายไฟล์ใหม่สำเร็จ และมีไฟล์รูปเดิมอยู่ ให้ลบรูปเดิมทิ้ง
+                        if (!empty($oldAvatar) && file_exists($uploadDir . $oldAvatar)) {
+                            unlink($uploadDir . $oldAvatar);
+                        }
+
+                        // อัปเดตชื่อไฟล์ลงฐานข้อมูล
+                        $stmt = $connection->prepare("UPDATE profile SET avatar = ? WHERE user_id = ?");
+                        $stmt->execute([$newFileName, $userId]);
+                        
+                        echo json_encode(["success" => true, "avatar" => $newFileName]);
+                        break;
+                    }
+                } else {
+                    http_response_code(400); 
+                    echo json_encode(["error" => "รองรับเฉพาะไฟล์รูปภาพ (jpg, png, gif) เท่านั้น"]); 
+                    break;
+                }
+            }
+            http_response_code(400); 
+            echo json_encode(["error" => "ไม่สามารถอัปโหลดไฟล์ได้"]);
+            break;
+        
+        // 🌟 สำรองข้อมูล (เฉพาะรูปภาพ .zip)
+        case 'admin/backup/images':
+            AuthMiddleware::checkAdmin($connection); // ล็อกเฉพาะแอดมิน
+
+            ini_set('memory_limit', '512M');
+            ini_set('max_execution_time', '300');
+
+            $backupDir = __DIR__ . '/uploads/backups/';
+            if (!is_dir($backupDir)) mkdir($backupDir, 0777, true);
+
+            $date = date('Ymd_His');
+            $zipFileName = "images_backup_{$date}.zip";
+            $zipFilePath = $backupDir . $zipFileName;
+            $zip = new ZipArchive();
+            
+            if ($zip->open($zipFilePath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+                
+                $imagesDir = __DIR__ . '/uploads/avatars/';
+                $hasFiles = false; // ตัวแปรเช็คว่ามีรูปไหม
+
+                if (is_dir($imagesDir)) {
+                    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($imagesDir), RecursiveIteratorIterator::LEAVES_ONLY);
+                    foreach ($files as $name => $file) {
+                        // เช็คว่าไม่ใช่โฟลเดอร์เปล่า (. และ ..)
+                        if (!$file->isDir()) {
+                            $filePath = $file->getRealPath();
+                            $relativePath = 'avatars/' . substr($filePath, strlen($imagesDir));
+                            $zip->addFile($filePath, $relativePath);
+                            $hasFiles = true;
+                        }
+                    }
+                }
+
+                // 🌟 ป้องกัน Error กรณีโฟลเดอร์รูปภาพยังไม่มีไฟล์เลย
+                if (!$hasFiles) {
+                    $zip->addFromString('empty_note.txt', 'ยังไม่มีรูปภาพในระบบ');
+                }
+
+                $zip->close();
+            }
+
+            // 🌟 สำคัญที่สุด: ล้าง Buffer (ข้อมูลขยะ/ช่องว่าง) ก่อนส่งไฟล์ ZIP
+            if (ob_get_length()) {
+                ob_end_clean();
+            }
+
+            // สั่งให้ Browser ดาวน์โหลดไฟล์ ZIP
+            header('Content-Type: application/zip');
+            header('Content-Disposition: attachment; filename="' . $zipFileName . '"');
+            header('Content-Length: ' . filesize($zipFilePath));
+            header('Cache-Control: max-age=0'); // ป้องกัน Browser จำไฟล์เดิม
+            
+            readfile($zipFilePath);
+
+            // เมื่อดาวน์โหลดเสร็จ ให้ลบไฟล์ ZIP ใน Server ทิ้ง
+            unlink($zipFilePath);
+            
+            // 🌟 หยุดการทำงานทันที ป้องกันไม่ให้โค้ดส่วนอื่นแอบส่งข้อความตามหลัง
+            exit;
+
+    // 🌟 สำรองข้อมูล (เฉพาะฐานข้อมูล .sql)
+        case 'admin/backup/sql':
+            AuthMiddleware::checkAdmin($connection); // ล็อกเฉพาะแอดมิน
+
+            ini_set('memory_limit', '512M');
+            ini_set('max_execution_time', '300');
+
+            $date = date('Ymd_His');
+            $sqlFileName = "database_{$date}.sql";
+
+            // สั่งให้ Browser ดาวน์โหลดไฟล์เป็น .sql ทันที โดยไม่ต้องเซฟลง Server ก่อน
+            header('Content-Type: application/sql');
+            header('Content-Disposition: attachment; filename="' . $sqlFileName . '"');
+
+            $tables = [];
+            $stmt = $connection->query('SHOW TABLES');
+            while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
+                $tables[] = $row[0];
+            }
+
+            echo "-- Backup Date: " . date('Y-m-d H:i:s') . "\n\n";
+            
+            foreach ($tables as $table) {
+                $stmt = $connection->query("SHOW CREATE TABLE `$table`");
+                $row = $stmt->fetch(PDO::FETCH_NUM);
+                echo "\nDROP TABLE IF EXISTS `$table`;\n";
+                echo $row[1] . ";\n\n";
+
+                $stmt = $connection->query("SELECT * FROM `$table`");
+                $numCols = $stmt->columnCount();
+
+                while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
+                    echo "INSERT INTO `$table` VALUES(";
+                    for ($j = 0; $j < $numCols; $j++) {
+                        if ($row[$j] === null) {
+                            echo "NULL";
+                        } else {
+                            echo $connection->quote($row[$j]);
+                        }
+                        if ($j < ($numCols - 1)) {
+                            echo ",";
+                        }
+                    }
+                    echo ");\n";
+                }
+                echo "\n";
+            }
+            break;
 
     default:
         http_response_code(404);

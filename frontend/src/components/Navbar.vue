@@ -83,9 +83,9 @@
         </ul>
 
         <div class="d-flex align-items-center text-white mt-2 mt-lg-0">
-          <router-link to="/profile" class="text-white text-decoration-none me-3 profile-link" title="จัดการโปรไฟล์">
-            <i class="bi bi-person-circle fs-5 align-middle me-1"></i> 
-            <span class="align-middle">{{ userName }}</span>
+          <router-link to="/profile" class="text-white text-decoration-none me-3 profile-link d-flex align-items-center" title="จัดการโปรไฟล์">
+            <img :src="getAvatarUrl(userAvatar, userName)" class="rounded-circle border border-white me-2" style="width: 30px; height: 30px; object-fit: cover;">
+            <span>{{ userName }}</span>
           </router-link>
           
           <button class="btn btn-light btn-sm rounded-pill fw-bold text-danger px-3 shadow-sm" @click="logout">
@@ -101,6 +101,7 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '../services/api'
+import Swal from 'sweetalert2'
 
 const router = useRouter()
 const route = useRoute()
@@ -109,6 +110,7 @@ const route = useRoute()
 const isLoggedIn = ref(false)
 const userName = ref('')
 const userRole = ref(null)
+const userAvatar = ref('')
 
 // ตัวแปรควบคุมการเปิด/ปิดเมนู
 const isAdminMenuOpen = ref(false)
@@ -124,6 +126,7 @@ const checkAuth = () => {
     isLoggedIn.value = true
     userName.value = localStorage.getItem('username') || 'ผู้ใช้งาน'
     userRole.value = parseInt(localStorage.getItem('role')) || 0
+    userAvatar.value = localStorage.getItem('avatar') || null
   } else {
     isLoggedIn.value = false
   }
@@ -190,20 +193,66 @@ const fetchSystemSettings = async () => {
   }
 }
 
+
+// 🌟 เพิ่มพารามิเตอร์ name เข้ามา (ตั้งค่าเริ่มต้นเป็น 'User' เผื่อดึงชื่อไม่ทัน)
+const getAvatarUrl = (filename, name = 'User') => {
+  if (!filename || filename == null) {
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=128&font-size=0.5`;
+  }
+
+  let baseUrl = api.defaults.baseURL || 'http://localhost/vengg3/backend/public/';
+  baseUrl = baseUrl.split('?')[0].replace('index.php', '');
+  if (!baseUrl.endsWith('/')) baseUrl += '/';
+  
+  return `${baseUrl}uploads/avatars/${filename}`;
+}
+
+const loadUserData = () => {
+  const userStr = localStorage.getItem('user');
+  if (userStr) {
+    const userData = JSON.parse(userStr);
+    // รองรับทั้งฟิลด์ name และ first_name
+    userName.value = userData.name || userData.first_name || 'ผู้ใช้งาน'; 
+    const separateAvatar = localStorage.getItem('avatar');
+    if (separateAvatar) {
+      userAvatar.value = separateAvatar;
+    }
+      userAvatar.value = userData.avatar || '';
+  }
+}
+
 // เริ่มดักจับการคลิกเมื่อโหลดคอมโพเนนต์
 onMounted(() => {
+  loadUserData()
   document.addEventListener('click', closeDropdowns)
   fetchSystemSettings()
+  window.addEventListener('user-updated', loadUserData)
+  window.addEventListener('storage', loadUserData)
 })
 
-// ยกเลิกดักจับเมื่อคอมโพเนนต์ถูกทำลาย ป้องกันค้างในหน่วยความจำ
 onBeforeUnmount(() => {
   document.removeEventListener('click', closeDropdowns)
+  window.removeEventListener('user-updated', loadUserData)
+  window.removeEventListener('storage', loadUserData)
 })
 
 // ออกจากระบบ
-const logout = () => {
-  localStorage.clear()
-  router.push('/login')
+const logout = async () => { 
+  const result = await Swal.fire({
+    title: 'ออกจากระบบ?',
+    text: "คุณต้องการออกจากระบบใช่หรือไม่?",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'ใช่, ออกจากระบบ',
+    cancelButtonText: 'ยกเลิก'
+  });
+
+  if (result.isConfirmed) {
+    // ถ้ากดยืนยัน ค่อยเคลียร์ค่าแล้วเด้งไปหน้า login
+    localStorage.clear()
+    router.push('/login')
+  }
 }
 </script>

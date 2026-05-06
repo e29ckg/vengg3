@@ -67,8 +67,9 @@ const handleLogin = async () => {
       
       // บันทึก Token และสิทธิ์ไว้ในเบราว์เซอร์
       localStorage.setItem('role', userData.role)
-      localStorage.setItem('username', userData.username)
+      localStorage.setItem('username', userData.fullname)
       localStorage.setItem('token', userToken)
+      localStorage.setItem('avatar', userData.avatar)
 
       // แสดง Popup สำเร็จ
       Swal.fire({

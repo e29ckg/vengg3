@@ -5,6 +5,18 @@
     <div class="card shadow-sm border-0 mb-4">
       <div class="card-header bg-light fw-bold">ข้อมูลทั่วไป</div>
       <div class="card-body">
+
+        <div class="text-center mb-4 pb-4 border-bottom">
+          <div class="position-relative d-inline-block">
+            <img :src="getAvatarUrl(profile.avatar, profile.first_name)" class="rounded-circle border border-3 border-primary shadow-sm" style="width: 120px; height: 120px; object-fit: cover;">            
+            <input type="file" ref="fileInput" class="d-none" accept="image/png, image/jpeg, image/webp" @change="uploadAvatar">
+            <button type="button" class="btn btn-sm btn-primary position-absolute bottom-0 start-100 translate-middle-x rounded-circle" style="width: 35px; height: 35px;" @click="$refs.fileInput.click()">
+              <i class="bi bi-camera"></i>
+            </button>
+          </div>
+          <div class="small text-muted mt-2">คลิกที่ไอคอนกล้องเพื่อเปลี่ยนรูปภาพ</div>
+        </div>
+
         <form @submit.prevent="updateProfile">
           <div class="row g-3">
             <div class="col-md-2">
@@ -196,6 +208,68 @@ const changePassword = async () => {
   } catch (error) {
     const msg = error.response?.data?.error || 'เกิดข้อผิดพลาด'
     Swal.fire('ไม่สำเร็จ', msg, 'error')
+  }
+}
+
+// เพิ่มตัวแปร
+const fileInput = ref(null);
+
+
+// ฟังก์ชันอัปโหลดรูป
+const uploadAvatar = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // จำกัดขนาดไฟล์ไม่เกิน 2MB
+  if (file.size > 2 * 1024 * 1024) {
+    Swal.fire('แจ้งเตือน', 'ขนาดรูปภาพต้องไม่เกิน 2MB', 'warning');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('avatar', file);
+
+  try {
+    // ต้องใส่ Header เป็น multipart/form-data เพื่อส่งไฟล์
+    const res = await api.post('?route=user/profile/upload_avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    
+    // อัปเดตรูปหน้าจอทันที
+    profile.value.avatar = res.data.avatar;
+    
+    if (res.data.avatar) {
+      localStorage.setItem('avatar', res.data.avatar);
+      
+      // Dispatch Event บังคับให้ Navbar เปลี่ยนรูป (ถ้าต้องการให้เรียลไทม์)
+      window.dispatchEvent(new Event('user-updated'));
+    }
+
+    Swal.fire({ icon: 'success', title: 'อัปเดตรูปโปรไฟล์แล้ว', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
+  } catch (error) {
+    Swal.fire('ผิดพลาด', 'ไม่สามารถอัปโหลดรูปภาพได้', 'error');
+  }
+}
+
+const getAvatarUrl = (filename, name = 'User') => {
+  if (!filename || filename == null) {
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=128&font-size=0.5`;
+  }
+
+  let baseUrl = api.defaults.baseURL || 'http://localhost/vengg3/backend/public/';
+  baseUrl = baseUrl.split('?')[0].replace('index.php', '');
+  if (!baseUrl.endsWith('/')) baseUrl += '/';
+  
+  return `${baseUrl}uploads/avatars/${filename}`;
+}
+
+const loadUserData = () => {
+  const userStr = localStorage.getItem('user');
+  if (userStr) {
+    const userData = JSON.parse(userStr);
+    // รองรับทั้งฟิลด์ name และ first_name
+    userName.value = userData.name || userData.first_name || 'ผู้ใช้งาน'; 
+    userAvatar.value = userData.avatar || '';
   }
 }
 

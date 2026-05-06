@@ -87,7 +87,22 @@
               </div>
 
             </form>
+
+            
           </div>
+
+          <div class="card-header py-3">
+            <div class="d-flex gap-2">
+              <button class="btn btn-info fw-bold text-white shadow-sm" @click="downloadSqlBackup">
+                <i class="bi bi-database-down"></i> สำรองเฉพาะฐานข้อมูล (.sql)
+              </button>
+  
+              <!-- <button class="btn btn-warning fw-bold shadow-sm" @click="downloadImageBackup">
+                <i class="bi bi-file-zip"></i> สำรองรูปภาพ (.zip)
+              </button> -->
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -206,6 +221,79 @@ const updateSystemName = async () => {
     // หรือใช้ Pinia/Global State ในการคุมชื่อระบบครับ
   } catch (error) {
     Swal.fire('ผิดพลาด', 'ไม่สามารถบันทึกชื่อระบบได้', 'error')
+  }
+}
+
+const downloadImageBackup = async () => {
+  try {
+    // แสดงหน้าโหลดรอ
+    Swal.fire({
+      title: 'กำลังบีบอัดไฟล์รูปภาพ...',
+      text: 'กรุณารอสักครู่ ระบบกำลังรวบรวมไฟล์รูปโปรไฟล์ทั้งหมด',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading()
+      }
+    });
+
+    // 🌟 ส่ง Request ไปขอไฟล์ (เปลี่ยน URL เป็น route สำหรับรูปภาพ)
+    const response = await api.get('?route=admin/backup/images', { 
+      responseType: 'blob' 
+    });
+
+    // สร้างลิงก์ดาวน์โหลด
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // 🌟 ตั้งชื่อไฟล์ให้รู้ว่าเป็นรูปภาพ
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    link.setAttribute('download', `images_backup_${dateStr}.zip`);
+    
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: 'ดาวน์โหลดไฟล์รูปภาพเรียบร้อยแล้ว', timer: 2000, showConfirmButton: false });
+  } catch (error) {
+    console.error("Backup Error:", error);
+    Swal.fire('ผิดพลาด', 'ไม่สามารถสำรองไฟล์รูปภาพได้', 'error');
+  }
+}
+
+const downloadSqlBackup = async () => {
+  try {
+    Swal.fire({
+      title: 'กำลังดึงข้อมูลฐานข้อมูล...',
+      text: 'กรุณารอสักครู่',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading()
+      }
+    });
+
+    // เรียก API ไปที่ route ใหม่
+    const response = await api.get('?route=admin/backup/sql', { 
+      responseType: 'blob' 
+    });
+
+    // สร้างลิงก์ดาวน์โหลด
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // ตั้งชื่อไฟล์เริ่มต้นเป็น .sql
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    link.setAttribute('download', `database_${dateStr}.sql`);
+    
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: 'ดาวน์โหลดฐานข้อมูลเรียบร้อยแล้ว', timer: 2000, showConfirmButton: false });
+  } catch (error) {
+    console.error("SQL Backup Error:", error);
+    Swal.fire('ผิดพลาด', 'ไม่สามารถสำรองฐานข้อมูลได้', 'error');
   }
 }
 
