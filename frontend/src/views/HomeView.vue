@@ -7,6 +7,16 @@
             <i class="bi bi-calendar3 me-2"></i>ตารางเวรเดือน {{ formatMonthThai(currentMonth) }}
           </h4>
           
+          <div class="mt-1">
+            <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill small fw-normal">
+              <i class="bi bi-info-circle me-1"></i>
+              <span v-if="systemSettings.advance_swap_days > 0">
+                ต้องทำรายการล่วงหน้าอย่างน้อย {{ systemSettings.advance_swap_days }} วัน
+              </span>
+              <span v-else>สามารถทำรายการแลกเปลี่ยนเวรได้ภายในวันเดียวกัน</span>
+            </span>
+          </div>
+
           <div class="d-flex gap-2">
             <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border">
               <button class="btn btn-light border-end" @click="changeMonth(-1)"><i class="bi bi-chevron-left"></i></button>
@@ -74,7 +84,7 @@
               <div class="modal-content border-0 shadow-lg rounded-4" v-if="selectedVen">
                 
                 <div class="modal-header border-0 pb-0">
-                  <h5 class="modal-title text-muted fs-6" style="font-family: monospace;">ID: {{ selectedVen.ven_id }}</h5>
+                  <h5 class="modal-title text-muted fs-6" style="font-family: monospace;">ID: {{ selectedVen.ven_id || selectedVen.id }}</h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
     
@@ -87,8 +97,8 @@
     
                   <div class="bg-light border rounded-3 p-3 text-start mb-4 shadow-sm">
                     <p class="mb-2"><i class="bi bi-calendar-event me-2 text-primary"></i> 
-                      <strong>{{ formatDate(selectedVen.ven_date) }}</strong> 
-                      <span v-if="selectedVen.ven_time">(เวลา {{ selectedVen.ven_time }} น.)</span>
+                      <strong>{{ formatDate(selectedVen.ven_date || selectedVen.date) }}</strong> 
+                      <span v-if="selectedVen.ven_time">(เวลา {{ selectedVen.ven_time.substring(0,5) }} น.)</span>
                     </p>
                     <p class="mb-2"><i class="bi bi-moon-stars me-2 text-warning"></i> {{ selectedVen.duty_main }}</p>
                     
@@ -112,45 +122,93 @@
                         <i class="bi bi-file-earmark-check me-1"></i> รายงานการปฏิบัติหน้าที่
                       </button>
                       
-                      <template v-if="systemSettings.allow_swap">
-                        <template v-if="!isPastShift(selectedVen.ven_date, selectedVen.ven_time) || systemSettings.allow_retroactive_swap">
-                          
-                          <button v-if="!showRecipientList" 
-                                  class="btn btn-warning rounded-pill fw-bold text-dark shadow-sm py-2 w-100" 
-                                  @click="loadRecipients">
-                            <i class="bi bi-arrow-left-right me-1"></i> ยกเวรนี้ให้ผู้อื่น
-                          </button>
+                      <div class="mb-3 text-start px-1" v-if="selectedVen.user_id == currentUserId">
+                        <div class="d-flex align-items-center text-muted small">
+                          <i class="bi bi-shield-check me-2 text-success"></i>
+                          <span>
+                            กฎการเปลี่ยนเวร: 
+                            <b>{{ systemSettings.advance_swap_days === 0 ? 'ทำรายการได้ทันที' : 'ล่วงหน้า ' + systemSettings.advance_swap_days + ' วัน' }}</b>
+                          </span>
+                        </div>
+                      </div>
+
+                      <template v-if="!isPastShift(selectedVen.ven_date || selectedVen.date, selectedVen.ven_time) || systemSettings.allow_retroactive_swap">                        
+                        <button v-if="!showRecipientList" 
+                                class="btn btn-warning rounded-pill fw-bold text-dark shadow-sm py-2 w-100" 
+                                @click="loadRecipients">
+                          <i class="bi bi-arrow-right-circle me-1"></i> ยกเวรนี้ให้ผู้อื่น (โอนขาด)
+                        </button>
       
-                          <div v-if="showRecipientList" class="mt-3 text-start border border-warning rounded-3 p-2 bg-white shadow-sm">
-                            <label class="form-label fw-bold small text-primary mb-2 px-1">เลือกผู้ที่ต้องการยกเวรให้:</label>
-                            <div class="list-group list-group-flush border rounded-3 overflow-auto custom-scrollbar" style="max-height: 180px;">
-                              <button v-for="user in recipients" :key="user.user_id" 
-                                      class="list-group-item list-group-item-action small py-2 d-flex align-items-center"
-                                      @click="confirmTransfer(user)">
-                                <i class="bi bi-person-plus-fill me-2 text-success fs-5"></i>
-                                <span class="fw-semibold">{{ user.full_name || (user.prefix_name + user.first_name + ' ' + user.last_name) }}</span>
-                              </button>
-                              <div v-if="recipients.length === 0" class="p-3 text-center text-muted small">ไม่พบผู้มีสิทธิ์ท่านอื่นในหน้าที่นี้</div>
-                            </div>
-                            <div class="text-center mt-2">
-                              <button class="btn btn-link btn-sm text-decoration-none text-muted" @click="showRecipientList = false">ยกเลิก</button>
-                            </div>
+                        <div v-if="showRecipientList" class="mt-3 text-start border border-warning rounded-3 p-2 bg-white shadow-sm">
+                          <label class="form-label fw-bold small text-primary mb-2 px-1">เลือกผู้ที่ต้องการยกเวรให้:</label>
+                          <div class="list-group list-group-flush border rounded-3 overflow-auto custom-scrollbar" style="max-height: 180px;">
+                            <button v-for="user in recipients" :key="user.user_id" 
+                                    class="list-group-item list-group-item-action small py-2 d-flex align-items-center"
+                                    @click="confirmTransfer(user)">
+                              <i class="bi bi-person-plus-fill me-2 text-success fs-5"></i>
+                              <span class="fw-semibold">{{ user.full_name || (user.prefix_name + user.first_name + ' ' + user.last_name) }}</span>
+                            </button>
+                            <div v-if="recipients.length === 0" class="p-3 text-center text-muted small">ไม่พบผู้มีสิทธิ์ท่านอื่นในหน้าที่นี้</div>
                           </div>
-                        </template>
-                        
-                        <div v-else class="alert alert-danger border-0 small text-center mt-2 shadow-sm rounded-3">
-                          <i class="bi bi-exclamation-triangle-fill me-1"></i> ระบบไม่อนุญาตให้เปลี่ยนเวรย้อนหลัง
+                          <div class="text-center mt-2">
+                            <button class="btn btn-link btn-sm text-decoration-none text-muted" @click="showRecipientList = false">ยกเลิก</button>
+                          </div>
                         </div>
                       </template>
                       
-                      <div v-else class="alert alert-secondary border-0 small text-center mt-2 shadow-sm rounded-3">
-                        <i class="bi bi-lock-fill me-1"></i> ระบบปิดรับคำขอแลกเปลี่ยนเวรชั่วคราว
+                      <div v-else class="alert alert-danger border-0 small text-center mt-2 shadow-sm rounded-3">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> ระบบไม่อนุญาตให้เปลี่ยนเวรย้อนหลัง
                       </div>
+                    </template>
+                  </div>
 
+                  <div v-else-if="systemSettings.allow_swap" class="mt-3 text-start border border-warning rounded-3 p-3 bg-white shadow-sm">
+                    <h6 class="fw-bold text-warning mb-2"><i class="bi bi-arrow-left-right"></i> ขอสลับเปลี่ยนเวร</h6>
+                    
+                    <div v-if="selectedVen.com_status != 1" class="alert alert-warning border-0 small text-start mt-2 shadow-sm">
+                      <i class="bi bi-exclamation-circle-fill me-1"></i> 
+                      รอคำสั่งอนุมัติก่อน จึงจะสามารถสลับเวรได้
+                    </div>
+                    
+                    <template v-else>
+                      <template v-if="!isPastShift(selectedVen.ven_date || selectedVen.date, selectedVen.ven_time) || systemSettings.allow_retroactive_swap">
+
+                        <div class="mb-3 text-start px-1" v-if="selectedVen.user_id == currentUserId">
+                          <div class="d-flex align-items-center text-muted small">
+                            <i class="bi bi-shield-check me-2 text-success"></i>
+                            <span>
+                              กฎการเปลี่ยนเวร: 
+                              <b>{{ systemSettings.advance_swap_days === 0 ? 'ทำรายการได้ทันที' : 'ล่วงหน้า ' + systemSettings.advance_swap_days + ' วัน' }}</b>
+                            </span>
+                          </div>
+                        </div>
+
+                        <label class="form-label text-secondary small fw-bold mt-1">เลือกเวรของคุณเพื่อเสนอแลกเปลี่ยน:</label>
+                        <select class="form-select mb-3 border-warning" v-model="selectedMyShiftId">
+                          <option value="" disabled>-- เลือกเวรของคุณ (คำสั่ง/หน้าที่เดียวกัน) --</option>
+                          <option v-for="shift in mySwappableShifts" :key="shift.id || shift.ven_id" :value="shift.id || shift.ven_id">
+                            วันที่ {{ formatDate(shift.date || shift.ven_date) }} <span v-if="shift.ven_time">({{ shift.ven_time.substring(0,5) }} น.)</span>
+                          </option>
+                        </select>
+                        
+                        <button class="btn btn-warning rounded-pill fw-bold text-dark shadow-sm py-2 w-100" 
+                                @click="confirmSwap"
+                                :disabled="!selectedMyShiftId">
+                          <i class="bi bi-check-circle me-1"></i> ยืนยันขอสลับเวร
+                        </button>
+
+                        <div v-if="mySwappableShifts.length === 0" class="text-danger small mt-2 text-center">
+                          <i class="bi bi-exclamation-circle"></i> คุณไม่มีเวรในคำสั่งและหน้าที่เดียวกันที่นำมาแลกได้
+                        </div>
+                      </template>
+                      
+                      <div v-else class="alert alert-danger border-0 small text-center mt-2 shadow-sm rounded-3">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> ระบบไม่อนุญาตให้สลับเวรย้อนหลัง
+                      </div>
                     </template>
                   </div>
                   
-                  <div v-else class="alert alert-secondary border-0 small text-center mt-3 mb-4">
+                  <div v-else class="alert alert-secondary border-0 small text-center mt-3 mb-4 shadow-sm rounded-3">
                     <i class="bi bi-info-circle me-1"></i> การเปลี่ยนเวรหรือยกเวร สามารถทำได้เฉพาะเวรของตนเองเท่านั้น
                   </div>
     
@@ -168,7 +226,10 @@
                           </div>
                           
                           <p class="mb-1 text-muted" style="font-size: 0.9rem;">
-                            {{ history.user1_name }} <i class="bi bi-arrow-right mx-1"></i> {{ history.user2_name }}
+                            {{ history.user1_name }} 
+                            <i v-if="history.is_swap == 1" class="bi bi-arrow-left-right mx-1 text-warning fw-bold"></i>
+                            <i v-else class="bi bi-arrow-right mx-1 text-primary fw-bold"></i> 
+                            {{ history.user2_name }}
                           </p>
                           
                           <div class="d-flex justify-content-end gap-2 mt-2">
@@ -191,8 +252,9 @@
                       <small>ไม่มีประวัติการเปลี่ยนเวร</small>
                     </div>
                   </div>
-                  </div>
-                  </div>
+
+                </div>
+              </div>
             </div>    
           </div>
         </Teleport>
@@ -428,6 +490,7 @@ const loadRecipients = async () => {
     if (diffDays >= 0 && diffDays < systemSettings.value.advance_swap_days) {
       return Swal.fire('ไม่สามารถทำรายการได้', `ระเบียบของหน่วยงานระบุให้ต้องทำรายการล่วงหน้าอย่างน้อย ${systemSettings.value.advance_swap_days} วันครับ`, 'warning');
     }
+   
 
     const sub_id = selectedVen.value.sub_id || selectedVen.value.ven_name_sub_id; 
     if (!sub_id) return Swal.fire('ข้อมูลไม่ครบถ้วน', 'ไม่พบรหัสหน้าที่', 'warning');
@@ -578,6 +641,137 @@ const cancelChange = async (changeId) => {
     } catch (error) {
       Swal.fire('ผิดพลาด', error.response?.data?.error || 'ไม่สามารถยกเลิกได้', 'error');
     }
+  }
+};
+
+
+// 🌟 ตัวแปรเก็บ ID เวรของตัวเองที่จะเอาไปเสนอแลก
+const selectedMyShiftId = ref(''); 
+
+// ดึงการตั้งค่าระบบว่าเปิดให้สลับเวรหรือไม่
+const allowSwap = computed(() => systemSettings.value.allow_swap ? 1 : 0);
+
+// 🌟 ตัวกรองดึง "เวรของฉัน" ที่มีคำสั่งและหน้าที่เดียวกับเวรที่กดเลือกเพื่อนำมาสลับ
+const mySwappableShifts = computed(() => {
+  // ถ้าไม่ได้เลือกเวร หรือกดโดนเวรตัวเอง ให้ส่งค่าว่างกลับไป (สลับกับตัวเองไม่ได้)
+  if (!selectedVen.value || selectedVen.value.user_id === currentUserId.value) return [];
+  
+  // ดึงวันที่ของเวรที่ถูกคลิกมาเก็บไว้ก่อน (รองรับทั้งฟิลด์ date และ ven_date)
+  const targetDate = selectedVen.value.date || selectedVen.value.ven_date;
+  
+  return allSchedules.value.filter(shift => {
+    const myShiftDate = shift.date || shift.ven_date;
+    
+    return shift.user_id === currentUserId.value && // ต้องเป็นเวรของฉันเอง
+           myShiftDate !== targetDate && // 🌟 กรองเวรในวันเดียวกันออก (ไม่ให้สลับวันเดียวกัน)
+           shift.ven_com_id === selectedVen.value.ven_com_id && // ต้องอยู่คำสั่งเดียวกัน
+           (shift.ven_name_sub_id === selectedVen.value.ven_name_sub_id || shift.sub_id === selectedVen.value.sub_id) && // ต้องเป็นหน้าที่เดียวกัน
+           new Date(myShiftDate) >= new Date(); // ต้องเป็นเวรในอนาคต (หรือวันนี้)
+  });
+});
+
+// ==========================================
+// 🌟 ฟังก์ชันขอสลับเวร (แลกเวร)
+// ==========================================
+const confirmSwap = async () => {
+  // 🌟 ดักจับกฎ: ตรวจสอบวันที่ล่วงหน้าและย้อนหลัง
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const shiftDate = new Date(selectedVen.value.ven_date);
+    shiftDate.setHours(0, 0, 0, 0);
+
+    const diffTime = shiftDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // กฎที่ 1: ตรวจสอบการเปลี่ยนเวรย้อนหลัง
+    if (!systemSettings.value.allow_retroactive_swap && diffDays < 0) {
+      return Swal.fire('ไม่สามารถทำรายการได้', 'ระบบไม่อนุญาตให้ส่งคำขอเปลี่ยนเวรย้อนหลังครับ', 'warning');
+    }
+
+    // กฎที่ 2: ตรวจสอบจำนวนวันล่วงหน้าขั้นต่ำ
+    if (diffDays >= 0 && diffDays < systemSettings.value.advance_swap_days) {
+      return Swal.fire('ไม่สามารถทำรายการได้', `ระเบียบของหน่วยงานระบุให้ต้องทำรายการล่วงหน้าอย่างน้อย ${systemSettings.value.advance_swap_days} วันครับ`, 'warning');
+    }
+    
+  if (!selectedMyShiftId.value) {
+    return Swal.fire('แจ้งเตือน', 'กรุณาเลือกเวรของคุณที่ต้องการนำไปสลับ', 'warning');
+  }
+
+  // theirShift = เวรของเขา (เวรที่เรากดดูบนปฏิทิน)
+  // myShift = เวรของเรา (เวรที่เราเลือกจาก Dropdown จะเอาไปแลก)
+  const theirShift = selectedVen.value;
+  const myShift = mySwappableShifts.value.find(s => s.id === selectedMyShiftId.value || s.ven_id === selectedMyShiftId.value);
+
+  // ตรวจสอบกฎ 24 ชั่วโมงทั้ง 2 ฝ่าย
+  let isMeViolated = false;
+  let isThemViolated = false;
+
+  if (systemSettings.value.check_24h_consecutive) {
+    isMeViolated = check24HourViolation(currentUserId.value, theirShift.ven_date || theirShift.date, theirShift.ven_time);
+    isThemViolated = check24HourViolation(theirShift.user_id, myShift.ven_date || myShift.date, myShift.ven_time);
+  }
+
+  // ถ้าเข้าข่าย 24 ชม. ฝ่ายใดฝ่ายหนึ่ง ให้เด้งเตือนสีแดง
+  if (isMeViolated || isThemViolated) {
+    let msg = "การสลับเวรครั้งนี้จะทำให้มีผู้ปฏิบัติงานติดต่อกัน 24 ชั่วโมง<br><br>";
+    if (isMeViolated) msg += "- <b>คุณ</b> จะมีเวร 24 ชม.<br>";
+    if (isThemViolated) msg += `- <b>${theirShift.user1_name || 'เจ้าของเวรเดิม'}</b> จะมีเวร 24 ชม.<br>`;
+    
+    const confirm24h = await Swal.fire({
+      title: '⚠️ แจ้งเตือนการปฏิบัติงาน 24 ชั่วโมง!',
+      html: msg,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'รับทราบ ยืนยันสลับเวร',
+      cancelButtonText: 'ยกเลิก'
+    });
+    if (!confirm24h.isConfirmed) return;
+  } else {
+    // ถ้าไม่ติด 24 ชม. ให้ขึ้นถามยืนยันปกติ
+    const confirmNormal = await Swal.fire({
+      title: 'ยืนยันการขอสลับเวร?',
+      text: 'ระบบจะส่งคำขอเพื่อรอการอนุมัติการสลับเวร',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#ffc107',
+      confirmButtonText: 'ใช่, ขอสลับเวร'
+    });
+    if (!confirmNormal.isConfirmed) return;
+  }
+
+  try {
+    Swal.fire({ title: 'กำลังส่งคำขอ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    // 🌟 เตรียม payload ส่งให้ Backend พร้อม Flag: is_swap = 1
+    await api.post('?route=user/transfer&action=perform', {
+      schedule_id: myShift.id || myShift.ven_id, // รหัสเวรของเรา (หลัก)
+      new_user_id: theirShift.user_id,           // รหัสเจ้าของเวรที่เราไปขอแลกด้วย
+      is_swap: 1,                                // บอก Backend ว่านี่คือการสลับเวร
+      s2_id: theirShift.id || theirShift.ven_id  // รหัสเวรของเขาที่จะเอามาแทน
+    });
+    
+    detailModalInstance.hide();
+    fetchVenData(); 
+    
+    const successResult = await Swal.fire({
+      title: 'ส่งคำขอสำเร็จ!',
+      html: `<div class="mb-2">ทำการส่งคำขอสลับเวรเรียบร้อยแล้ว</div> รอการอนุมัติตามขั้นตอน`,
+      icon: 'success',
+      showCancelButton: true,
+      confirmButtonText: 'ไปหน้าประวัติ',
+      cancelButtonText: 'ปิดหน้านี้',
+      confirmButtonColor: '#198754'
+    });
+
+    if (successResult.isConfirmed) {
+      router.push('/user/history'); 
+    }
+
+  } catch (error) {
+    Swal.fire('ผิดพลาด', 'ไม่สามารถส่งคำขอสลับเวรได้', 'error');
   }
 };
 

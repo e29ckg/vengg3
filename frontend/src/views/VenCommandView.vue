@@ -254,7 +254,7 @@ const groupedCommands = computed(() => {
 const openModal = (mode, com = null) => {
   if (mode === 'add') {
     isEditing.value = false
-    form.value = { id: '', com_num: '', com_date: '', ven_month: '', ven_name_id: '', ven_com_days: [] } // 🌟 เพิ่ม ven_com_days
+    form.value = { com_num: '', com_date: '', ven_month: '', ven_name_id: '', ven_com_days: [] } // 🌟 เพิ่ม ven_com_days
     
     // ตั้งค่าเริ่มต้นเป็น วัน/เดือน/ปี ปัจจุบัน
     const now = new Date()

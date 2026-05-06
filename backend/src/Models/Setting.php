@@ -343,6 +343,7 @@ class Setting {
                          CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS user_name,
                          s.ven_com_id as com_id, c.com_num,
                          s.ven_name_sub_id as sub_id, sub.name as sub_name, sub.color,
+                         sub.price,
                          n.dn as shift_type
                   FROM ven_schedule s
                   JOIN user u ON s.user_id = u.id
@@ -797,12 +798,18 @@ class Setting {
     // ดึงประวัติการโอนเวร (เอาเฉพาะที่ตัวเองเป็นคนให้ หรือ ตัวเองเป็นคนรับ)
     public function getUserChangeHistory($user_id) {
         $query = "SELECT vc.id, vc.change_no, vc.status, vc.created_at, vc.s1_id,
-                         vs.ven_date, vn.name AS duty_main, vns.name AS duty_role,
+                         vs.ven_date, -- วันที่เวรหลัก
+                         vc.is_swap, vc.s2_id,           -- 🌟 เพิ่มตัวแปรสำหรับระบบสลับเวร
+                         vs2.ven_date AS s2_date,        -- 🌟 ดึงวันที่ของเวรที่ถูกนำมาสลับด้วย (ถ้ามี)
+                         vs.ven_date AS s1_date,        -- 🌟 ดึงวันที่ของเวรที่ 1 (เวรหลัก)
+                         vn.name AS duty_main, vns.name AS duty_role,
                          vc.user1_id, vc.user2_id,
                          vcom.com_num AS com_num, 
                          vcom.com_date AS com_date,
                          CONCAT_WS(' ', p1.prefix_name, p1.first_name, p1.last_name) AS user1_name,
                          CONCAT_WS(' ', p2.prefix_name, p2.first_name, p2.last_name) AS user2_name,
+                         p1.position AS user1_dep,
+                         p2.position AS user2_dep,
 
                          (SELECT prev.change_no 
                             FROM ven_change prev 
@@ -814,6 +821,7 @@ class Setting {
 
                   FROM ven_change vc
                   JOIN ven_schedule vs ON vc.s1_id = vs.id
+                  LEFT JOIN ven_schedule vs2 ON vc.s2_id = vs2.id  -- 🌟 เชื่อมตารางเพื่อดึงข้อมูลเวรที่ 2
                   LEFT JOIN ven_name_sub vns ON vs.ven_name_sub_id = vns.id
                   LEFT JOIN ven_com vcom ON vs.ven_com_id = vcom.id
                   LEFT JOIN ven_name vn ON vcom.ven_name_id = vn.id
