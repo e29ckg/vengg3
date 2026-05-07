@@ -1,52 +1,69 @@
-<template>
+<<template>
   <div class="bg-light min-vh-100">
     <div class="container py-5">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold text-dark"><i class="bi bi-file-text me-2"></i>จัดการคำสั่งเวร</h3>
-        <button class="btn btn-success fw-bold px-4 shadow-sm rounded-pill" @click="openModal('add')">
-          <i class="bi bi-plus-circle me-2"></i>เพิ่มคำสั่ง
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+          <h3 class="fw-bold text-dark mb-1"><i class="bi bi-file-text-fill text-primary me-2"></i>จัดการคำสั่งเวร</h3>
+          <p class="text-muted mb-0">ระบบจัดการและสร้างคำสั่งเพื่อนำไปจัดตารางเวร</p>
+        </div>
+        <button class="btn btn-success fw-bold px-4 shadow-sm rounded-pill d-flex align-items-center" @click="openModal('add')">
+          <i class="bi bi-plus-circle-fill me-2 fs-5"></i>สร้างคำสั่งใหม่
         </button>
       </div>
 
       <div v-for="(commands, month) in groupedCommands" :key="month" class="mb-5">
-        <h5 class="fw-bold text-secondary mb-3">เวรเดือน {{ formatMonthThai(month) }}</h5>
+        <h5 class="fw-bold text-secondary mb-3 d-flex align-items-center">
+          <i class="bi bi-calendar3 me-2"></i>คำสั่งเวรประจำเดือน {{ formatMonthThai(month) }}
+        </h5>
         
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
           <ul class="list-group list-group-flush">
-            <li v-for="com in commands" :key="com.id" class="list-group-item d-flex justify-content-between align-items-center py-3 hover-bg">
-              <div>
-                <span class="fw-bold text-dark fs-6">เลขคำสั่งที่ {{ com.com_num }}</span>
-                <span class="text-muted mx-2">|</span>
-                <span class="text-muted">ลงวันที่ {{ formatDateThai(com.com_date) }}</span>
-                <span class="text-muted mx-2">|</span>
-                <span class="text-primary fw-semibold"><i class="bi bi-tag-fill me-1"></i>{{ com.ven_name_title }}</span>
+            <li v-for="com in commands" :key="com.id" class="list-group-item d-flex flex-column flex-lg-row justify-content-between align-items-lg-center py-3 px-4 hover-bg transition-all">
+              
+              <div class="mb-3 mb-lg-0">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <span class="fw-bold text-dark fs-5">เลขคำสั่งที่ {{ com.com_num }}</span>
+                  <span v-if="com.status == 1" class="badge bg-success bg-opacity-10 text-success border border-success-subtle rounded-pill px-2">เปิดใช้งาน</span>
+                  <span v-else class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill px-2">ปิดใช้งาน</span>
+                </div>
+                <div class="text-muted small d-flex flex-wrap align-items-center gap-2 mt-2">
+                  <span><i class="bi bi-calendar-event me-1"></i>ลงวันที่ {{ formatDateThai(com.com_date) }}</span>
+                  <span class="d-none d-md-inline text-light-subtle">|</span>
+                  <span class="text-primary fw-semibold bg-primary bg-opacity-10 px-2 py-1 rounded-pill"><i class="bi bi-tag-fill me-1"></i>{{ com.ven_name_title }}</span>
+                </div>
               </div>
               
-              <div class="d-flex align-items-center">
-                <div class="form-check form-switch me-3 fs-5 mb-0" title="เปิด/ปิด การใช้งานคำสั่งนี้">
-                  <input class="form-check-input custom-switch" type="checkbox" role="switch" 
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <div class="form-check form-switch me-2 fs-5 mb-0" title="เปิด/ปิด การใช้งานคำสั่งนี้">
+                  <input class="form-check-input custom-switch cursor-pointer" type="checkbox" role="switch" 
                          :checked="com.status == 1" 
                          @change="toggleStatus(com.id, $event.target.checked ? 1 : 0)">
                 </div>
                 
-                <button class="btn btn-sm btn-warning fw-bold text-dark rounded-3 px-3 me-2 shadow-sm" @click="openModal('edit', com)">
-                  <i class="bi bi-pencil-square me-1"></i>แก้ไข
+                <button class="btn btn-primary btn-sm fw-bold rounded-pill px-3 shadow-sm d-flex align-items-center" @click="goToSchedule(com)">
+                  <i class="bi bi-calendar-plus-fill me-1"></i> จัดตารางเวร
                 </button>
-                <button class="btn btn-sm btn-danger rounded-3 px-3 shadow-sm" @click="deleteCommand(com)">
-                  <i class="bi bi-trash me-1"></i>ลบ
+                
+                <button class="btn btn-outline-warning btn-sm fw-bold text-dark rounded-pill px-3 shadow-sm d-flex align-items-center" @click="openModal('edit', com)">
+                  <i class="bi bi-pencil-square me-1"></i> แก้ไข
+                </button>
+                <button class="btn btn-outline-danger btn-sm fw-bold rounded-pill px-3 shadow-sm d-flex align-items-center" @click="deleteCommand(com)">
+                  <i class="bi bi-trash-fill me-1"></i> ลบ
                 </button>
               </div>
             </li>
-            <li v-if="commands.length === 0" class="list-group-item text-center text-muted py-4">ไม่มีข้อมูลคำสั่ง</li>
           </ul>
         </div>
       </div>
       
       <div v-if="Object.keys(groupedCommands).length === 0" class="text-center text-muted mt-5 py-5">
-        <div class="bg-white p-5 rounded-4 shadow-sm d-inline-block">
-          <i class="bi bi-inbox text-secondary" style="font-size: 4rem;"></i>
-          <h4 class="mt-3 fw-bold">ยังไม่มีข้อมูลคำสั่งในระบบ</h4>
-          <p class="mb-0">คลิกที่ปุ่ม "เพิ่มคำสั่ง" ด้านบนเพื่อเริ่มต้นจัดเวร</p>
+        <div class="bg-white p-5 rounded-4 shadow-sm d-inline-block border border-light">
+          <i class="bi bi-folder-x text-secondary opacity-50" style="font-size: 5rem;"></i>
+          <h4 class="mt-3 fw-bold text-dark">ยังไม่มีข้อมูลคำสั่งในระบบ</h4>
+          <p class="mb-0 text-muted">คลิกที่ปุ่ม "สร้างคำสั่งใหม่" เพื่อเริ่มต้นกำหนดวันจัดเวร</p>
+          <button class="btn btn-success fw-bold px-4 shadow-sm rounded-pill mt-4 d-inline-flex align-items-center" @click="openModal('add')">
+            <i class="bi bi-plus-circle-fill me-2"></i>สร้างคำสั่งแรกของคุณ
+          </button>
         </div>
       </div>
     </div>
@@ -90,7 +107,7 @@
                   <div class="row g-4">
                     <div class="col-md-6">
                       <label class="form-label fw-semibold text-muted small">วันที่ออกคำสั่ง (ลงวันที่) *</label>
-                      <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                      <div class="input-group shadow-sm rounded-3 overflow-hidden border">
                         <select class="form-select border-0 text-center" v-model="selectedComDay" required>
                           <option value="" disabled>วัน</option>
                           <option v-for="d in 31" :key="d" :value="String(d).padStart(2, '0')">{{ d }}</option>
@@ -108,7 +125,7 @@
 
                    <div class="col-md-6">
                       <label class="form-label fw-semibold text-muted small">ประจำเดือน (เวรเดือน) *</label>
-                      <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                      <div class="input-group shadow-sm rounded-3 overflow-hidden border">
                         <select 
                           class="form-select border-0 text-center" 
                           v-model="selectedMonth" 
@@ -136,20 +153,20 @@
                       </div>
                     </div>
 
-                    <div class="card border-0 shadow-sm rounded-3 mt-3">
-                      <div class="card-body p-3 p-md-4">
-                        <h6 class="fw-bold text-info mb-3 border-bottom pb-2">
+                    <div class="card border-0 shadow-none bg-light rounded-3 mt-4 pt-3 border-top">
+                      <div class="card-body p-0">
+                        <h6 class="fw-bold text-info mb-3">
                           <i class="bi bi-calendar-day-fill me-2"></i>3. ระบุวันที่จัดเวรในเดือนนี้
                         </h6>
                         
-                        <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
                           <p class="small text-muted mb-0">คลิกเลือกวันที่คำสั่งนี้มีผลบังคับใช้</p>
                           <div class="btn-group btn-group-sm shadow-sm">
                             <button type="button" class="btn btn-outline-primary fw-bold" @click="selectAllDays">
-                              <i class="bi bi-check-all me-1"></i>ทุกวัน
+                              <i class="bi bi-check-all me-1"></i>เลือกทุกวัน
                             </button>
                             <button type="button" class="btn btn-outline-danger fw-bold" @click="clearAllDays">
-                              <i class="bi bi-eraser-fill me-1"></i>ล้าง
+                              <i class="bi bi-eraser-fill me-1"></i>ล้างการเลือก
                             </button>
                           </div>
                         </div>
@@ -157,21 +174,18 @@
                         <div class="d-flex flex-wrap gap-2">
                           <button type="button" 
                                   v-for="d in daysInSelectedMonth" :key="d"
-                                  class="btn rounded-circle shadow-sm fw-bold d-flex align-items-center justify-content-center"
-                                  style="width: 42px; height: 42px; transition: 0.2s;"
+                                  class="btn rounded-circle shadow-sm fw-bold d-flex align-items-center justify-content-center day-btn"
                                   :class="form.ven_com_days.includes(d) ? 'btn-primary' : 'btn-outline-secondary'"
                                   @click="toggleComDay(d)">
                             {{ d }}
                           </button>
                         </div>
                         
-                        <div v-if="form.ven_com_days.length > 0" class="mt-3 small text-success fw-bold">
+                        <div v-if="form.ven_com_days.length > 0" class="mt-3 small text-success fw-bold p-2 bg-success bg-opacity-10 rounded-3 border border-success-subtle">
                           <i class="bi bi-check-circle-fill me-1"></i>เลือกไว้แล้ว {{ form.ven_com_days.length }} วัน (วันที่: {{ form.ven_com_days.join(', ') }})
                         </div>
                       </div>
                     </div>
-
-
                   </div>
                 </div>
               </div>
@@ -179,7 +193,7 @@
             </div>
             
             <div class="modal-footer border-0 pb-4 pe-4 bg-white">
-              <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">ยกเลิก</button>
+              <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">ยกเลิก</button>
               <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
                 <i class="bi bi-save me-2"></i>บันทึกข้อมูล
               </button>
@@ -188,15 +202,28 @@
         </div>
       </div>
     </div>
-
   </div>
 </template>
+
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import api from '../services/api'
 import Swal from 'sweetalert2'
 import { Modal } from 'bootstrap'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+// ฟังก์ชันนำทางไปหน้าจัดเวร
+const goToSchedule = (com) => {
+  // นำทางไปยังหน้าจัดเวร (แก้ path '/admin/ven_schedule' ให้ตรงกับที่คุณตั้งไว้ใน router/index.js)
+  // พร้อมส่งเลขเดือนและ ID คำสั่งไปเป็น Parameter
+  router.push({ 
+    path: '/director/schedule', 
+    query: { com_id: com.id, month: com.ven_month } 
+  })
+}
 
 const commands = ref([])
 const venNames = ref([])
@@ -439,10 +466,10 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.hover-bg:hover {
+/* .hover-bg:hover {
   background-color: #f8f9fa;
   transition: 0.2s;
-}
+} */
 
 /* แต่งสี Switch ให้เด่นชัด */
 .custom-switch:checked {
@@ -453,5 +480,31 @@ onMounted(() => {
   width: 3rem;
   height: 1.5rem;
   cursor: pointer;
+}
+
+.hover-bg:hover {
+  background-color: #f8f9fa !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  z-index: 1;
+}
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+.cursor-pointer {
+  cursor: pointer;
+}
+.custom-switch {
+  cursor: pointer;
+  transform: scale(1.3);
+  margin-right: 0.5rem;
+}
+.day-btn {
+  width: 42px; 
+  height: 42px; 
+  transition: 0.2s;
+}
+.day-btn:hover {
+  transform: scale(1.1);
 }
 </style>

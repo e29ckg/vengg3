@@ -12,7 +12,7 @@
         <div class="card-body px-4 d-flex flex-column gap-3 overflow-hidden">
           
           <div>
-            <label class="form-label small fw-bold text-muted">1. เลือกเดือนปฏิทิน</label>
+            <label class="form-label small fw-bold text-muted">1. เลือกเดือนปฏิทิน </label>
             <div class="input-group input-group-sm shadow-sm rounded-3 overflow-hidden">
               <select class="form-select border-0 bg-white" v-model="selMonth" @change="updateCurrentMonth">
                 <option v-for="(m, idx) in thaiMonths" :key="idx" :value="String(idx + 1).padStart(2, '0')">
@@ -26,13 +26,14 @@
           </div>
 
           <div>
-            <label class="form-label small fw-bold text-muted">2. เลือกคำสั่ง</label>
+            <label class="form-label small fw-bold text-muted">2. เลือกคำสั่ง </label>
             <select class="form-select form-select-sm" v-model="activeCommand" @change="onCommandChange">
               <option value="">-- เลือกคำสั่ง ({{ formatMonthThai(currentMonth) }}) --</option>
               <option v-for="com in filteredCommands" :key="com.id" :value="com">
                 {{ com.com_num }} ({{ com.ven_name_title }})
               </option>
             </select>
+
             
             <div v-if="activeCommand" class="mt-2 p-2 border rounded-3 bg-white shadow-sm d-flex justify-content-between align-items-center">
               <div>
@@ -128,9 +129,12 @@
                      opacity: isScheduleEditable(schedule) ? '1' : '0.85'
                    }">
                 
-                <div class="text-truncate" style="max-width: 85%; white-space: normal; line-height: 1.1; font-size: 0.7rem;">
-                  <span class="fw-bold d-block">{{ schedule.user_name }}</span>
-                  <span style="opacity: 0.8; font-size: 0.6rem;">{{ schedule.com_num }} - {{ schedule.sub_name }}</span>
+                <div style="max-width: 85%; line-height: 1.2; font-size: 0.7rem; cursor: pointer;" @click="showScheduleDetails(schedule)">
+                  <span class="fw-bold d-block text-truncate">{{ schedule.user_name }}</span>
+                  
+                  <span class="d-block text-truncate" style="opacity: 0.8; font-size: 0.6rem;">
+                    <i class="bi bi-clock me-1"></i>{{ schedule.ven_time.substring(0,5) }} | {{ schedule.com_num }} - {{ schedule.sub_name }}
+                  </span>
                 </div>
                 
                 <button v-if="isScheduleEditable(schedule)" class="btn btn-sm p-0 border-0 ms-1 opacity-75" :style="{ color: getTextColor(schedule.color) }" @click="removeSchedule(schedule.id)">
@@ -233,10 +237,13 @@
 </template>
 
 <script setup>
+import { useRoute } from 'vue-router'
 import { ref, computed, onMounted } from 'vue'
 import api from '../services/api'
 import Swal from 'sweetalert2'
 import { Modal } from 'bootstrap'
+
+const route = useRoute()
 
 // --- 🌟 จัดการเรื่องวันที่และภาษาไทย ---
 const today = new Date()
@@ -301,10 +308,8 @@ const getTextColor = (bg) => {
   return darks.includes(bg?.toLowerCase()) ? '#fff' : '#000'
 }
 
-// 🌟 เพิ่มฟังก์ชันเช็คสถานะเวรว่า "ล็อค" อยู่หรือไม่
 const isScheduleEditable = (sch) => {
   const scheduleCommand = commands.value.find(c => c.id === sch.com_id);
-  // ถ้าหาคำสั่งเจอ และสถานะเป็น 0 (กำลังดำเนินการ) จะให้ค่าเป็น true (แก้ไขลากได้)
   return scheduleCommand ? scheduleCommand.status == 0 : false;
 }
 
@@ -338,7 +343,35 @@ const startDragFromCalendar = (e, sch) => {
   e.dataTransfer.setData('source', 'calendar'); e.dataTransfer.setData('scheduleID', sch.id)
 }
 
-// อัปเดตสถานะคำสั่ง
+// 🌟 ฟังก์ชันตรวจสอบ เวรเร่งรัด vs เวรกลางคืน// 🌟 ฟังก์ชันตรวจสอบ เวรเร่งรัด vs เวรกลางคืน (ละเว้นเวร 0 บาท)
+const checkFastTrackAndNightConflict = (userId, targetDay, targetShiftStr, targetPrice) => {
+  
+  // 1. ถ้าเวรที่กำลังจะจัดมีราคา 0 บาท ให้ปล่อยผ่านได้เลย ไม่ต้องเช็คเงื่อนไขใดๆ
+  if (targetPrice !== undefined && Number(targetPrice) === 0) return false;
+
+  const userShiftsToday = allSchedules.value.filter(s => String(s.user_id) === String(userId) && parseInt(s.day) === parseInt(targetDay));
+  
+  const targetStr = (targetShiftStr || '').toLowerCase();
+  const isTargetFastTrack = targetStr.includes('เร่งรัด') || targetStr.includes('16:30-20:00');
+  const isTargetNight = targetStr.includes('กลางคืน') || targetStr.includes('16:30-08:30');
+
+  for (const shift of userShiftsToday) {
+    // 2. ถ้าเวรที่มีอยู่แล้วในระบบวันนั้นเป็นเวร 0 บาท ให้ข้ามการตรวจเวรนั้นไปเลย
+    if (Number(shift.price) === 0) continue;
+
+    const existingStr = `${shift.shift_type || ''} ${shift.sub_name || ''} ${shift.title || ''} ${shift.ven_time || ''}`.toLowerCase();
+
+    const existingIsFastTrack = existingStr.includes('เร่งรัด') || existingStr.includes('16:30-20:00');
+    const existingIsNight = existingStr.includes('กลางคืน') || existingStr.includes('16:30-08:30');
+
+    // ถ้าพบว่าชนกัน (เร่งรัดชนกลางคืน)
+    if ((isTargetFastTrack && existingIsNight) || (isTargetNight && existingIsFastTrack)) {
+      return true; 
+    }
+  }
+  return false;
+};
+
 const toggleCommandStatus = async (newStatus) => {
   const statusText = newStatus === 0 ? 'ยืนยันการจัดเวรและเปิดให้สมาชิกแลกเปลี่ยน?' : 'ปลดล็อคเพื่อกลับมาแก้ไขตารางเวร?';
   const result = await Swal.fire({
@@ -352,16 +385,11 @@ const toggleCommandStatus = async (newStatus) => {
 
   if (result.isConfirmed) {
     try {
-      await api.post('?route=admin/ven_com&action=update_status', {
-        id: activeCommand.value.id,
-        status: newStatus
-      });
+      await api.post('?route=admin/ven_com&action=update_status', { id: activeCommand.value.id, status: newStatus });
       activeCommand.value.status = newStatus;
       await fetchCommands();
-      
       const updatedCom = commands.value.find(c => c.id === activeCommand.value.id);
       if(updatedCom) activeCommand.value = updatedCom;
-
       Swal.fire('สำเร็จ', 'อัปเดตสถานะคำสั่งเรียบร้อยแล้ว', 'success');
     } catch (error) {
       Swal.fire('ผิดพลาด', 'ไม่สามารถอัปเดตสถานะได้', 'error');
@@ -369,13 +397,11 @@ const toggleCommandStatus = async (newStatus) => {
   }
 }
 
-// ฟังก์ชันดรอป (วางเวร)
+// 🌟 ปรับปรุง onDrop เพิ่มระบบแจ้งเตือนก่อนบันทึก
 const onDrop = async (e, day) => {
-  
   const source = e.dataTransfer.getData('source')
   
   if (source === 'sidebar') {
-    // ⛔ เช็คว่าคำสั่งที่เลือกอยู่ ถูกล็อคหรือไม่ (status != 0 แปลว่าล็อค)
     if (activeCommand.value && activeCommand.value.status != 0) {
       return Swal.fire('ถูกล็อค!', 'คำสั่งนี้ได้รับการยืนยันแล้ว โปรดปลดล็อคก่อนแก้ไข', 'warning');
     }
@@ -390,6 +416,28 @@ const onDrop = async (e, day) => {
       return Swal.fire('รายชื่อซ้ำ!', 'บุคคลนี้มีเวรในคำสั่งนี้ของวันนี้แล้ว', 'warning')
     }
 
+    // 🌟 ดักเช็คเงื่อนไข เวรเร่งรัด vs เวรกลางคืน
+    const shiftInfoStr = `${activeCommand.value.ven_name_title || ''} ${activeSubDuty.value.name || ''}`;
+    
+    // ดึงราคาของเวรที่กำลังจะจัด (อ้างอิงจาก activeSubDuty หรือ activeCommand)
+    const newPrice = activeSubDuty.value?.price !== undefined ? activeSubDuty.value.price : activeCommand.value?.price;
+    
+    if (checkFastTrackAndNightConflict(uID, day, shiftInfoStr)) {
+      const confirm = await Swal.fire({
+        title: 'จัดเวรชนกัน!',
+        text: 'เจ้าหน้าที่มี "เวรเร่งรัด" และ "เวรกลางคืน" ในวันเดียวกัน ต้องการจัดเวรนี้ต่อไปหรือไม่?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f39c12',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'ยืนยันจัดเวร',
+        cancelButtonText: 'ยกเลิก'
+      });
+      // ถ้าแอดมินกดยกเลิก ให้จบการทำงานตรงนี้เลย (ไม่บันทึก)
+      if (!confirm.isConfirmed) return;
+    }
+
+    // บันทึกเมื่อไม่มีปัญหา หรือแอดมินกดยืนยันแล้ว
     await api.post('?route=admin/ven_schedule&action=add', { date: `${currentMonth.value}-${String(day).padStart(2,'0')}`, com_id: activeCommand.value.id, sub_id: activeSubDuty.value.id, user_id: uID })
     fetchMonthSchedules()
   } 
@@ -402,7 +450,6 @@ const onDrop = async (e, day) => {
 
     const scheduleCommand = commands.value.find(c => c.id === old.com_id)
 
-    // ⛔ เช็คสถานะคำสั่งที่ดึงมาว่าถูกล็อคอยู่หรือไม่ (แก้จาก status == 2 เป็น != 0)
     if (scheduleCommand && scheduleCommand.status != 0) {
       return Swal.fire('ถูกล็อค!', `คำสั่งเลขที่ ${scheduleCommand.com_num} ถูกยืนยันแล้ว ไม่สามารถย้ายได้`, 'warning');
     }
@@ -418,6 +465,22 @@ const onDrop = async (e, day) => {
       return Swal.fire('ย้ายไม่ได้!', 'มีชื่อบุคคลนี้ในวันนั้นอยู่แล้ว', 'warning')
     }
 
+    // 🌟 ดักเช็คเงื่อนไข เวรเร่งรัด vs เวรกลางคืน (กรณีลากย้ายวัน)
+    const oldShiftInfoStr = `${old.shift_type || ''} ${old.sub_name || ''} ${old.title || ''}`;
+    if (checkFastTrackAndNightConflict(old.user_id, day, oldShiftInfoStr, old.price)) {
+      const confirm = await Swal.fire({
+        title: 'ย้ายเวรชนกัน!',
+        text: 'เจ้าหน้าที่มี "เวรเร่งรัด" และ "เวรกลางคืน" ในวันเดียวกัน ต้องการย้ายมาวันนี้ต่อไปหรือไม่?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f39c12',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'ยืนยันย้ายเวร',
+        cancelButtonText: 'ยกเลิก'
+      });
+      if (!confirm.isConfirmed) return;
+    }
+
     await api.post('?route=admin/ven_schedule&action=remove', { id: old.id })
     await api.post('?route=admin/ven_schedule&action=add', { date: `${currentMonth.value}-${String(day).padStart(2,'0')}`, com_id: old.com_id, sub_id: old.sub_id, user_id: old.user_id })
     fetchMonthSchedules()
@@ -429,7 +492,6 @@ const removeSchedule = async (id) => {
   const schedule = allSchedules.value.find(s => s.id === id);
   if (schedule) {
     const scheduleCommand = commands.value.find(c => c.id === schedule.com_id);
-    // ⛔ (แก้จาก status == 2 เป็น != 0)
     if (scheduleCommand && scheduleCommand.status != 0) {
       return Swal.fire('ถูกล็อค!', `คำสั่งเลขที่ ${scheduleCommand.com_num} ถูกยืนยันแล้ว ไม่สามารถลบได้`, 'warning');
     }
@@ -441,7 +503,6 @@ const removeSchedule = async (id) => {
   } 
 }
 
-// 🌟 ฟังก์ชันล้างเฉพาะหน้าที่ย่อยที่เลือก
 const clearSubDutySchedules = async () => {
   if (!activeCommand.value || !activeSubDuty.value) return;
 
@@ -457,17 +518,8 @@ const clearSubDutySchedules = async () => {
 
   if (result.isConfirmed) {
     Swal.fire({ title: 'กำลังลบข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    
-    // 🌟 กรองเอาเฉพาะข้อมูลที่มี com_id และ sub_id ตรงกับที่เลือกอยู่
-    const toDel = allSchedules.value.filter(s => 
-      s.com_id === activeCommand.value.id && 
-      s.sub_id === activeSubDuty.value.id
-    );
-    
-    // สั่งลบ
+    const toDel = allSchedules.value.filter(s => s.com_id === activeCommand.value.id && s.sub_id === activeSubDuty.value.id);
     await Promise.all(toDel.map(s => api.post('?route=admin/ven_schedule&action=remove', { id: s.id })));
-    
-    // โหลดข้อมูลใหม่
     fetchMonthSchedules();
     Swal.fire('สำเร็จ', `ล้างข้อมูลหน้าที่ "${activeSubDuty.value.name}" เรียบร้อยแล้ว`, 'success');
   }
@@ -511,7 +563,6 @@ const runAutoAssign = async () => {
 }
 
 const isClashing = (sch) => {
-
   if (Number(sch.price) === 0) {return false; }
 
   const userShifts = allSchedules.value.filter(s => s.user_id === sch.user_id)
@@ -522,7 +573,6 @@ const isClashing = (sch) => {
   return false
 }
 
-// ฟังก์ชันดึงชื่อวันภาษาไทยย่อ (จ., อ., พ.)
 const getThaiDayShort = (day) => {
   const [y, m] = currentMonth.value.split('-')
   const date = new Date(y, m - 1, day)
@@ -530,15 +580,93 @@ const getThaiDayShort = (day) => {
   return days[date.getDay()]
 }
 
-// แก้ไขฟังก์ชันพิมพ์ให้เรียกใช้ได้ทันที
 const printSchedule = () => {
   if (!activeCommand.value) {
     return Swal.fire('แจ้งเตือน', 'โปรดเลือกคำสั่งก่อนพิมพ์รายงาน', 'warning')
   }
   window.print()
 }
+// 🌟 ฟังก์ชันแสดงรายละเอียดเวรเมื่อกดคลิกที่บล็อก
+const showScheduleDetails = (sch) => {
+  Swal.fire({
+    title: '<i class="bi bi-info-circle-fill text-primary"></i> รายละเอียดการจัดเวร',
+    html: `
+      <div class="text-start mt-3 p-3 bg-light rounded-3" style="font-size: 0.95rem; line-height: 1.8;">
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-person-badge fs-4 text-secondary me-3"></i>
+          <div style="line-height: 1.2;">
+            <small class="text-muted d-block mb-1">ผู้ปฏิบัติหน้าที่</small>
+            <strong class="text-dark fs-6">${sch.user_name || sch.title || 'ไม่ระบุ'}</strong>
+          </div>
+        </div>
+        
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-tag-fill fs-4 text-primary me-3"></i>
+          <div style="line-height: 1.2;">
+            <small class="text-muted d-block mb-1">คำสั่ง / หน้าที่</small>
+            <strong class="text-dark">${sch.com_num || '-'} | ${sch.sub_name || '-'}</strong>
+          </div>
+        </div>
+        
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-clock-fill fs-4 text-warning me-3"></i>
+          <div style="line-height: 1.2;">
+            <small class="text-muted d-block mb-1">เวลาปฏิบัติงาน</small>
+            <strong class="text-dark">${sch.ven_time || '-'} น.</strong>
+          </div>
+        </div>
+        
+        <div class="d-flex align-items-center">
+          <i class="bi bi-cash-coin fs-4 text-success me-3"></i>
+          <div style="line-height: 1.2;">
+            <small class="text-muted d-block mb-1">ค่าตอบแทน</small>
+            <strong class="text-dark">${Number(sch.price) > 0 ? sch.price + ' บาท' : 'ไม่มีค่าตอบแทน (0 บาท)'}</strong>
+          </div>
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    showConfirmButton: true,
+    confirmButtonColor: '#dc3545', // สีแดงสำหรับปุ่มลบ
+    cancelButtonColor: '#6c757d',  // สีเทาสำหรับปุ่มปิด
+    confirmButtonText: '<i class="bi bi-trash3-fill"></i> ลบเวรนี้',
+    cancelButtonText: 'ปิดหน้าต่าง',
+    reverseButtons: true // สลับให้ปุ่มปิดอยู่ขวา ปุ่มลบอยู่ซ้าย
+  }).then((result) => {
+    // ถ้าแอดมินกดปุ่ม "ลบเวรนี้" จะไปเรียกฟังก์ชัน removeSchedule ที่คุณมีอยู่แล้ว
+    if (result.isConfirmed) {
+      removeSchedule(sch.id); 
+    }
+  });
+};
 
-onMounted(() => { fetchCommands(); fetchMonthSchedules(); autoAssignModalInstance = new Modal(document.getElementById('autoAssignModal')) })
+// 🌟 แก้ไข onMounted ให้ตั้งค่า Parameter ครบถ้วน
+onMounted(async () => { 
+  await fetchCommands(); 
+  
+  autoAssignModalInstance = new Modal(document.getElementById('autoAssignModal'))
+  
+  if (route.query.com_id || route.query.month) {    
+    if (route.query.month) {
+      const [y, m] = route.query.month.split('-');
+      selMonth.value = m;
+      selYear.value = parseInt(y) + 543; 
+      currentMonth.value = `${y}-${m}`; 
+    }
+    
+    // 🌟 ดึงคอมมานด์มาแสดงอัตโนมัติ
+    if (route.query.com_id) {
+      // ค้นหา command จาก id ที่ส่งมา และตั้งเป็น activeCommand
+      const foundCom = commands.value.find(c => String(c.id) === String(route.query.com_id));
+      if (foundCom) {
+        activeCommand.value = foundCom;
+        // โหลดหน้าที่ย่อยของคำสั่งนี้มาใส่ Dropdown ถัดไปทันที
+        await onCommandChange();
+      }
+    }
+  }
+  await fetchMonthSchedules();     
+})
 </script>
 
 <style scoped>

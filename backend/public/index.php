@@ -293,6 +293,52 @@ switch ($route) {
 
     case 'admin/ven_approve':
         AuthMiddleware::checkAdmin($connection); 
+        $action = $_GET['action'] ?? '';
+        if ($action === 'list') {
+                try {
+                    // Query ดึงรายการคำขอเปลี่ยนเวร/สลับเวร พร้อม JOIN ข้อมูลที่เกี่ยวข้อง
+                    $query = "SELECT 
+                                vc.id, 
+                                vc.change_no, 
+                                vc.status, 
+                                vc.is_swap, 
+                                vc.created_at,
+                                vc.user1_id, 
+                                vc.user2_id,
+                                -- ชื่อคนขอ (User A)
+                                CONCAT_WS(' ', p1.prefix_name, p1.first_name, p1.last_name) AS user1_name,
+                                -- ชื่อคนรับ/คนถูกสลับ (User B)
+                                CONCAT_WS(' ', p2.prefix_name, p2.first_name, p2.last_name) AS user2_name,
+                                -- ข้อมูลเวรที่ 1
+                                vs1.ven_date AS s1_date, 
+                                -- vs1.ven_time AS s1_time,
+                                -- ข้อมูลเวรที่ 2 (กรณีสลับเวร)
+                                vs2.ven_date AS s2_date, 
+                                -- vs2.ven_time AS s2_time,
+                                -- ข้อมูลหน้าที่
+                                vns.name AS duty_role,
+                                vn.name AS duty_main
+                              FROM ven_change vc
+                              LEFT JOIN profile p1 ON vc.user1_id = p1.user_id
+                              LEFT JOIN profile p2 ON vc.user2_id = p2.user_id
+                              LEFT JOIN ven_schedule vs1 ON vc.s1_id = vs1.id
+                              LEFT JOIN ven_schedule vs2 ON vc.s2_id = vs2.id
+                              LEFT JOIN ven_name_sub vns ON vs1.ven_name_sub_id = vns.id
+                              LEFT JOIN ven_com vcom ON vs1.ven_com_id = vcom.id
+                              LEFT JOIN ven_name vn ON vcom.ven_name_id = vn.id
+                              -- เรียงลำดับ: เอาที่ยังไม่อนุมัติ (status=0) ขึ้นก่อน และตามด้วยวันที่ล่าสุด
+                              ORDER BY vc.status ASC, vc.created_at DESC";
+                    
+                    $stmt = $connection->query($query);
+                    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    http_response_code(200);
+                    echo json_encode($results);
+                    exit;
+                } catch (PDOException $e) {
+                    http_response_code(500);
+                    echo json_encode(['error' => 'Database Error: ' . $e->getMessage()]);
+                }
+            }
             
             $data = json_decode(file_get_contents("php://input"), true);
             $change_id = $data['change_id'] ?? null;
@@ -308,7 +354,7 @@ switch ($route) {
                 $changeReq = $stmt->fetch(PDO::FETCH_ASSOC);
                 
                 if ($changeReq) {
-                    $tableName = "ven_name"; // ตรวจสอบชื่อตารางให้ตรงกับของคุณ
+                    $tableName = "ven_schedule"; // ตรวจสอบชื่อตารางให้ตรงกับของคุณ
                     
                     // 🌟 2. อัปเดตตารางเวร ให้สถานะกลับมาเป็น 1 (อนุมัติสมบูรณ์)
                     if ($changeReq['is_swap'] == 1) {

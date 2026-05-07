@@ -260,7 +260,7 @@ class Setting {
         $query = "SELECT c.*, n.name as ven_name_title 
                   FROM ven_com c 
                   LEFT JOIN ven_name n ON c.ven_name_id = n.id 
-                  ORDER BY c.ven_month DESC, c.com_date DESC";
+                  ORDER BY c.ven_month DESC, n.srt ASC, c.com_date DESC";
         $stmt = $this->conn->query($query);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -343,6 +343,7 @@ class Setting {
                          CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS user_name,
                          s.ven_com_id as com_id, c.com_num,
                          s.ven_name_sub_id as sub_id, sub.name as sub_name, sub.color,
+                         IF(n.dn LIKE '%กลางคืน%', '16:30:00', '08:30:00') AS ven_time,
                          sub.price,
                          n.dn as shift_type
                   FROM ven_schedule s
