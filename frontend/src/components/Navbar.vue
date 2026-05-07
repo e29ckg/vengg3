@@ -196,7 +196,7 @@ const fetchSystemSettings = async () => {
 
 // 🌟 เพิ่มพารามิเตอร์ name เข้ามา (ตั้งค่าเริ่มต้นเป็น 'User' เผื่อดึงชื่อไม่ทัน)
 const getAvatarUrl = (filename, name = 'User') => {
-  if (!filename || filename == null) {
+  if (!filename || filename == null || filename == "null") {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=128&font-size=0.5`;
   }
 
