@@ -75,5 +75,5 @@ coverage/
 # User Uploads (บล็อกทั้งโฟลเดอร์ที่เก็บรูปอัปโหลด)
 # ==========================================
 # ปรับพาธให้ตรงกับโฟลเดอร์ที่คุณใช้เก็บรูปโปรไฟล์ครับ
-backend/public/uploads/
+backend/public/uploads/avatars/
 public/uploads/

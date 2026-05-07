@@ -177,14 +177,8 @@ const updateProfile = async () => {
     await api.post('?route=user/profile/update', profile.value)
     Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false })
     
-    // อัปเดตชื่อใน LocalStorage และหน้าเว็บ
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      let userData = JSON.parse(userStr);
-      userData.name = `${profile.value.first_name} ${profile.value.last_name}`;
-      localStorage.setItem('user', JSON.stringify(userData));
-      // คุณอาจจะต้องใช้ state management (Pinia) หรือ event bus เพื่อให้ Navbar อัปเดตชื่อทันที
-    }
+    localStorage.setItem('username',`${profile.value.prefix_name}${profile.value.first_name} ${profile.value.last_name}`);
+    
   } catch (error) {
     Swal.fire('ผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error')
   }
