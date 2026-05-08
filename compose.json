@@ -1,0 +1,13 @@
+{
+    "name": "vengg3/backend",
+    "description": "Backend API for Ven Management System",
+    "type": "project",
+    "require": {
+        "google/apiclient": "^2.15"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    }
+}
