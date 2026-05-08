@@ -387,6 +387,25 @@ switch ($route) {
    // ==========================================
         // 🌟 1. การตั้งค่าเวรหลัก และ หน้าที่ย่อย
         // ==========================================
+        case 'admin/google_settings':
+            AuthMiddleware::checkAdmin($connection);
+            $action = $_GET['action'] ?? '';
+            $data = json_decode(file_get_contents("php://input"), true);
+
+            if ($action == 'get_google_config') {
+                // 🌟 ดึงข้อมูลจากตารางใหม่ google_service_settings
+                $stmt = $connection->prepare("SELECT setting_value FROM google_service_settings WHERE setting_key = 'google_service_account'");
+                $stmt->execute();
+                echo json_encode(['google_service_account' => $stmt->fetchColumn()]);
+            } 
+            elseif ($action == 'update_google_config') {
+                // 🌟 อัปเดตข้อมูลในตารางใหม่ google_service_settings
+                $stmt = $connection->prepare("UPDATE google_service_settings SET setting_value = ? WHERE setting_key = 'google_service_account'");
+                $stmt->execute([$data['google_service_account']]);
+                echo json_encode(['success' => true]);
+            }
+            break;
+                
         case 'admin/setting':
             AuthMiddleware::checkAdmin($connection);
             require_once '../src/Models/Setting.php';
@@ -394,6 +413,19 @@ switch ($route) {
             
             $action = $_GET['action'] ?? '';
             $data = json_decode(file_get_contents("php://input"), true);
+
+            if ($action == 'update_calendar_id') {
+                $stmt = $connection->prepare("UPDATE ven_name SET google_calendar_id = ? WHERE id = ?");
+                $stmt->execute([$data['google_calendar_id'], $data['id']]);
+                echo json_encode(['success' => true]);
+                exit;
+            }
+
+            if ($action == 'update_calendar_id') {
+                $stmt = $connection->prepare("UPDATE ven_name SET google_calendar_id = ? WHERE id = ?");
+                $stmt->execute([$data['google_calendar_id'], $data['id']]);
+                echo json_encode(['success' => true]);
+            }
 
             // 1.1 โหลดข้อมูลทั้งหมด (เวรหลัก + หน้าที่ย่อยซ้อนกัน)
             if ($action === 'ven_full') {

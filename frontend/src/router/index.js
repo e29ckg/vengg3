@@ -16,15 +16,13 @@ const router = createRouter({
     { 
       path: '/home', 
       name: 'home', 
-      // โหลดหน้า Home แบบ Lazy load (โหลดเมื่อใช้งาน) เพื่อให้เว็บเร็วขึ้น
       component: () => import('../views/HomeView.vue') 
     },
     { 
       path: '/admin/users', 
       name: 'admin-users', 
       component: () => import('../views/UserManagementView.vue'),
-      meta: { requiresAuth: true, role: 9 } // เฉพาะ Admin
-
+      meta: { requiresAuth: true, role: 9 }
     },
     {
       path: '/admin/settings/system',
@@ -32,12 +30,26 @@ const router = createRouter({
       component: () => import('../views/admin/SystemSettingsView.vue'),
       meta: { requiresAuth: true, role: 9 }
     },
-       
     {
       path: '/admin/settings/agency',
       name: 'AgencySettings',
       component: () => import('../views/admin/AgencySettingsView.vue'),
-      meta: { requiresAuth: true, role: 9 } // เฉพาะ Admin
+      meta: { requiresAuth: true, role: 9 }
+    },
+
+    // 🌟 เพิ่ม Route สำหรับตั้งค่า Google Calendar ตรงนี้ครับ
+    {
+      path: '/admin/settings/google-calendar',
+      name: 'GoogleCalendarSettings',
+      component: () => import('../views/admin/GoogleCalendarSettingsView.vue'),
+      meta: { requiresAuth: true, role: 9 } // เฉพาะ Admin เท่านั้น
+    },
+
+    {
+      path: '/admin/settings/telegram',
+      name: 'TelegramSettings',
+      component: () => import('../views/admin/TelegramSettingsView.vue'),
+      meta: { requiresAuth: true, role: 9 }
     },
     { 
       path: '/director/ven-settings', 
@@ -45,12 +57,11 @@ const router = createRouter({
       component: () => import('../views/VenSettingView.vue') ,
       meta: { requiresAuth: true }
     },
-    
     { 
       path: '/director/commands', 
       name: 'commands', 
       component: () => import('../views/VenCommandView.vue'), 
-      meta: { requiresAuth: true } // ต้องล็อกอินก่อนถึงใช้งานได้
+      meta: { requiresAuth: true }
     },
     { 
       path: '/director/schedule', 
@@ -68,31 +79,25 @@ const router = createRouter({
       path: '/director/approvals',
       name: 'ven-approvals',
       component: () => import('../views/VenApproveView.vue'),
-      meta: { requiresAuth: true, roles: [2, 9] } // อนุญาตเฉพาะสิทธิ์ 2 (อำนวยการ) และ 9 (แอดมิน)
+      meta: { requiresAuth: true, roles: [2, 9] }
     },
     {
         path: '/staff/swap',
         name: 'staff-swap',
         component: () => import('../views/VenSwapView.vue'),
-        meta: { requiresAuth: true } // ต้องล็อกอินก่อนถึงใช้งานได้
+        meta: { requiresAuth: true }
     },
     {
       path: '/finance/report',
       name: 'finance-report',
       component: () => import('../views/FinanceReportView.vue'),
-      meta: { requiresAuth: true , roles: [3, 9] } // อนุญาตเฉพาะสิทธิ์ 3 (การเงิน)
-    },
-    {
-      path: '/admin/settings/telegram',
-      name: 'TelegramSettings',
-      component: () => import('../views/admin/TelegramSettingsView.vue'),
-      meta: { requiresAuth: true, role: 9 } // เฉพาะ Admin
+      meta: { requiresAuth: true , roles: [3, 9] }
     },
     {
       path: '/user/history',
       name: 'ven-history',
       component: () => import('../views/VenChangeHistoryView.vue'),
-      meta: { requiresAuth: true } // ต้องล็อกอินก่อนถึงดูประวัติได้
+      meta: { requiresAuth: true }
     },
     {
       path: '/profile',
@@ -106,7 +111,6 @@ const router = createRouter({
       component: () => import('../views/AdminOptionsView.vue'),
       meta: { requiresAuth: true }
     },
-
   ]
 })
 

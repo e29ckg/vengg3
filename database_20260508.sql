@@ -1,4 +1,4 @@
--- Backup Date: 2026-05-07 03:31:02
+-- Backup Date: 2026-05-08 09:34:58
 
 
 DROP TABLE IF EXISTS `agency_settings`;
@@ -14,6 +14,17 @@ CREATE TABLE `agency_settings` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 INSERT INTO `agency_settings` VALUES('1','ศาลจังหวัดเพชรบุรี','(ลงชื่อ).......................................................','ตำแหน่งผู้บริหาร','[{\"name\":\"นายชูเกียรติ ภานุกรอุดม\",\"position\":\"ผู้พิพากษาหัวหน้าคณะชั้นต้นในศาลเยาวชนและครอบครัวจังหวัดลพบุรี ช่วยฯ ผู้พิพากษาหัวหน้าศาลเยาวชนและครอบครัวจังหวัดประจวบคีรีขันธ์\",\"is_active\":true},{\"name\":\"นายพพพ\",\"position\":\"รอง\",\"is_active\":true},{\"name\":\"www\",\"position\":\"www\",\"is_active\":true}]','[{\"name\":\"นางสาวศรีชมภู อุ่นจิตรพันธ์\",\"position\":\"ผู้อำนวยการสำนักงานประจำศาลเยาวชนและครอบครัวจังหวัดประจวบคีรีขันธ์\",\"is_active\":false},{\"name\":\"okpddsd\",\"position\":\"sssss\",\"is_active\":true}]','[{\"name\":\"นางสาวพจนา เทพพิชิตสมุทร\",\"position\":\"นักวิชาการเงินและบัญชีปฏิบัติการ\",\"is_active\":true},{\"name\":\"\",\"position\":\"\",\"is_active\":true}]');
+
+
+DROP TABLE IF EXISTS `google_service_settings`;
+CREATE TABLE `google_service_settings` (
+  `setting_key` varchar(50) NOT NULL,
+  `setting_value` text,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`setting_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT INTO `google_service_settings` VALUES('google_service_account','','2026-05-08 14:32:22');
 
 
 DROP TABLE IF EXISTS `profile`;
@@ -36,12 +47,12 @@ CREATE TABLE `profile` (
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   `st` smallint DEFAULT NULL,
-  `avatar` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `avatar` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   UNIQUE KEY `user_id` (`user_id`),
   KEY `user_id_2` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
-INSERT INTO `profile` VALUES('1',NULL,'นาง','ผู้ดูแลระบบ','ทดสอบ11','1',NULL,NULL,'ผู้พิพากษา','กลุ่มงานอำนวยการ',NULL,'1123344','123','12311','10','2023-12-14 09:54:13','2024-05-16 06:58:08','1',NULL);
+INSERT INTO `profile` VALUES('1',NULL,'นาย','ผู้ดูแลระบ','ทดสอบ','1',NULL,NULL,'ผู้พิพากษา','กลุ่มงานอำนวยการ',NULL,'1123344','123','12311','10','2023-12-14 09:54:13','2024-05-16 06:58:08','1','user_1_1778175011.png');
 INSERT INTO `profile` VALUES('1680162049',NULL,'นาง','just1','just1','999',NULL,NULL,'ผู้พิพากษา','ผู้พิพากษา',NULL,'1111',NULL,NULL,'10','2025-09-02 11:14:34','2025-09-02 11:14:34','1',NULL);
 INSERT INTO `profile` VALUES('1680162050',NULL,'นาง','just2','just2','999',NULL,NULL,'ผู้พิพากษา','ผู้พิพากษา',NULL,'2222',NULL,NULL,'10','2025-09-02 11:15:07','2025-09-02 11:15:07','2',NULL);
 INSERT INTO `profile` VALUES('1680162051',NULL,'นางสาว','just3','just3','999',NULL,NULL,'ผู้พิพากษา','ผู้พิพากษา',NULL,'3333','','','10','2025-09-02 11:15:44','2025-09-02 11:15:44','3',NULL);
@@ -78,7 +89,7 @@ CREATE TABLE `system_settings` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-INSERT INTO `system_settings` VALUES('1','ระบบบริหารจัดการเวรนอกเวลาทำการ','0','0','0','0','1','{\"prefixes\":[\"นาย\",\"นาง\",\"นางสาว\"],\"positions\":[\"ผู้พิพากษา\",\"ผู้อำนวยการฯ\",\"นิติกร\",\"เจ้าพนักงานศาลยุติธรรม\"],\"departments\":[\"กลุ่มงานอำนวยการ\",\"กลุ่มงานคลัง\",\"กลุ่มงานบริการประชาชนฯ\"]}');
+INSERT INTO `system_settings` VALUES('1','ระบบบริหารจัดการเวรนอกเวลาทำการ','1','0','0','0','1','{\"prefixes\":[\"นาย\",\"นาง\",\"นางสาว\"],\"positions\":[\"ผู้พิพากษา\",\"ผู้อำนวยการฯ\",\"นิติกร\",\"เจ้าพนักงานศาลยุติธรรม\"],\"departments\":[\"กลุ่มงานอำนวยการ\",\"กลุ่มงานคลัง\",\"กลุ่มงานบริการประชาชนฯ\"]}');
 
 
 DROP TABLE IF EXISTS `telegram_notify_times`;
@@ -88,9 +99,9 @@ CREATE TABLE `telegram_notify_times` (
   `status` tinyint(1) DEFAULT '1',
   `notify_day` tinyint(1) DEFAULT '0' COMMENT '0: Today, 1: Tomorrow',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-INSERT INTO `telegram_notify_times` VALUES('34','18:20:00','1','0');
+INSERT INTO `telegram_notify_times` VALUES('36','00:01:00','1','0');
 
 
 DROP TABLE IF EXISTS `telegram_settings`;
@@ -125,7 +136,7 @@ CREATE TABLE `user` (
   UNIQUE KEY `password_reset_token` (`password_reset_token`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
-INSERT INTO `user` VALUES('1','admin','fb6c17bd201911f0c77e754571fae0ce','$2y$10$cagJUbgpXBGOcPaLgqXauep2t4utkj0MrtQOorkjPukwGLkLARXkK',NULL,NULL,'9','10','0','2023-12-14 09:54:13','2024-04-27 18:13:27');
+INSERT INTO `user` VALUES('1','admin','bb31dcd21156c7540e52ee05b086d5a0','$2y$10$cagJUbgpXBGOcPaLgqXauep2t4utkj0MrtQOorkjPukwGLkLARXkK',NULL,NULL,'9','10','0','2023-12-14 09:54:13','2024-04-27 18:13:27');
 INSERT INTO `user` VALUES('1fc3e2ea-d925-461f-be7d-471efcd1b4ab','j2',NULL,'$2y$10$DmazDZNRJT/U1CLy9fTgrevvTSLGY0H5s1B.yHc2J43Js4FKbHvTa',NULL,NULL,'1','10','0','2026-05-06 20:28:54',NULL);
 INSERT INTO `user` VALUES('3e575911-b13d-4e11-8a51-2da6484596ba','u3',NULL,'$2y$10$6dpN9g40.iHY6TySallCXuZw8ZKbfp3TlQksAUYKdh8czboFWn2/O',NULL,NULL,'1','10','0','2026-05-06 20:30:56',NULL);
 INSERT INTO `user` VALUES('66ee9c73-24c7-4109-b0f2-9562b9a7d24e','j1',NULL,'$2y$10$ItmlgrRzwQGqaExyq0mHHu7oRN1bsiXtylWMxLV4GWdEvaKzfBFyu',NULL,NULL,'1','10','0','2026-05-06 20:28:21',NULL);
@@ -146,14 +157,17 @@ CREATE TABLE `ven_change` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `is_swap` tinyint(1) DEFAULT '0' COMMENT '0=ยกเวรให้ปกติ, 1=สลับเวรกัน',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=58 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `ven_change` VALUES('40','CH-202605-9047','1067','1',NULL,'3e575911-b13d-4e11-8a51-2da6484596ba','1','2026-05-06 20:59:24','0');
 INSERT INTO `ven_change` VALUES('41','CH-202605-6840','1071','1','1067','3e575911-b13d-4e11-8a51-2da6484596ba','1','2026-05-06 21:06:22','1');
 INSERT INTO `ven_change` VALUES('42','CH-202605-8545','1079','1',NULL,'d1db3e5c-da4f-4409-b498-a574a8ba0cde','1','2026-05-06 21:10:11','0');
 INSERT INTO `ven_change` VALUES('43','CH-202605-6882','1067','1','1066','3e575911-b13d-4e11-8a51-2da6484596ba','1','2026-05-06 21:16:59','1');
 INSERT INTO `ven_change` VALUES('45','CH-202605-5482','1066','1',NULL,'ee9222da-25c3-484a-9772-7046a51b0402','1','2026-05-06 21:44:09','0');
-INSERT INTO `ven_change` VALUES('54','CH-202605-9336','1086','1','1085','d1db3e5c-da4f-4409-b498-a574a8ba0cde','0','2026-05-06 23:11:42','1');
+INSERT INTO `ven_change` VALUES('54','CH-202605-9336','1086','1','1085','d1db3e5c-da4f-4409-b498-a574a8ba0cde','1','2026-05-06 23:11:42','1');
+INSERT INTO `ven_change` VALUES('58','CH-202605-1715','1111','1',NULL,'ee9222da-25c3-484a-9772-7046a51b0402','1','2026-05-07 10:45:43','0');
+INSERT INTO `ven_change` VALUES('59','CH-202605-1745','1133','1',NULL,'ee9222da-25c3-484a-9772-7046a51b0402','0','2026-05-07 20:46:38','0');
+INSERT INTO `ven_change` VALUES('60','CH-202605-1387','1119','1',NULL,'ee9222da-25c3-484a-9772-7046a51b0402','0','2026-05-08 00:18:29','0');
 
 
 DROP TABLE IF EXISTS `ven_com`;
@@ -170,11 +184,14 @@ CREATE TABLE `ven_com` (
   `ref` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `create_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1772680481 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1772680485 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 INSERT INTO `ven_com` VALUES('1772680478','111/69','2026-05-06','2026-05','1','24','2,3,4,9,10,13,16,17,23,24,30,31',NULL,NULL,NULL,NULL);
-INSERT INTO `ven_com` VALUES('1772680479','222','2026-05-06','2026-05','0','27','1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31',NULL,NULL,NULL,NULL);
+INSERT INTO `ven_com` VALUES('1772680479','222','2026-05-06','2026-05','1','27','1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31',NULL,NULL,NULL,NULL);
 INSERT INTO `ven_com` VALUES('1772680480','xc','2026-05-07','2026-05','0','35','1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31',NULL,NULL,NULL,NULL);
+INSERT INTO `ven_com` VALUES('1772680482','555','2026-05-07','2026-06','0','24','1,2,3,4,5',NULL,NULL,NULL,NULL);
+INSERT INTO `ven_com` VALUES('1772680483','222','2026-05-07','2026-06','0','36','2,3,4,5,7',NULL,NULL,NULL,NULL);
+INSERT INTO `ven_com` VALUES('1772680484','666','2026-05-07','2026-05','1','36','1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31',NULL,NULL,NULL,NULL);
 
 
 DROP TABLE IF EXISTS `ven_name`;
@@ -186,17 +203,19 @@ CREATE TABLE `ven_name` (
   `word` varchar(255) DEFAULT NULL,
   `srt` int DEFAULT NULL,
   `status` int NOT NULL DEFAULT '1' COMMENT '1=ปกติ, 0=ลบ (Soft Delete)',
+  `google_calendar_id` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb3;
 
-INSERT INTO `ven_name` VALUES('24','เวรเปิดทำการศาลนอกเวลาราชการ (เวรตรวจสอบการจับ)','ให้ข้าราชการฝ่ายตุลาการศาลยุติธรรม พนักงานราชการศาลยุติธรรม และลูกจ้างในศาลเยาวชนและครอบครัวกลาง อยู่ปฏิบัติหน้าที่โดยเปิดทำการศาลนอกเวลาราชการในวันหยุดราชการ','กลางวัน(08.30-16.30)','ven_report_24_1756973949.docx','0','1');
-INSERT INTO `ven_name` VALUES('27','หมายจับ - ค้น (กลางคืน 16.30-08.30 น.)','ให้ข้าราชการตุลาการ ข้าราชการศาลยุติธรรม ลูกจ้าง และพนักงานราชการ ปฏิบัติงานในวันหยุดราชการ เวลา 16.30 – 08.30 นาฬิกา ','กลางคืน(16.30-08.30)',NULL,'2','1');
-INSERT INTO `ven_name` VALUES('28','เวรปฏิบัติงานในวันหยุดราชการตามโครงการเปิดทำการศาลนอกเวลาราชการฯ 8.30-16.30 น.','ให้ข้าราชการตุลาการ ข้าราชการศาลยุติธรรม ลูกจ้าง และพนักงานราชการ ปฏิบัติงานในวันหยุดราชการ เวลา 08.30 – 16.30 นาฬิกา ตามโครงการเปิดทำการศาลนอกเวลาราชการเพื่อเร่งรัดการพิจารณาพิพากษาคดี หรือเพื่ออำนวยความสะดวกแก่ประชาชน ประจำปีงบประมาณ พ.ศ. ๒๕๖๗ ','กลางวัน(08.30-16.30)',NULL,'1','0');
-INSERT INTO `ven_name` VALUES('29','เวรปฏิบัติงานนอกเวลาราชการในวันทำการปกติตามโครงการเปิดทำการศาลนอกเวลาราชการฯ 16.30-8.30 น.','ๆๆ','กลางคืน(16.30-08.30)',NULL,'4','0');
-INSERT INTO `ven_name` VALUES('32','aaaaqq','qqqqqq','nightCourt(16.30-20.00)',NULL,'6','0');
-INSERT INTO `ven_name` VALUES('33','ฟหดด','ผผปก','กลางคืน(16.30-08.30)',NULL,'5','0');
-INSERT INTO `ven_name` VALUES('34','aa','aa','กลางวัน(08.30-16.30)',NULL,'3','0');
-INSERT INTO `ven_name` VALUES('35','ผู้ตรวจ','ตรวจ','กลางคืน(16.30-08.30)',NULL,'3','1');
+INSERT INTO `ven_name` VALUES('24','เวรเปิดทำการศาลนอกเวลาราชการ (เวรตรวจสอบการจับ)','ให้ข้าราชการฝ่ายตุลาการศาลยุติธรรม พนักงานราชการศาลยุติธรรม และลูกจ้างในศาลเยาวชนและครอบครัวกลาง อยู่ปฏิบัติหน้าที่โดยเปิดทำการศาลนอกเวลาราชการในวันหยุดราชการ','กลางวัน(08.30-16.30)','ven_report_24_1756973949.docx','0','1','ddddxx');
+INSERT INTO `ven_name` VALUES('27','หมายจับ - ค้น (กลางคืน 16.30-08.30 น.)','ให้ข้าราชการตุลาการ ข้าราชการศาลยุติธรรม ลูกจ้าง และพนักงานราชการ ปฏิบัติงานในวันหยุดราชการ เวลา 16.30 – 08.30 นาฬิกา ','กลางคืน(16.30-08.30)',NULL,'2','1',NULL);
+INSERT INTO `ven_name` VALUES('28','เวรปฏิบัติงานในวันหยุดราชการตามโครงการเปิดทำการศาลนอกเวลาราชการฯ 8.30-16.30 น.','ให้ข้าราชการตุลาการ ข้าราชการศาลยุติธรรม ลูกจ้าง และพนักงานราชการ ปฏิบัติงานในวันหยุดราชการ เวลา 08.30 – 16.30 นาฬิกา ตามโครงการเปิดทำการศาลนอกเวลาราชการเพื่อเร่งรัดการพิจารณาพิพากษาคดี หรือเพื่ออำนวยความสะดวกแก่ประชาชน ประจำปีงบประมาณ พ.ศ. ๒๕๖๗ ','กลางวัน(08.30-16.30)',NULL,'1','0',NULL);
+INSERT INTO `ven_name` VALUES('29','เวรปฏิบัติงานนอกเวลาราชการในวันทำการปกติตามโครงการเปิดทำการศาลนอกเวลาราชการฯ 16.30-8.30 น.','ๆๆ','กลางคืน(16.30-08.30)',NULL,'4','0',NULL);
+INSERT INTO `ven_name` VALUES('32','aaaaqq','qqqqqq','nightCourt(16.30-20.00)',NULL,'6','0',NULL);
+INSERT INTO `ven_name` VALUES('33','ฟหดด','ผผปก','กลางคืน(16.30-08.30)',NULL,'5','0',NULL);
+INSERT INTO `ven_name` VALUES('34','aa','aa','กลางวัน(08.30-16.30)',NULL,'3','0',NULL);
+INSERT INTO `ven_name` VALUES('35','ผู้ตรวจ','ตรวจ','กลางคืน(16.30-08.30)',NULL,'3','1',NULL);
+INSERT INTO `ven_name` VALUES('36','เวรเร่งรัด','เวรเร่งรัด','nightCourt(16.30-20.00)',NULL,'4','1',NULL);
 
 
 DROP TABLE IF EXISTS `ven_name_sub`;
@@ -209,7 +228,7 @@ CREATE TABLE `ven_name_sub` (
   `srt` int DEFAULT NULL,
   `status` int NOT NULL DEFAULT '1' COMMENT '1=ปกติ, 0=ลบ (Soft Delete)',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=145 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=147 DEFAULT CHARSET=utf8mb3;
 
 INSERT INTO `ven_name_sub` VALUES('113','ผู้พิพากษา','27','1500','Green','1','1');
 INSERT INTO `ven_name_sub` VALUES('115','ผู้พิพากษา','28','3000','Brown','1','0');
@@ -234,6 +253,8 @@ INSERT INTO `ven_name_sub` VALUES('141','หกกด','33','0','Magenta','1','0
 INSERT INTO `ven_name_sub` VALUES('142','จนท','29','1200','BlueViolet','2','0');
 INSERT INTO `ven_name_sub` VALUES('143','sss','34','150','BlueViolet','1','0');
 INSERT INTO `ven_name_sub` VALUES('144','ผู้ตรวจ','35','0','DarkOrange','1','1');
+INSERT INTO `ven_name_sub` VALUES('145','ผู้พิพากษา','36','2000','Magenta','1','1');
+INSERT INTO `ven_name_sub` VALUES('146','จนท','36','1500','Teal','2','1');
 
 
 DROP TABLE IF EXISTS `ven_schedule`;
@@ -250,7 +271,7 @@ CREATE TABLE `ven_schedule` (
   KEY `idx_ven_com` (`ven_com_id`),
   KEY `idx_ven_sub` (`ven_name_sub_id`),
   KEY `idx_user` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1136 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1186 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `ven_schedule` VALUES('987','2026-05-02','1772680478','130','1','1','2026-05-06 20:51:24');
 INSERT INTO `ven_schedule` VALUES('988','2026-05-03','1772680478','130','66ee9c73-24c7-4109-b0f2-9562b9a7d24e','1','2026-05-06 20:51:24');
@@ -288,7 +309,6 @@ INSERT INTO `ven_schedule` VALUES('1019','2026-05-30','1772680478','118','d1db3e
 INSERT INTO `ven_schedule` VALUES('1020','2026-05-30','1772680478','118','3e575911-b13d-4e11-8a51-2da6484596ba','1','2026-05-06 20:51:58');
 INSERT INTO `ven_schedule` VALUES('1021','2026-05-31','1772680478','118','1','1','2026-05-06 20:51:58');
 INSERT INTO `ven_schedule` VALUES('1022','2026-05-31','1772680478','118','ee9222da-25c3-484a-9772-7046a51b0402','1','2026-05-06 20:51:58');
-INSERT INTO `ven_schedule` VALUES('1029','2026-05-01','1772680479','113','66ee9c73-24c7-4109-b0f2-9562b9a7d24e','1','2026-05-06 20:53:10');
 INSERT INTO `ven_schedule` VALUES('1030','2026-05-02','1772680479','113','1fc3e2ea-d925-461f-be7d-471efcd1b4ab','1','2026-05-06 20:53:10');
 INSERT INTO `ven_schedule` VALUES('1031','2026-05-03','1772680479','113','7e92bb9f-1031-4299-859b-7d063d86cbd8','1','2026-05-06 20:53:10');
 INSERT INTO `ven_schedule` VALUES('1032','2026-05-04','1772680479','113','66ee9c73-24c7-4109-b0f2-9562b9a7d24e','1','2026-05-06 20:53:10');
@@ -364,7 +384,7 @@ INSERT INTO `ven_schedule` VALUES('1107','2026-05-03','1772680480','144','1','1'
 INSERT INTO `ven_schedule` VALUES('1108','2026-05-04','1772680480','144','ee9222da-25c3-484a-9772-7046a51b0402','1','2026-05-07 01:08:37');
 INSERT INTO `ven_schedule` VALUES('1109','2026-05-05','1772680480','144','1','1','2026-05-07 01:08:37');
 INSERT INTO `ven_schedule` VALUES('1110','2026-05-06','1772680480','144','ee9222da-25c3-484a-9772-7046a51b0402','1','2026-05-07 01:08:37');
-INSERT INTO `ven_schedule` VALUES('1111','2026-05-07','1772680480','144','1','1','2026-05-07 01:08:37');
+INSERT INTO `ven_schedule` VALUES('1111','2026-05-07','1772680480','144','ee9222da-25c3-484a-9772-7046a51b0402','2','2026-05-07 01:08:37');
 INSERT INTO `ven_schedule` VALUES('1112','2026-05-08','1772680480','144','ee9222da-25c3-484a-9772-7046a51b0402','1','2026-05-07 01:08:37');
 INSERT INTO `ven_schedule` VALUES('1113','2026-05-09','1772680480','144','1','1','2026-05-07 01:08:37');
 INSERT INTO `ven_schedule` VALUES('1114','2026-05-10','1772680480','144','ee9222da-25c3-484a-9772-7046a51b0402','1','2026-05-07 01:08:37');
@@ -372,7 +392,7 @@ INSERT INTO `ven_schedule` VALUES('1115','2026-05-11','1772680480','144','1','1'
 INSERT INTO `ven_schedule` VALUES('1116','2026-05-12','1772680480','144','ee9222da-25c3-484a-9772-7046a51b0402','1','2026-05-07 01:08:38');
 INSERT INTO `ven_schedule` VALUES('1117','2026-05-13','1772680480','144','1','1','2026-05-07 01:08:38');
 INSERT INTO `ven_schedule` VALUES('1118','2026-05-14','1772680480','144','ee9222da-25c3-484a-9772-7046a51b0402','1','2026-05-07 01:08:38');
-INSERT INTO `ven_schedule` VALUES('1119','2026-05-15','1772680480','144','1','1','2026-05-07 01:08:38');
+INSERT INTO `ven_schedule` VALUES('1119','2026-05-15','1772680480','144','ee9222da-25c3-484a-9772-7046a51b0402','2','2026-05-07 01:08:38');
 INSERT INTO `ven_schedule` VALUES('1120','2026-05-16','1772680480','144','ee9222da-25c3-484a-9772-7046a51b0402','1','2026-05-07 01:08:38');
 INSERT INTO `ven_schedule` VALUES('1121','2026-05-17','1772680480','144','1','1','2026-05-07 01:08:38');
 INSERT INTO `ven_schedule` VALUES('1122','2026-05-18','1772680480','144','ee9222da-25c3-484a-9772-7046a51b0402','1','2026-05-07 01:08:38');
@@ -386,9 +406,25 @@ INSERT INTO `ven_schedule` VALUES('1129','2026-05-25','1772680480','144','1','1'
 INSERT INTO `ven_schedule` VALUES('1130','2026-05-26','1772680480','144','ee9222da-25c3-484a-9772-7046a51b0402','1','2026-05-07 01:08:38');
 INSERT INTO `ven_schedule` VALUES('1131','2026-05-27','1772680480','144','1','1','2026-05-07 01:08:38');
 INSERT INTO `ven_schedule` VALUES('1132','2026-05-28','1772680480','144','ee9222da-25c3-484a-9772-7046a51b0402','1','2026-05-07 01:08:38');
-INSERT INTO `ven_schedule` VALUES('1133','2026-05-29','1772680480','144','1','1','2026-05-07 01:08:38');
+INSERT INTO `ven_schedule` VALUES('1133','2026-05-29','1772680480','144','ee9222da-25c3-484a-9772-7046a51b0402','2','2026-05-07 01:08:38');
 INSERT INTO `ven_schedule` VALUES('1134','2026-05-30','1772680480','144','ee9222da-25c3-484a-9772-7046a51b0402','1','2026-05-07 01:08:38');
 INSERT INTO `ven_schedule` VALUES('1135','2026-05-31','1772680480','144','1','1','2026-05-07 01:08:38');
+INSERT INTO `ven_schedule` VALUES('1161','2026-06-01','1772680482','130','1','1','2026-05-07 22:22:27');
+INSERT INTO `ven_schedule` VALUES('1162','2026-06-02','1772680482','130','66ee9c73-24c7-4109-b0f2-9562b9a7d24e','1','2026-05-07 22:22:31');
+INSERT INTO `ven_schedule` VALUES('1168','2026-06-03','1772680482','130','7e92bb9f-1031-4299-859b-7d063d86cbd8','1','2026-05-07 22:37:30');
+INSERT INTO `ven_schedule` VALUES('1169','2026-06-03','1772680482','130','1','1','2026-05-07 22:37:32');
+INSERT INTO `ven_schedule` VALUES('1171','2026-06-03','1772680482','130','1fc3e2ea-d925-461f-be7d-471efcd1b4ab','1','2026-05-07 22:37:35');
+INSERT INTO `ven_schedule` VALUES('1172','2026-06-02','1772680483','145','1','1','2026-05-07 23:05:43');
+INSERT INTO `ven_schedule` VALUES('1173','2026-06-03','1772680483','145','66ee9c73-24c7-4109-b0f2-9562b9a7d24e','1','2026-05-07 23:06:02');
+INSERT INTO `ven_schedule` VALUES('1174','2026-06-04','1772680483','145','1','1','2026-05-07 23:09:23');
+INSERT INTO `ven_schedule` VALUES('1175','2026-06-04','1772680482','130','1','1','2026-05-07 23:09:31');
+INSERT INTO `ven_schedule` VALUES('1177','2026-05-05','1772680484','145','66ee9c73-24c7-4109-b0f2-9562b9a7d24e','1','2026-05-07 23:11:02');
+INSERT INTO `ven_schedule` VALUES('1178','2026-05-06','1772680479','113','66ee9c73-24c7-4109-b0f2-9562b9a7d24e','1','2026-05-07 23:11:54');
+INSERT INTO `ven_schedule` VALUES('1179','2026-05-07','1772680484','145','7e92bb9f-1031-4299-859b-7d063d86cbd8','1','2026-05-07 23:12:28');
+INSERT INTO `ven_schedule` VALUES('1181','2026-05-02','1772680480','144','1','1','2026-05-07 23:29:22');
+INSERT INTO `ven_schedule` VALUES('1182','2026-05-02','1772680479','113','66ee9c73-24c7-4109-b0f2-9562b9a7d24e','1','2026-05-07 23:29:35');
+INSERT INTO `ven_schedule` VALUES('1183','2026-05-01','1772680479','113','66ee9c73-24c7-4109-b0f2-9562b9a7d24e','1','2026-05-07 23:35:59');
+INSERT INTO `ven_schedule` VALUES('1185','2026-05-31','1772680480','144','ee9222da-25c3-484a-9772-7046a51b0402','1','2026-05-07 23:37:49');
 
 
 DROP TABLE IF EXISTS `ven_time`;
@@ -415,7 +451,7 @@ CREATE TABLE `ven_user` (
   `create_at` datetime DEFAULT NULL,
   `srt` int NOT NULL DEFAULT '999' COMMENT 'ลำดับคิวการเข้าเวร',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=812 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=816 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 INSERT INTO `ven_user` VALUES('792','1',NULL,'130',NULL,NULL,'1');
 INSERT INTO `ven_user` VALUES('793','66ee9c73-24c7-4109-b0f2-9562b9a7d24e',NULL,'130',NULL,NULL,'2');
@@ -437,4 +473,8 @@ INSERT INTO `ven_user` VALUES('808','d1db3e5c-da4f-4409-b498-a574a8ba0cde',NULL,
 INSERT INTO `ven_user` VALUES('809','3e575911-b13d-4e11-8a51-2da6484596ba',NULL,'118',NULL,NULL,'4');
 INSERT INTO `ven_user` VALUES('810','1',NULL,'144',NULL,NULL,'1');
 INSERT INTO `ven_user` VALUES('811','ee9222da-25c3-484a-9772-7046a51b0402',NULL,'144',NULL,NULL,'2');
+INSERT INTO `ven_user` VALUES('812','1',NULL,'145',NULL,NULL,'1');
+INSERT INTO `ven_user` VALUES('813','66ee9c73-24c7-4109-b0f2-9562b9a7d24e',NULL,'145',NULL,NULL,'2');
+INSERT INTO `ven_user` VALUES('814','1fc3e2ea-d925-461f-be7d-471efcd1b4ab',NULL,'145',NULL,NULL,'3');
+INSERT INTO `ven_user` VALUES('815','7e92bb9f-1031-4299-859b-7d063d86cbd8',NULL,'145',NULL,NULL,'4');
 

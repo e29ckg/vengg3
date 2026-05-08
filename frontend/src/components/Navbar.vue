@@ -72,7 +72,12 @@
                 <router-link to="/admin/settings/system" class="dropdown-item" active-class="active fw-bold">
                   <i class="bi bi-gear-wide-connected me-2 text-dark"></i> ตั้งค่าระบบ
                 </router-link>
-              </li>             
+              </li>  
+              <li>
+                <router-link to="/admin/settings/google-calendar" class="dropdown-item py-2" active-class="active fw-bold bg-primary text-white">
+                  <i class="bi bi-google me-2 text-danger"></i>ตั้งค่า Google Calendar
+                </router-link>
+              </li>       
               <li>
                 <router-link to="/admin/settings/agency" class="dropdown-item" active-class="active fw-bold">
                   <i class="bi bi-building me-2 text-primary"></i> ตั้งค่าข้อมูลหน่วยงาน
@@ -84,7 +89,12 @@
 
         <div class="d-flex align-items-center text-white mt-2 mt-lg-0">
           <router-link to="/profile" class="text-white text-decoration-none me-3 profile-link d-flex align-items-center" title="จัดการโปรไฟล์">
-            <img :src="getAvatarUrl(userAvatar, userName)" class="rounded-circle border border-white me-2" style="width: 30px; height: 30px; object-fit: cover;">
+            
+            <div class="rounded-circle border border-white me-2 d-flex align-items-center justify-content-center fw-bold text-uppercase" 
+                style="width: 30px; height: 30px; background-color: rgba(255, 255, 255, 0.2);">
+                {{ userName ? userName.charAt(0).toUpperCase() : '' }}
+            </div>
+            
             <span>{{ userName }}</span>
           </router-link>
           
