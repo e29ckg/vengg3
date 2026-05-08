@@ -8,14 +8,20 @@
 
         <div class="text-center mb-4 pb-4 border-bottom">
           <div class="position-relative d-inline-block">
-            <img :src="getAvatarUrl(profile.avatar, profile.first_name)" class="rounded-circle border border-3 border-primary shadow-sm" style="width: 120px; height: 120px; object-fit: cover;">            
+            <!-- <img :src="getAvatarUrl(profile.avatar, profile.first_name)" class="rounded-circle border border-3 border-primary shadow-sm" style="width: 120px; height: 120px; object-fit: cover;">            
             <input type="file" ref="fileInput" class="d-none" accept="image/png, image/jpeg, image/webp" @change="uploadAvatar">
             <button type="button" class="btn btn-sm btn-primary position-absolute bottom-0 start-100 translate-middle-x rounded-circle" style="width: 35px; height: 35px;" @click="$refs.fileInput.click()">
               <i class="bi bi-camera"></i>
-            </button>
+            </button> -->
+            <div class="rounded-circle border border-3 border-primary shadow-sm d-flex align-items-center justify-content-center fw-bold text-uppercase text-primary bg-primary bg-opacity-10" 
+                style="width: 120px; height: 120px; font-size: 3.5rem;">
+              {{ profile.first_name ? profile.first_name.charAt(0).toUpperCase() : '' }}
+            </div>
           </div>
-          <div class="small text-muted mt-2">คลิกที่ไอคอนกล้องเพื่อเปลี่ยนรูปภาพ</div>
+          <!-- <div class="small text-muted mt-2">คลิกที่ไอคอนกล้องเพื่อเปลี่ยนรูปภาพ</div> -->                        
         </div>
+
+        
 
         <form @submit.prevent="updateProfile">
           <div class="row g-3">

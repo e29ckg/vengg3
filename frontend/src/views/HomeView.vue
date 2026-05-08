@@ -92,7 +92,11 @@
                 </div>
     
                 <div class="modal-body text-center pt-2 px-4 pb-4">
-                  <img :src="getProfileImage(selectedVen)" class="rounded-circle shadow-sm mb-3 object-fit-cover border border-3 border-white" style="width: 100px; height: 100px;">
+                  <!-- <img :src="getProfileImage(selectedVen)" class="rounded-circle shadow-sm mb-3 object-fit-cover border border-3 border-white" style="width: 100px; height: 100px;"> -->
+                  <div class="rounded-circle border border-3 border-primary shadow-sm d-flex align-items-center justify-content-center fw-bold text-uppercase text-primary bg-primary bg-opacity-10 mx-auto" 
+                      style="width: 120px; height: 120px; font-size: 3.5rem;">
+                    {{ selectedVen.full_name  ? selectedVen.full_name.charAt(0).toUpperCase() : '' }}
+                  </div>
                   <h4 class="fw-bold mb-1" :style="{ color: selectedVen.color }">{{ selectedVen.full_name }}</h4>
                   <span class="badge mb-3 px-3 py-2 rounded-pill shadow-sm" :style="{ backgroundColor: selectedVen.color }">
                     {{ selectedVen.duty_role }}
