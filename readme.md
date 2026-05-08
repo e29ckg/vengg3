@@ -58,8 +58,8 @@
 **ขั้นตอนการรันระบบ:**
 1. Clone โปรเจกต์ลงมาที่เครื่องของคุณ:
    ```bash
-   git clone <repository_url>
-   cd <project_folder>
+   git clone https://github.com/e29ckg/vengg3.git
+   cd vengg3
 
 ```
 

@@ -111,6 +111,12 @@ const router = createRouter({
       component: () => import('../views/AdminOptionsView.vue'),
       meta: { requiresAuth: true }
     },
+    {
+      path: '/manual',
+      name: 'options',
+      component: () => import('../views/UserManualView.vue'),
+      meta: { requiresAuth: true }
+    },
   ]
 })
 
