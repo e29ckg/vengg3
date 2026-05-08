@@ -11,3 +11,5 @@ Thumbs.db
 
 # ไฟล์ Log
 *.log
+
+/backend/scr/config/credentials.json

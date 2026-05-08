@@ -116,6 +116,27 @@
             </form>
           </div>
         </div>
+        <div class="card border-0 shadow-sm rounded-4 mt-4 bg-dark text-white">
+          <div class="card-body p-4 small opacity-75">
+            <h6 class="fw-bold mb-3 text-warning">
+              <i class="bi bi-lightbulb-fill me-2"></i>ขั้นตอนการสร้างบอทและตั้งค่าการแจ้งเตือน Telegram:
+            </h6>
+            <ol class="mb-0" style="line-height: 1.8;">
+              <li><strong>สร้างบอท:</strong> เปิดแอป Telegram ค้นหาบัญชี <strong>@BotFather</strong> แล้วพิมพ์คำสั่ง <code class="text-info fw-bold">/newbot</code></li>
+              <li><strong>ตั้งชื่อบอท:</strong> พิมพ์ชื่อบอทและ Username ที่ต้องการ (ต้องลงท้ายด้วยคำว่า bot เสมอ) เมื่อสำเร็จ BotFather จะให้ <strong>HTTP API Token</strong> มา</li>
+              <li><strong>ใส่ Token:</strong> ก๊อปปี้ Token ที่ได้ (รหัสยาวๆ) มาวางในช่อง <strong>Telegram Bot Token</strong> ในระบบของเรา</li>
+              <li><strong>เชิญบอทเข้ากลุ่ม:</strong> สร้างกลุ่ม (Group) ใน Telegram ที่ต้องการให้แจ้งเตือนเวร แล้ว <strong>เพิ่ม (Add member)</strong> บอทของคุณเข้าไปในกลุ่ม</li>
+              <li><strong>หา Chat ID ของกลุ่ม:</strong> 
+                <ul class="mb-1 ps-3" style="list-style-type: circle;">
+                  <li>พิมพ์ข้อความทักทายอะไรก็ได้ในกลุ่ม 1 ครั้ง (เช่น "สวัสดี")</li>
+                  <li>เพิ่มบอท <strong>@getidsbot</strong> เข้าไปในกลุ่ม บอทจะตอบกลับข้อมูลกลุ่มมาให้ทันที</li>
+                  <li>ดูกระทู้ที่เขียนว่า <code>Chat ID:</code> แล้วก๊อปปี้ตัวเลขนั้นมา (หากเป็นกลุ่ม ตัวเลขมักจะมี <strong>เครื่องหมายลบ <code>-</code></strong> นำหน้าเสมอ เช่น -100123456789)</li>
+                </ul>
+              </li>
+              <li><strong>เสร็จสิ้น:</strong> นำ Chat ID มาใส่ในช่องตั้งค่าด้านบน กด <strong>บันทึก</strong> และลองกดปุ่ม <strong>"ทดสอบส่งข้อความ"</strong> เพื่อดูผลลัพธ์ได้เลย!</li>
+            </ol>
+          </div>
+        </div>
       </div>
     </div>
   </div>

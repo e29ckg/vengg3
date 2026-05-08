@@ -27,6 +27,88 @@ $route = isset($_GET['route']) ? $_GET['route'] : '';
 $db = new Database();
 $connection = $db->getConnection();
 
+// 🌟 ฟังก์ชันตัวช่วยสำหรับอัปเดต Google Calendar เฉพาะวันที่กำหนด
+function updateGoogleCalendarDay($connection, $date) {
+    // 1. ตรวจสอบไฟล์ Credentials และ Calendar ID
+    $keyFilePath = __DIR__ . '/../src/Config/credentials.json';
+    if (!file_exists($keyFilePath)) return false;
+
+    $stmtConf = $connection->prepare("SELECT setting_value FROM google_service_settings WHERE setting_key = 'google_calendar_id'");
+    $stmtConf->execute();
+    $calId = $stmtConf->fetchColumn();
+    if (!$calId) return false;
+
+    // 2. ดึงข้อมูลตารางเวรล่าสุดของ "วันนั้น"
+    $stmt = $connection->prepare("
+        SELECT 
+            vs.ven_date,
+            vn.dn AS ven_time,
+            vns.name AS sub_name,
+            vn.name AS main_name,
+            vs.google_event_id,
+            CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS user_name
+        FROM ven_schedule vs
+        LEFT JOIN ven_name_sub vns ON vs.ven_name_sub_id = vns.id
+        LEFT JOIN ven_com vc ON vs.ven_com_id = vc.id
+        LEFT JOIN ven_name vn ON vc.ven_name_id = vn.id
+        LEFT JOIN profile p ON vs.user_id = p.user_id 
+        WHERE vs.ven_date = ?
+    ");
+    $stmt->execute([$date]);
+    $shifts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (empty($shifts)) return false;
+
+    // 3. หา google_event_id ของวันนั้น
+    $googleEventId = null;
+    foreach ($shifts as $sch) {
+        if (!empty($sch['google_event_id'])) {
+            $googleEventId = $sch['google_event_id'];
+            break;
+        }
+    }
+    
+    // หากวันนั้นไม่เคยถูกซิงค์ขึ้น Google มาก่อน ก็ข้ามการอัปเดตไป
+    if (!$googleEventId) return false; 
+
+    // 4. สร้างข้อความ Description ขึ้นมาใหม่จากข้อมูลล่าสุด
+    $groupedByDuty = [];
+    foreach ($shifts as $sch) {
+        $dutyName = $sch['main_name'];
+        if (!isset($groupedByDuty[$dutyName])) { $groupedByDuty[$dutyName] = []; }
+        $groupedByDuty[$dutyName][] = $sch;
+    }
+
+    $description = "เวรประจำวันที่ " . date('d/m/Y', strtotime($date)) . "\n";
+    foreach ($groupedByDuty as $dutyName => $dutyShifts) {
+        $description .= "---------------------\n" . $dutyName . "\n---------------------\n";
+        foreach ($dutyShifts as $sch) {
+            $uName = trim($sch['user_name']) ?: "(ยังไม่มีผู้ลงเวร)";
+            $description .= "👨‍💼 " . $uName . "\n";
+        }
+        $description .= "\n";
+    }
+
+    // 5. เชื่อมต่อ Google API และสั่งอัปเดตข้อมูล
+    require_once __DIR__ . '/../vendor/autoload.php';
+    $client = new Google_Client();
+    $client->setAuthConfig($keyFilePath);
+    $client->addScope(Google_Service_Calendar::CALENDAR_EVENTS);
+    $service = new Google_Service_Calendar($client);
+
+    try {
+        // ดึง Event เดิมขึ้นมา
+        $event = $service->events->get($calId, $googleEventId);
+        // แก้ไขแค่รายละเอียด (รายชื่อ)
+        $event->setDescription($description);
+        // ส่งกลับไปทับของเดิม
+        $service->events->update($calId, $googleEventId, $event);
+        return true;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
 // --- ระบบ Routing ---
 switch ($route) {
     case 'test':
@@ -276,7 +358,134 @@ switch ($route) {
             } else {
                 http_response_code(500); echo json_encode(["error" => "ไม่สามารถลบข้อมูลได้"]);
             }
-        } 
+        }
+
+        // 🌟 เพิ่มฟังก์ชันซิงค์ Google Calendar ตรงนี้ครับ
+    if ($action == 'sync_google') {
+        
+        // 🌟 1. รับค่าเดือนและตรวจสอบ
+        $month = $data['month'] ?? ''; 
+        if (!$month) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ไม่พบข้อมูลเดือนที่ต้องการ']);
+            exit;
+        }
+
+        // 🌟 2. กำหนดที่อยู่ไฟล์ Credentials
+        $keyFilePath = __DIR__ . '/../src/Config/credentials.json';
+        if (!file_exists($keyFilePath)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ไม่พบไฟล์ credentials.json กรุณาอัปโหลดในหน้าตั้งค่าก่อน']);
+            exit;
+        }
+
+        // 3. ดึง Calendar ID กลางจากตารางตั้งค่า
+        $stmtConf = $connection->prepare("SELECT setting_value FROM google_service_settings WHERE setting_key = 'google_calendar_id'");
+        $stmtConf->execute();
+        $calId = $stmtConf->fetchColumn();
+
+        if (!$calId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'กรุณาตั้งค่า Google Calendar ID ในหน้าตั้งค่าก่อน']);
+            exit;
+        }
+
+        // 4. ดึงข้อมูลเวรทั้งหมดในเดือนนั้น
+        $stmt = $connection->prepare("
+            SELECT 
+                vs.ven_date,
+                vn.dn AS ven_time,
+                vns.name AS sub_name,
+                vn.name AS main_name,
+                CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS user_name
+            FROM ven_schedule vs
+            LEFT JOIN ven_name_sub vns ON vs.ven_name_sub_id = vns.id
+            LEFT JOIN ven_com vc ON vs.ven_com_id = vc.id
+            LEFT JOIN ven_name vn ON vc.ven_name_id = vn.id
+            LEFT JOIN profile p ON vs.user_id = p.user_id 
+            WHERE DATE_FORMAT(vs.ven_date, '%Y-%m') = ?
+        ");
+        $stmt->execute([$month]); // 🌟 ใช้ตัวแปร $month 
+        $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($schedules)) {
+            echo json_encode(['success' => true, 'message' => 'ไม่มีข้อมูลเวรในเดือนนี้']);
+            exit;
+        }
+
+        // 5. จัดกลุ่มข้อมูล (Group By Date)
+        $groupedByDate = [];
+        foreach ($schedules as $sch) {
+            $date = $sch['ven_date'];
+            if (!isset($groupedByDate[$date])) { $groupedByDate[$date] = []; }
+            $groupedByDate[$date][] = $sch;
+        }
+
+        // 6. โหลด Google Client
+        require_once __DIR__ . '/../vendor/autoload.php';
+        $client = new Google_Client();
+        $client->setAuthConfig($keyFilePath); // 🌟 ตรงนี้จะไม่พังแล้ว
+        $client->addScope(Google_Service_Calendar::CALENDAR_EVENTS);
+        $service = new Google_Service_Calendar($client);
+
+        try {
+            // ล้าง Event เก่าของเดือนนี้ในปฏิทินกลาง (เพื่อ Re-sync ใหม่)
+            $timeMin = date('c', strtotime($month . '-01 00:00:00'));
+            $timeMax = date('c', strtotime($month . '-01 +1 month 00:00:00'));
+            $results = $service->events->listEvents($calId, ['timeMin' => $timeMin, 'timeMax' => $timeMax, 'q' => 'เวรประจำวันที่']);
+            
+            foreach ($results->getItems() as $oldEvent) {
+                $service->events->delete($calId, $oldEvent->getId());
+            }
+
+            // วนลูปสร้างกิจกรรมใหม่รายวัน
+            foreach ($groupedByDate as $date => $shifts) {
+                // จัดกลุ่มย่อยตามชื่อเวรเพื่อทำข้อความ
+                $groupedByDuty = [];
+                foreach ($shifts as $sch) {
+                    $dutyName = $sch['main_name'];
+                    if (!isset($groupedByDuty[$dutyName])) { $groupedByDuty[$dutyName] = []; }
+                    $groupedByDuty[$dutyName][] = $sch;
+                }
+
+                $description = "เวรประจำวันที่ " . date('d/m/Y', strtotime($date)) . "\n";
+                foreach ($groupedByDuty as $dutyName => $dutyShifts) {
+                    $description .= "---------------------\n" . $dutyName . "\n---------------------\n";
+                    foreach ($dutyShifts as $sch) {
+                        $uName = trim($sch['user_name']) ?: "(ยังไม่มีผู้ลงเวร)";
+                        $description .= "👨‍💼 " . $uName . "\n";
+                    }
+                    $description .= "\n";
+                }
+
+                $event = new Google_Service_Calendar_Event([
+                    'summary' => "เวรประจำวันที่ " . date('d/m/Y', strtotime($date)),
+                    'description' => $description,
+                    'start' => ['date' => $date, 'timeZone' => 'Asia/Bangkok'],
+                    'end' => ['date' => date('Y-m-d', strtotime($date . ' +1 day')), 'timeZone' => 'Asia/Bangkok'],
+                ]);
+
+                // 🌟 ส่งขึ้น Google และรับค่า Event ID กลับมา
+                $createdEvent = $service->events->insert($calId, $event);
+                $googleEventId = $createdEvent->getId();
+
+                // 🌟 บันทึก google_event_id กลับลงใน ven_schedule
+                // เนื่องจากเป็นปฏิทินรวมแล้ว เราแค่อัปเดตรายการทั้งหมดที่มี ven_date ตรงกันได้เลย
+                $updateStmt = $connection->prepare("
+                    UPDATE ven_schedule 
+                    SET google_event_id = ?
+                    WHERE ven_date = ?
+                ");
+                $updateStmt->execute([$googleEventId, $date]);
+            }
+
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Google API Error: ' . $e->getMessage()]);
+        }
+        exit;
+    }
             
         break;
     
@@ -390,19 +599,77 @@ switch ($route) {
         case 'admin/google_settings':
             AuthMiddleware::checkAdmin($connection);
             $action = $_GET['action'] ?? '';
+            
+            // สำหรับรับข้อมูล JSON ปกติ (ถ้ามีการอัปโหลดไฟล์ $_FILES จะทำงานแยกต่างหาก)
             $data = json_decode(file_get_contents("php://input"), true);
 
-            if ($action == 'get_google_config') {
-                // 🌟 ดึงข้อมูลจากตารางใหม่ google_service_settings
-                $stmt = $connection->prepare("SELECT setting_value FROM google_service_settings WHERE setting_key = 'google_service_account'");
+           if ($action == 'get_google_config') {
+                $stmt = $connection->prepare("SELECT setting_key, setting_value FROM google_service_settings");
                 $stmt->execute();
-                echo json_encode(['google_service_account' => $stmt->fetchColumn()]);
+                $settings = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+                echo json_encode([
+                    'google_service_account' => $settings['google_service_account'] ?? '',
+                    'google_calendar_id' => $settings['google_calendar_id'] ?? ''
+                ]);
+                exit;
             } 
             elseif ($action == 'update_google_config') {
-                // 🌟 อัปเดตข้อมูลในตารางใหม่ google_service_settings
-                $stmt = $connection->prepare("UPDATE google_service_settings SET setting_value = ? WHERE setting_key = 'google_service_account'");
-                $stmt->execute([$data['google_service_account']]);
+                $updateAcc = $connection->prepare("UPDATE google_service_settings SET setting_value = ? WHERE setting_key = 'google_service_account'");
+                $updateAcc->execute([$data['google_service_account']]);
+                
+                $updateCal = $connection->prepare("UPDATE google_service_settings SET setting_value = ? WHERE setting_key = 'google_calendar_id'");
+                $updateCal->execute([$data['google_calendar_id']]);
+                
                 echo json_encode(['success' => true]);
+                exit;
+            }
+            elseif ($action == 'upload_credentials') {
+                // 🌟 อัปโหลดไฟล์ credentials.json และบันทึกอีเมลอัตโนมัติ
+                if (isset($_FILES['credential_file']) && $_FILES['credential_file']['error'] === UPLOAD_ERR_OK) {
+                    
+                    $fileTmpPath = $_FILES['credential_file']['tmp_name'];
+                    $fileName = $_FILES['credential_file']['name'];
+                    $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+                    if ($fileExtension === 'json') {
+                        $destDir = __DIR__ . '/../src/Config';
+                        $destPath = $destDir . '/credentials.json';
+                        
+                        // สร้างโฟลเดอร์ Config ถ้ายังไม่มี
+                        if (!is_dir($destDir)) {
+                            mkdir($destDir, 0755, true);
+                        }
+
+                        if (move_uploaded_file($fileTmpPath, $destPath)) {
+                            
+                            // อ่านไฟล์ JSON เพื่อดึง Email
+                            $jsonContent = file_get_contents($destPath);
+                            $credentials = json_decode($jsonContent, true);
+                            $clientEmail = $credentials['client_email'] ?? '';
+
+                            // ถ้าดึงอีเมลได้ ให้อัปเดตลงตารางใหม่ google_service_settings ให้เลย
+                            if ($clientEmail) {
+                                $stmt = $connection->prepare("UPDATE google_service_settings SET setting_value = ? WHERE setting_key = 'google_service_account'");
+                                $stmt->execute([$clientEmail]);
+                            }
+
+                            echo json_encode([
+                                'success' => true, 
+                                'client_email' => $clientEmail
+                            ]);
+                        } else {
+                            http_response_code(500);
+                            echo json_encode(['error' => 'บันทึกไฟล์ลงเซิร์ฟเวอร์ไม่สำเร็จ']);
+                        }
+                    } else {
+                        http_response_code(400);
+                        echo json_encode(['error' => 'อนุญาตให้อัปโหลดเฉพาะไฟล์ .json เท่านั้น']);
+                    }
+                } else {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'ไม่พบไฟล์หรือเกิดข้อผิดพลาดในการอัปโหลด']);
+                }
+                exit;
             }
             break;
                 
@@ -421,12 +688,7 @@ switch ($route) {
                 exit;
             }
 
-            if ($action == 'update_calendar_id') {
-                $stmt = $connection->prepare("UPDATE ven_name SET google_calendar_id = ? WHERE id = ?");
-                $stmt->execute([$data['google_calendar_id'], $data['id']]);
-                echo json_encode(['success' => true]);
-            }
-
+            
             // 1.1 โหลดข้อมูลทั้งหมด (เวรหลัก + หน้าที่ย่อยซ้อนกัน)
             if ($action === 'ven_full') {
                 echo json_encode([
@@ -553,16 +815,26 @@ switch ($route) {
         
         if (isset($data['change_id'])) {
             $change_id = $data['change_id'];
-           try {
-                // 1. ดึงข้อมูลว่าสลับเวรใครไปบ้าง
-                $stmt = $connection->prepare("SELECT * FROM ven_change WHERE id = ?");
+            try {
+                $connection->beginTransaction(); // 🌟 เริ่ม Transaction เพื่อความปลอดภัย
+
+                // 1. ดึงข้อมูลว่าสลับเวรใครไปบ้าง (🌟 JOIN เอา ven_date มาด้วยเพื่อใช้อัปเดตปฏิทิน)
+                $stmt = $connection->prepare("
+                    SELECT vc.*, 
+                           vs1.ven_date AS date1, 
+                           vs2.ven_date AS date2 
+                    FROM ven_change vc
+                    LEFT JOIN ven_schedule vs1 ON vc.s1_id = vs1.id
+                    LEFT JOIN ven_schedule vs2 ON vc.s2_id = vs2.id
+                    WHERE vc.id = ?
+                ");
                 $stmt->execute([$change_id]);
                 $changeReq = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if ($changeReq) {
                     $tableName = "ven_schedule";
                     
-                    // 🌟 2. คืนค่าชื่อเดิมกลับมา และตั้งสถานะเป็น 1
+                    // 2. คืนค่าชื่อเดิมกลับมา และตั้งสถานะเป็น 1
                     if ($changeReq['is_swap'] == 1) {
                         // เอา user1_id กลับไปใส่ s1_id เหมือนเดิม
                         $stmt1 = $connection->prepare("UPDATE $tableName SET user_id = ?, status = 1 WHERE id = ?");
@@ -577,15 +849,38 @@ switch ($route) {
                         $stmt1->execute([$changeReq['user1_id'], $changeReq['s1_id']]);
                     }
 
-                    // 3. เปลี่ยนสถานะใบคำขอเป็น "ยกเลิกแล้ว" (สมมติใช้ status = 2 แทนการลบทิ้ง หรือจะใช้คำสั่ง DELETE ก็ได้)
+                    // 3. เปลี่ยนสถานะใบคำขอเป็น "ยกเลิกแล้ว" (หรือลบทิ้ง)
                     $stmtDel = $connection->prepare("DELETE FROM ven_change WHERE id = ?");
                     $stmtDel->execute([$change_id]);
 
-                    echo json_encode(['success' => true, 'message' => 'ยกเลิกการเปลี่ยนเวรเรียบร้อยแล้ว']);
+                    $connection->commit(); // 🌟 บันทึกการเปลี่ยนแปลงในฐานข้อมูล
+
+                    // 🌟 4. อัปเดต Google Calendar ให้กลับเป็นรายชื่อเดิม
+                    if (function_exists('updateGoogleCalendarDay')) {
+                        // อัปเดตวันที่ 1
+                        if (!empty($changeReq['date1'])) {
+                            updateGoogleCalendarDay($connection, $changeReq['date1']);
+                        }
+                        
+                        // อัปเดตวันที่ 2 (ถ้าเป็นการสลับเวรและคนละวันกัน)
+                        if ($changeReq['is_swap'] == 1 && !empty($changeReq['date2']) && $changeReq['date1'] != $changeReq['date2']) {
+                            updateGoogleCalendarDay($connection, $changeReq['date2']);
+                        }
+                    }
+
+                    echo json_encode(['success' => true, 'message' => 'ยกเลิกการเปลี่ยนเวรและอัปเดตปฏิทินเรียบร้อยแล้ว']);
+                } else {
+                    $connection->rollBack();
+                    http_response_code(404); echo json_encode(['error' => 'ไม่พบข้อมูลใบเปลี่ยนเวร']);
                 }
-            }catch (PDOException $e) {
-                http_response_code(500); echo json_encode(['error' => 'Database Error: ' . $e->getMessage()]);
+            } catch (Exception $e) {
+                if ($connection->inTransaction()) {
+                    $connection->rollBack(); // ถ้ายกเวรพัง ให้ Rollback ข้อมูลกลับ
+                }
+                http_response_code(500); echo json_encode(['error' => 'Error: ' . $e->getMessage()]);
             }
+        } else {
+            http_response_code(400); echo json_encode(['error' => 'ข้อมูลไม่ครบถ้วน']);
         }
         break;
 
@@ -598,70 +893,93 @@ switch ($route) {
     
 
     case 'user/transfer':
-            $userData = AuthMiddleware::checkToken($connection);
-            $currentUserId = is_array($userData) ? $userData['id'] : $userData->id;
+    $userData = AuthMiddleware::checkToken($connection);
+    $currentUserId = is_array($userData) ? $userData['id'] : $userData->id;
+    
+    $action = $_GET['action'] ?? '';
+    
+    if ($action === 'perform') {
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        // รับค่าจาก Payload ของ Vue.js
+        $s1_id = $data['schedule_id'] ?? null; // ID เวรตั้งต้น
+        $user2_id = $data['new_user_id'] ?? null; // คนที่จะโอน/สลับด้วย
+        $is_swap = isset($data['is_swap']) ? (int)$data['is_swap'] : 0;
+        $s2_id = $data['s2_id'] ?? null; // ID เวรของคนที่จะสลับด้วย (ถ้ามี)
+        
+        if (!$s1_id || !$user2_id) {
+            http_response_code(400); echo json_encode(['error' => 'ข้อมูลไม่ครบถ้วน']); break;
+        }
+        
+        try {
+            $connection->beginTransaction(); // 🌟 เริ่ม Transaction ป้องกันข้อมูลพัง
+
+            // 1. เช็คว่าเวรนี้กำลังรออนุมัติเปลี่ยนเวรอยู่หรือไม่
+            $stmtCheck = $connection->prepare("SELECT id FROM ven_change WHERE (s1_id = ? OR s2_id = ?) AND status = 0");
+            $stmtCheck->execute([$s1_id, $s1_id]);
+            if ($stmtCheck->fetch()) {
+                $connection->rollBack();
+                http_response_code(400); echo json_encode(['error' => 'เวรนี้อยู่ระหว่างดำเนินการรออนุมัติอยู่แล้ว']); break;
+            }
+
+            // 🌟 1.5 ดึงข้อมูลวันที่ ($date1, $date2) ล่วงหน้า เพื่อเตรียมใช้อัปเดตปฏิทิน Google
+            $stmtDate1 = $connection->prepare("SELECT ven_date FROM ven_schedule WHERE id = ?");
+            $stmtDate1->execute([$s1_id]);
+            $date1 = $stmtDate1->fetchColumn();
+
+            $date2 = null;
+            if ($is_swap == 1 && $s2_id) {
+                $stmtDate2 = $connection->prepare("SELECT ven_date FROM ven_schedule WHERE id = ?");
+                $stmtDate2->execute([$s2_id]);
+                $date2 = $stmtDate2->fetchColumn();
+            }
+
+            // 2. รันเลขที่ใบเปลี่ยนเวร
+            $changeNo = "CH-" . date('Ym') . "-" . rand(1000, 9999);
+
+            // 3. บันทึกคำขอลงตาราง ven_change
+            $sql = "INSERT INTO ven_change (change_no, s1_id, user1_id, user2_id, is_swap, s2_id, status, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, 0, NOW())";
+            $stmt = $connection->prepare($sql);
+            $stmt->execute([ $changeNo, $s1_id, $currentUserId, $user2_id, $is_swap, ($is_swap == 1) ? $s2_id : null ]);
+
+            // 🌟 4. ย้ายชื่อในตารางเวร และปรับสถานะเป็น 2 ทันที!
+            $tableName = "ven_schedule"; // ตรวจสอบชื่อตารางให้ตรงกับของคุณ
             
-            $action = $_GET['action'] ?? '';
-            
-            if ($action === 'perform') {
-                $data = json_decode(file_get_contents("php://input"), true);
+            if ($is_swap == 1) {
+                // กรณีสลับเวร (เปลี่ยนชื่อทั้ง 2 วัน และปรับสถานะ=2)
+                $stmt1 = $connection->prepare("UPDATE $tableName SET user_id = ?, status = 2 WHERE id = ?");
+                $stmt1->execute([$user2_id, $s1_id]);
                 
-                // รับค่าจาก Payload ของ Vue.js
-                $s1_id = $data['schedule_id'] ?? null; // ID เวรตั้งต้น
-                $user2_id = $data['new_user_id'] ?? null; // คนที่จะโอน/สลับด้วย
-                $is_swap = isset($data['is_swap']) ? (int)$data['is_swap'] : 0;
-                $s2_id = $data['s2_id'] ?? null; // ID เวรของคนที่จะสลับด้วย (ถ้ามี)
+                $stmt2 = $connection->prepare("UPDATE $tableName SET user_id = ?, status = 2 WHERE id = ?");
+                $stmt2->execute([$currentUserId, $s2_id]);
+            } else {
+                // กรณียกให้ (โอนขาด) (เปลี่ยนชื่อแค่เวรเดียว และปรับสถานะ=2)
+                $stmt1 = $connection->prepare("UPDATE $tableName SET user_id = ?, status = 2 WHERE id = ?");
+                $stmt1->execute([$user2_id, $s1_id]);
+            }
+
+            $connection->commit(); // 🌟 บันทึก Transaction สำเร็จ
+
+            // 🌟 5. เมื่อ UPDATE DB เสร็จแล้ว สั่งอัปเดตปฏิทิน Google อัตโนมัติทันที
+            // ป้องกัน Error โดยเช็คก่อนว่ามีฟังก์ชันและดึงวันที่มาได้จริง
+            if (function_exists('updateGoogleCalendarDay') && $date1) {
+                updateGoogleCalendarDay($connection, $date1);
                 
-                if (!$s1_id || !$user2_id) {
-                    http_response_code(400); echo json_encode(['error' => 'ข้อมูลไม่ครบถ้วน']); break;
-                }
-                
-                try {
-                    $connection->beginTransaction(); // 🌟 เริ่ม Transaction ป้องกันข้อมูลพัง
-
-                    // 1. เช็คว่าเวรนี้กำลังรออนุมัติเปลี่ยนเวรอยู่หรือไม่
-                    $stmtCheck = $connection->prepare("SELECT id FROM ven_change WHERE (s1_id = ? OR s2_id = ?) AND status = 0");
-                    $stmtCheck->execute([$s1_id, $s1_id]);
-                    if ($stmtCheck->fetch()) {
-                        $connection->rollBack();
-                        http_response_code(400); echo json_encode(['error' => 'เวรนี้อยู่ระหว่างดำเนินการรออนุมัติอยู่แล้ว']); break;
-                    }
-
-                    // 2. รันเลขที่ใบเปลี่ยนเวร
-                    $changeNo = "CH-" . date('Ym') . "-" . rand(1000, 9999);
-
-                    // 3. บันทึกคำขอลงตาราง ven_change
-                    $sql = "INSERT INTO ven_change (change_no, s1_id, user1_id, user2_id, is_swap, s2_id, status, created_at) 
-                            VALUES (?, ?, ?, ?, ?, ?, 0, NOW())";
-                    $stmt = $connection->prepare($sql);
-                    $stmt->execute([ $changeNo, $s1_id, $currentUserId, $user2_id, $is_swap, ($is_swap == 1) ? $s2_id : null ]);
-
-                    // 🌟 4. ย้ายชื่อในตารางเวร และปรับสถานะเป็น 2 ทันที!
-                    $tableName = "ven_schedule"; // ตรวจสอบชื่อตารางให้ตรงกับของคุณ
-                    
-                    if ($is_swap == 1) {
-                        // กรณีสลับเวร (เปลี่ยนชื่อทั้ง 2 วัน และปรับสถานะ=2)
-                        $stmt1 = $connection->prepare("UPDATE $tableName SET user_id = ?, status = 2 WHERE id = ?");
-                        $stmt1->execute([$user2_id, $s1_id]);
-                        
-                        $stmt2 = $connection->prepare("UPDATE $tableName SET user_id = ?, status = 2 WHERE id = ?");
-                        $stmt2->execute([$currentUserId, $s2_id]);
-                    } else {
-                        // กรณียกให้ (โอนขาด) (เปลี่ยนชื่อแค่เวรเดียว และปรับสถานะ=2)
-                        $stmt1 = $connection->prepare("UPDATE $tableName SET user_id = ?, status = 2 WHERE id = ?");
-                        $stmt1->execute([$user2_id, $s1_id]);
-                    }
-
-                    $connection->commit(); // 🌟 บันทึก Transaction
-
-                    echo json_encode([ 'success' => true, 'message' => 'บันทึกคำขอเปลี่ยนเวรสำเร็จ', 'change_no' => $changeNo ]);
-                    
-                } catch (PDOException $e) {
-                    $connection->rollBack();
-                    http_response_code(500); echo json_encode(['error' => 'Database Error: ' . $e->getMessage()]);
+                // ถ้าเป็นการ "สลับเวร" (มี 2 วัน) และวันที่ไม่ซ้ำกัน ก็สั่งอัปเดตวันที่ 2 ด้วย
+                if (!empty($date2) && $date1 != $date2) {
+                    updateGoogleCalendarDay($connection, $date2);
                 }
             }
-            break;
+
+            echo json_encode([ 'success' => true, 'message' => 'บันทึกคำขอเปลี่ยนเวรสำเร็จ', 'change_no' => $changeNo ]);
+            
+        } catch (PDOException $e) {
+            $connection->rollBack(); // ถ้ายกเวรพัง ให้ Rollback ข้อมูลกลับ
+            http_response_code(500); echo json_encode(['error' => 'Database Error: ' . $e->getMessage()]);
+        }
+    }
+    break;
 
 
 

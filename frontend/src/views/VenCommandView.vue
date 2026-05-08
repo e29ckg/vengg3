@@ -13,7 +13,10 @@
 
       <div v-for="(commands, month) in groupedCommands" :key="month" class="mb-5">
         <h5 class="fw-bold text-secondary mb-3 d-flex align-items-center">
-          <i class="bi bi-calendar3 me-2"></i>คำสั่งเวรประจำเดือน {{ formatMonthThai(month) }}
+          <i class="bi bi-calendar3 me-2"></i>คำสั่งเวรประจำเดือน {{ formatMonthThai(month) }} 
+          <button class="btn btn-sm btn-outline-danger shadow-sm ms-1" @click="syncToGoogle(month)" title="ส่งตารางเวรเดือนนี้ขึ้น Google Calendar">
+            <i class="bi bi-google"></i> ซิงค์ปฏิทิน
+          </button>
         </h5>
         
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
@@ -457,6 +460,62 @@ const selectAllDays = () => {
 const clearAllDays = () => {
   form.value.ven_com_days = []
 }
+
+
+const syncToGoogle = async (monthToSync) => {
+  if (!monthToSync) {
+    Swal.fire('แจ้งเตือน', 'ไม่พบข้อมูลเดือนของคำสั่งนี้', 'warning');
+    return;
+  }
+
+  const result = await Swal.fire({
+    title: 'ส่งเวรขึ้น Google Calendar?',
+    text: `ระบบจะนำข้อมูลการจัดเวรของเดือน ${monthToSync} ส่งขึ้นไปอัปเดตบน Google Calendar`,
+    icon: 'info',
+    showCancelButton: true,
+    confirmButtonColor: '#db4437',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: '<i class="bi bi-cloud-upload"></i> ตกลง, เริ่มซิงค์',
+    cancelButtonText: 'ยกเลิก'
+  });
+
+  if (result.isConfirmed) {
+    Swal.fire({
+      title: 'กำลังซิงค์ข้อมูล...',
+      html: 'โปรดรอสักครู่ ระบบกำลังสื่อสารกับเซิร์ฟเวอร์ของ Google',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    try {
+      // ยิง API ไปที่ Backend เดิมที่เราทำไว้
+      const response = await api.post('?route=admin/ven_schedule&action=sync_google', {
+        month: monthToSync 
+      });
+
+      if (response.data.success) {
+        Swal.fire(
+          'สำเร็จ!',
+          response.data.message || 'อัปเดตตารางเวรบน Google Calendar เรียบร้อยแล้ว',
+          'success'
+        );
+      } else {
+        Swal.fire('เสร็จสิ้น', response.data.message || 'ไม่มีข้อมูลเวรใหม่ให้ซิงค์', 'info');
+      }
+
+    } catch (error) {
+      console.error("Sync Google Error:", error);
+      Swal.fire(
+        'เกิดข้อผิดพลาด!',
+        error.response?.data?.error || 'ไม่สามารถเชื่อมต่อ Google API ได้',
+        'error'
+      );
+    }
+  }
+};
+
 
 onMounted(() => {
   fetchCommands()

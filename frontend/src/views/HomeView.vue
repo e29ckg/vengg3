@@ -561,69 +561,59 @@ const is24HourShift = (sch) => {
   }
 };
 
-const confirmTransfer = async (targetUser) => {
-  let isViolated = false;
-  
-  if (systemSettings.value.check_24h_consecutive) {
-    isViolated = check24HourViolation(targetUser.user_id, selectedVen.value.ven_date, selectedVen.value.ven_time);
-  }
+// 🌟 ฟังก์ชันสำหรับกดยกเลิกใบเปลี่ยนเวร
+// const cancelRequest = async (changeId) => {
+//   // 1. ถามยืนยันก่อนยกเลิก
+//   const result = await Swal.fire({
+//     title: 'ยืนยันการยกเลิก?',
+//     text: 'คุณต้องการยกเลิกคำขอเปลี่ยนเวรนี้ และดึงชื่อของคุณกลับเข้าตารางเวรตามเดิมใช่หรือไม่?',
+//     icon: 'warning',
+//     showCancelButton: true,
+//     confirmButtonColor: '#d33', // สีแดงให้ดูเป็นการยกเลิก
+//     cancelButtonColor: '#6c757d',
+//     confirmButtonText: '<i class="bi bi-x-circle"></i> ใช่, ยกเลิกคำขอ',
+//     cancelButtonText: 'ปิด'
+//   });
 
-  const result = await Swal.fire({
-    title: isViolated ? '⚠️ ตรวจพบการเข้าเวร 24 ชม.' : 'ยืนยันการโอนเวร?',
-    html: isViolated 
-      ? `หากโอนให้ <b>${targetUser.full_name}</b> จะทำให้เข้าเวรติดต่อกัน 24 ชม. <br>ต้องการยืนยันหรือไม่?`
-      : `คุณแน่ใจหรือไม่ที่จะยกเวรให้ <b>${targetUser.full_name}</b>?`,
-    icon: isViolated ? 'error' : 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'ยืนยันการโอน',
-    cancelButtonText: 'ยกเลิก',
-    confirmButtonColor: isViolated ? '#dc3545' : '#3085d6'
-  });
+//   if (result.isConfirmed) {
+//     try {
+//       // 🌟 2. แสดงหน้าต่าง Loading หมุนๆ ทันทีที่กดยืนยัน
+//       Swal.fire({
+//         title: 'กำลังยกเลิกคำขอ...',
+//         html: 'โปรดรอสักครู่ ระบบกำลังคืนเวรและอัปเดต Google Calendar',
+//         allowOutsideClick: false,
+//         didOpen: () => {
+//           Swal.showLoading();
+//         }
+//       });
 
-  if (result.isConfirmed) {
-    try {
-      Swal.fire({ 
-        title: 'กำลังส่งคำขอ...', 
-        allowOutsideClick: false, 
-        didOpen: () => Swal.showLoading() 
-      });
+//       // 3. ยิง API ไปที่ Backend ที่เราเขียนไว้
+//       const response = await api.post('?route=ven/cancel_change', {
+//         change_id: changeId
+//       });
 
-      await api.post('?route=user/transfer&action=perform', {
-        schedule_id: selectedVen.value.ven_id, 
-        new_user_id: targetUser.user_id
-      });
-      
-      detailModalInstance.hide();
-      fetchVenData(); 
-      
-      // 🌟 ดักจับผลลัพธ์ (await) จากหน้าต่างแจ้งเตือนโอนสำเร็จ
-      const successResult = await Swal.fire({
-        title: 'ส่งคำขอสำเร็จ!',
-        html: `
-          <div class="mb-2">ทำการโอนเวรเรียบร้อยแล้ว</div>
-          สถานะปัจจุบัน: <span class="badge bg-warning text-dark fs-6"><i class="bi bi-printer"></i> รอพิมพ์เอกสาร</span>
-          <hr>
-          <div class="small text-muted text-start">
-            <b>คำแนะนำ:</b> โปรดไปที่หน้าประวัติเพื่อพิมพ์ใบเปลี่ยนเวร และนำไปเสนอผู้บังคับบัญชาลงนาม
-          </div>
-        `,
-        icon: 'success',
-        showCancelButton: true, // เพิ่มปุ่มปิดเผื่อผู้ใช้ยังไม่อยากไปตอนนี้
-        confirmButtonText: '<i class="bi bi-box-arrow-up-right"></i> ไปหน้าประวัติ',
-        cancelButtonText: 'ปิดหน้านี้',
-        confirmButtonColor: '#198754'
-      });
+//       // 4. เมื่อ Backend ทำงานเสร็จ ปิด Loading แล้วแสดงข้อความสำเร็จ
+//       if (response.data.success) {
+//         Swal.fire(
+//           'ยกเลิกสำเร็จ!',
+//           response.data.message || 'ระบบได้ดึงชื่อคุณกลับเข้าเวรเรียบร้อยแล้ว',
+//           'success'
+//         );
+        
+//         // 🌟 รีเฟรชข้อมูลในตารางใหม่ (เปลี่ยนชื่อฟังก์ชันให้ตรงกับหน้าของคุณ)
+//         // fetchHistoryData(); หรือ fetchVenData();
+//       }
 
-      // 🌟 ถ้ายืนยัน ให้เด้งไปที่หน้า /user/history ทันที
-      if (successResult.isConfirmed) {
-        router.push('/user/history'); // *หมายเหตุ: ตรวจสอบให้แน่ใจว่า path นี้ตรงกับที่คุณตั้งใน router/index.js
-      }
-
-    } catch (error) {
-      Swal.fire('ผิดพลาด', 'ไม่สามารถโอนเวรได้', 'error');
-    }
-  }
-};
+//     } catch (error) {
+//       // ปิด Loading และแสดงข้อความ Error
+//       Swal.fire(
+//         'เกิดข้อผิดพลาด!',
+//         error.response?.data?.error || 'ไม่สามารถยกเลิกคำขอได้',
+//         'error'
+//       );
+//     }
+//   }
+// };
 
 const cancelChange = async (changeId) => {
   const result = await Swal.fire({
@@ -639,13 +629,27 @@ const cancelChange = async (changeId) => {
 
   if (result.isConfirmed) {
     try {
+      // 🌟 1. แสดงหน้าต่าง Loading ทันทีที่กดยืนยัน
+      Swal.fire({
+        title: 'กำลังดำเนินการ...',
+        html: 'โปรดรอสักครู่ ระบบกำลังคืนเวรและอัปเดตปฏิทิน',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      // 2. ยิง API ไปยกเลิกและอัปเดต Google Calendar
       const res = await api.post('?route=ven/cancel_change', { change_id: changeId });
+      
+      // 3. ปิด Loading และแสดงข้อความสำเร็จ
       if (res.data.success) {
         Swal.fire('ยกเลิกสำเร็จ', 'ใบเปลี่ยนเวรถูกยกเลิกและคืนเวรเรียบร้อยแล้ว', 'success');
         detailModalInstance.hide();
         fetchVenData();
       }
     } catch (error) {
+      // 4. กรณี Error ก็จะปิด Loading แล้วแสดงข้อความแจ้งเตือน
       Swal.fire('ผิดพลาด', error.response?.data?.error || 'ไม่สามารถยกเลิกได้', 'error');
     }
   }
@@ -778,7 +782,7 @@ const confirmSwap = async () => {
     }
 
   } catch (error) {
-    Swal.fire('ผิดพลาด', 'ไม่สามารถส่งคำขอสลับเวรได้', 'error');
+    Swal.fire('ผิดพลาด', error.response?.data?.error || 'ไม่สามารถส่งคำขอสลับเวรได้', error);
   }
 };
 

@@ -2,9 +2,9 @@
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm d-print-none"  v-if="isLoggedIn">
     <div class="container-fluid">
       
-      <router-link class="navbar-brand d-flex align-items-center" to="/home">
+      <!-- <router-link class="navbar-brand d-flex align-items-center" to="/home">
         <span class="fw-bold"><i class="bi bi-calendar2-check"></i> {{ systemName || 'ระบบเวรนอกเวลาทำการ' }}</span>
-      </router-link>
+      </router-link> -->
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" @click="toggleMobileMenu">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -62,27 +62,27 @@
                 </router-link>
               </li>
               <li>
-                <router-link class="dropdown-item" to="/admin/options" active-class="active fw-bold">
-                  <i class="bi bi-card-list"></i> จัดการคำนำหน้า ตำแหน่ง กลุ่มงาน
+                <router-link to="/admin/settings/agency" class="dropdown-item" active-class="active fw-bold">
+                  <i class="bi bi-building me-2 text-primary"></i> ตั้งค่าข้อมูลหน่วยงาน
                 </router-link>
               </li>
-              <li><hr class="dropdown-divider"></li>            
-              <li>  <router-link to="/admin/settings/telegram" class="dropdown-item"><i class="bi bi-telegram me-2"></i> ตั้งค่า Telegram</router-link></li>
               <li>
                 <router-link to="/admin/settings/system" class="dropdown-item" active-class="active fw-bold">
                   <i class="bi bi-gear-wide-connected me-2 text-dark"></i> ตั้งค่าระบบ
                 </router-link>
               </li>  
               <li>
+                <router-link class="dropdown-item" to="/admin/options" active-class="active fw-bold">
+                  <i class="bi bi-card-list"></i> จัดการคำนำหน้า ตำแหน่ง กลุ่มงาน
+                </router-link>
+              </li>
+              <li><hr class="dropdown-divider"></li>            
+              <li>
                 <router-link to="/admin/settings/google-calendar" class="dropdown-item py-2" active-class="active fw-bold bg-primary text-white">
                   <i class="bi bi-google me-2 text-danger"></i>ตั้งค่า Google Calendar
                 </router-link>
               </li>       
-              <li>
-                <router-link to="/admin/settings/agency" class="dropdown-item" active-class="active fw-bold">
-                  <i class="bi bi-building me-2 text-primary"></i> ตั้งค่าข้อมูลหน่วยงาน
-                </router-link>
-              </li>
+              <li>  <router-link to="/admin/settings/telegram" class="dropdown-item"><i class="bi bi-telegram me-2"></i> ตั้งค่า Telegram</router-link></li>
             </ul>
           </li>
         </ul>

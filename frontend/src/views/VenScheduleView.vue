@@ -2,8 +2,8 @@
   <div class="bg-light min-vh-100 d-flex flex-column pb-3">
     <div class="container-fluid flex-grow-1 d-flex p-3 gap-3">
       
-      <div class="card shadow-sm border-0 rounded-4 d-flex flex-column position-sticky" 
-           style="width: 350px; min-width: 350px; top: 20px; height: calc(100vh - 40px);">
+      <div class="card shadow-sm border-0 rounded-4 d-flex flex-column position-sticky align-self-start" 
+     style="width: 350px; min-width: 350px; top: 80px; height: calc(100vh - 100px); z-index: 10;">
         
         <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
           <h5 class="fw-bold text-primary"><i class="bi bi-person-lines-fill me-2"></i>รายชื่อผู้อยู่เวร</h5>
@@ -45,7 +45,8 @@
               </button>
               <button v-else-if="activeCommand.status == 1" class="btn btn-sm btn-outline-secondary fw-bold" style="font-size: 0.7rem;" @click="toggleCommandStatus(0)">
                 ปลดล็อคแก้ไข
-              </button>
+              </button>             
+
             </div>
 
             <div v-if="filteredCommands.length === 0" class="text-danger small mt-1" style="font-size: 0.7rem;">
@@ -638,6 +639,69 @@ const showScheduleDetails = (sch) => {
       removeSchedule(sch.id); 
     }
   });
+};
+
+// 🌟 ฟังก์ชันส่งข้อมูลขึ้น Google Calendar
+const syncToGoogle = async () => {
+  // ตรวจสอบว่ามีการเลือกเดือนหรือยัง (ปรับตัวแปร currentMonth.value ให้ตรงกับของคุณ)
+  const monthToSync = currentMonth.value; 
+  
+  if (!monthToSync) {
+    Swal.fire('แจ้งเตือน', 'กรุณาเลือกเดือนที่ต้องการซิงค์', 'warning');
+    return;
+  }
+
+  // ถามยืนยันก่อนเริ่มซิงค์
+  const result = await Swal.fire({
+    title: 'ยืนยันการซิงค์ข้อมูล?',
+    text: "ระบบจะนำข้อมูลการจัดเวรล่าสุดของเดือนนี้ ส่งขึ้นไปอัปเดตบน Google Calendar แยกตามประเภทเวรที่คุณได้ตั้งค่าไว้",
+    icon: 'info',
+    showCancelButton: true,
+    confirmButtonColor: '#db4437', // สีแดงสไตล์ Google
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: '<i class="bi bi-cloud-upload"></i> ตกลง, เริ่มซิงค์เลย',
+    cancelButtonText: 'ยกเลิก'
+  });
+
+  if (result.isConfirmed) {
+    // แสดงหน้าต่างโหลด
+    Swal.fire({
+      title: 'กำลังซิงค์ข้อมูล...',
+      html: 'โปรดรอสักครู่ ระบบกำลังสื่อสารกับเซิร์ฟเวอร์ของ Google<br><small class="text-muted">อาจใช้เวลา 10-30 วินาที ขึ้นอยู่กับจำนวนข้อมูล</small>',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    try {
+      // เรียก API ไปยัง Backend PHP ของเรา
+      const response = await api.post('?route=admin/ven_schedule&action=sync_google', {
+        month: monthToSync 
+      });
+
+      // ถ้า Backend ทำงานสำเร็จ
+      if (response.data.success) {
+        Swal.fire(
+          'สำเร็จ!',
+          response.data.message || 'อัปเดตตารางเวรบน Google Calendar เรียบร้อยแล้ว',
+          'success'
+        );
+      } else {
+        // กรณีเชื่อมต่อได้แต่ไม่มีข้อมูลเวร
+        Swal.fire('เสร็จสิ้น', response.data.message || 'ไม่มีข้อมูลเวรใหม่ให้ซิงค์', 'info');
+      }
+
+    } catch (error) {
+      console.error("Sync Google Error:", error);
+      // กรณีเกิด Error จากฝั่ง Backend หรือ Google API
+      Swal.fire(
+        'เกิดข้อผิดพลาด!',
+        error.response?.data?.error || 'ไม่สามารถเชื่อมต่อ Google API ได้ โปรดตรวจสอบการตั้งค่า Service Account',
+        'error'
+      );
+    }
+  }
 };
 
 // 🌟 แก้ไข onMounted ให้ตั้งค่า Parameter ครบถ้วน

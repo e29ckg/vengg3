@@ -2,109 +2,72 @@
   <div class="container-fluid mt-4 pb-5">
     <div class="d-flex align-items-center mb-4">
       <h4 class="fw-bold text-dark mb-0">
-        <i class="bi bi-google text-danger me-2"></i>ตั้งค่า Google Calendar Integration
+        <i class="bi bi-google text-danger me-2"></i>ตั้งค่าการเชื่อมต่อ Google Calendar
       </h4>
     </div>
 
-    <div class="row g-4">
-      <div class="col-lg-5">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
+    <div class="row g-4 justify-content-center">
+      <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4">
           <div class="card-header bg-white border-0 pt-4 px-4">
-            <h5 class="fw-bold"><i class="bi bi-key-fill me-2 text-warning"></i>API Credentials</h5>
+            <h5 class="fw-bold"><i class="bi bi-gear-wide-connected me-2 text-primary"></i>Configuration</h5>
           </div>
-          <div class="card-body px-4">
+          <div class="card-body px-4 pb-4">
             
             <div class="mb-4">
-              <label class="form-label fw-bold text-muted small">Service Account Email ปัจจุบัน</label>
-              <div class="form-control bg-light text-success fw-bold d-flex align-items-center" v-if="googleEmail">
-                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
-                <span class="text-truncate">{{ googleEmail }}</span>
+              <label class="form-label fw-bold text-muted small">Service Account Email (ใช้สำหรับแชร์สิทธิ์ใน Google Calendar)</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope-at text-primary"></i></span>
+                <input type="text" class="form-control bg-light fw-bold text-success" :value="config.google_service_account" readonly placeholder="ยังไม่ได้อัปโหลดไฟล์ Credentials">
               </div>
-              <div class="form-control bg-light text-danger d-flex align-items-center" v-else>
-                <i class="bi bi-exclamation-circle-fill me-2 fs-5"></i>ยังไม่ได้อัปโหลดไฟล์
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-bold text-dark">Google Calendar ID (รหัสปฏิทินที่ต้องการให้ข้อมูลไปปรากฏ)</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-calendar3 text-danger"></i></span>
+                <input type="text" class="form-control border-start-0" v-model="config.google_calendar_id" placeholder="เช่น xxxx@group.calendar.google.com">
               </div>
+              <div class="form-text mt-2 small">
+                <i class="bi bi-info-circle me-1"></i> นำรหัสปฏิทินจากหน้าตั้งค่าของ Google Calendar (Integrate Calendar) มาใส่ที่นี่
+              </div>
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-4">
+              <button class="btn btn-primary px-4 fw-bold shadow-sm" @click="saveConfig">
+                <i class="bi bi-save me-2"></i>บันทึกการตั้งค่าปฏิทิน
+              </button>
             </div>
 
             <hr class="text-muted opacity-25 mb-4">
 
-            <div class="mb-3">
-              <label class="form-label fw-bold text-dark">อัปโหลดไฟล์ credentials.json</label>
-              <input type="file" class="form-control" accept=".json" @change="handleFileChange" ref="fileInput">
-              <div class="form-text text-muted small mt-2">
-                <i class="bi bi-info-circle me-1"></i>อัปโหลดไฟล์ Key (JSON) ที่ดาวน์โหลดจาก Google Cloud Console ระบบจะอ่านอีเมลและบันทึกไฟล์ให้ทันที
+            <div class="bg-light p-3 rounded-3 border">
+              <label class="form-label fw-bold text-dark small"><i class="bi bi-file-earmark-code me-1"></i>อัปโหลดไฟล์ credentials.json ใหม่</label>
+              <div class="input-group input-group-sm">
+                <input type="file" class="form-control" accept=".json" @change="handleFileChange" ref="fileInput">
+                <button class="btn btn-outline-dark fw-bold" @click="uploadCredentials" :disabled="!selectedFile">อัปโหลดไฟล์</button>
               </div>
             </div>
 
-            <button class="btn btn-primary w-100 fw-bold mt-2 py-2" @click="uploadCredentials" :disabled="!selectedFile">
-              <i class="bi bi-cloud-upload-fill me-2"></i>อัปโหลดไฟล์และอัปเดตสิทธิ์
-            </button>
-
           </div>
         </div>
-      </div>
-
-      <div class="col-lg-7">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
-          <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
-            <h5 class="fw-bold mb-0"><i class="bi bi-calendar3 me-2 text-primary"></i>จับคู่ประเภทเวรกับปฏิทิน</h5>
-            <button class="btn btn-sm btn-outline-secondary" @click="fetchVenNames" title="รีเฟรชข้อมูล"> 
-              <i class="bi bi-arrow-clockwise"></i>
-            </button>
-          </div>
-          <div class="card-body p-0">
-            
-            <div v-if="isLoading" class="text-center py-5 text-muted">
-              <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
-              <div>กำลังโหลดข้อมูล...</div>
-            </div>
-
-            <div class="table-responsive" v-else>{{ venNames }}
-              <table class="table table-hover align-middle mb-0">
-                <thead class="table-light text-muted">
-                  <tr>
-                    <th class="ps-4" style="width: 35%;">ชื่อเวร</th>
-                    <th style="width: 50%;">Google Calendar ID (รหัสปฏิทิน)</th>
-                    <th class="text-center" style="width: 15%;">สถานะ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="ven in venNames" :key="ven.id">
-                    <td class="ps-4">
-                      <div class="fw-bold text-dark">{{ ven.name }}</div>
-                      <small class="text-muted">อัตรา {{ ven.price }} บ.</small>
-                    </td>
-                    <td>
-                      <input type="text" class="form-control form-control-sm border bg-light" 
-                             v-model="ven.google_calendar_id" 
-                             placeholder="เว้นว่างไว้หากไม่ต้องการซิงค์"
-                             @change="updateVenCalendarId(ven)">
-                    </td>
-                    <td class="text-center">
-                      <i v-if="ven.google_calendar_id" class="bi bi-check-circle-fill text-success fs-5" title="เปิดใช้งานแล้ว"></i>
-                      <i v-else class="bi bi-dash-circle text-secondary opacity-50 fs-5" title="ปิดใช้งาน"></i>
-                    </td>
-                  </tr>
-                  <tr v-if="venNames.length === 0">
-                    <td colspan="3" class="text-center py-4 text-muted">ไม่พบข้อมูลชื่อเวรในระบบ</td>
-                  </tr>
-                </tbody>
-              </table>
-
-            </div>
+        
+        <div class="card border-0 shadow-sm rounded-4 mt-4 bg-dark text-white">
+          <div class="card-body p-4 small opacity-75">
+            <h6 class="fw-bold mb-3 text-warning">
+              <i class="bi bi-lightbulb-fill me-2"></i>ขั้นตอนการตั้งค่าและเชื่อมต่อ Google Calendar:
+            </h6>
+            <ol class="mb-0" style="line-height: 1.8;">
+              <li><strong>เปิดใช้งาน API:</strong> ไปที่ <a href="https://console.cloud.google.com/" target="_blank" class="text-info fw-bold">Google Cloud Console</a> &gt; สร้าง Project &gt; ค้นหาและกด Enable <strong>Google Calendar API</strong></li>
+              <li><strong>สร้างผู้ใช้งานจำลอง:</strong> ไปที่เมนู IAM & Admin &gt; Service Accounts &gt; กด Create Service Account</li>
+              <li><strong>ดาวน์โหลดไฟล์ Key:</strong> คลิกที่ Service Account ที่เพิ่งสร้าง &gt; ไปที่แถบ <strong>Keys</strong> &gt; Add Key &gt; Create new key &gt; เลือกฟอร์แมต <strong>JSON</strong> (ไฟล์จะถูกดาวน์โหลดลงเครื่อง)</li>
+              <li><strong>อัปโหลดเข้าสู่ระบบ:</strong> นำไฟล์ JSON ที่ดาวน์โหลดมา อัปโหลดในช่องด้านบน เพื่อให้ระบบอ่านค่า <strong>Service Account Email</strong></li>
+              <li><strong>แชร์ปฏิทิน:</strong> ก๊อปปี้ Email ที่ได้ ไป <strong>"เพิ่มบุคคล" (Share)</strong> ในหน้าตั้งค่าของ Google Calendar และปรับสิทธิ์เป็น <strong>"Make changes to events"</strong></li>
+              <li><strong>เชื่อมต่อ:</strong> ก๊อปปี้ <strong>Calendar ID</strong> จาก Google มาใส่ในช่องด้านบนแล้วกด "บันทึกการตั้งค่าปฏิทิน"</li>
+            </ol>
           </div>
         </div>
-      </div>
-    </div>
-    
-    <div class="card border-0 shadow-sm rounded-4 mt-4 bg-dark text-white">
-      <div class="card-body p-4">
-        <h6 class="fw-bold mb-3 text-warning"><i class="bi bi-lightbulb-fill me-2"></i>ขั้นตอนการตั้งค่าใช้งานครั้งแรก:</h6>
-        <ol class="small mb-0 opacity-75" style="line-height: 1.8;">
-          <li>สร้างโปรเจกต์ใน <a href="https://console.cloud.google.com/" target="_blank" class="text-info fw-bold">Google Cloud Console</a> และเปิดใช้ <strong>Google Calendar API</strong></li>
-          <li>สร้าง <strong>Service Account</strong> และดาวน์โหลดคีย์แบบ <strong>JSON</strong> นำมาอัปโหลดในช่องด้านซ้าย</li>
-          <li>ก๊อปปี้ <strong>Service Account Email ปัจจุบัน</strong> ที่ปรากฏด้านซ้าย ไปเพิ่มเป็นผู้ใช้งาน (Share) ในแต่ละปฏิทินของท่าน และกำหนดสิทธิ์ให้เป็น <strong>"Make changes to events"</strong></li>
-          <li>นำรหัส <strong>Calendar ID</strong> (อยู่ในตั้งค่าปฏิทินของ Google) มาใส่ให้ตรงกับชื่อเวรในตารางด้านขวา ระบบจะบันทึกอัตโนมัติ</li>
-        </ol>
+
       </div>
     </div>
   </div>
@@ -115,107 +78,44 @@ import { ref, onMounted } from 'vue'
 import api from '../../services/api'
 import Swal from 'sweetalert2'
 
-// --- State ---
-const googleEmail = ref('')
-const venNames = ref([])
+const config = ref({
+  google_service_account: '',
+  google_calendar_id: ''
+})
 const selectedFile = ref(null)
 const fileInput = ref(null)
-const isLoading = ref(true)
 
-// --- API Calls: ดึงข้อมูลการตั้งค่า ---
-const fetchSystemSettings = async () => {
+const fetchConfig = async () => {
   try {
     const res = await api.get('?route=admin/google_settings&action=get_google_config')
-    googleEmail.value = res.data.google_service_account || ''
-  } catch (error) { 
-    console.error("Error fetching google settings:", error) 
-  }
+    config.value = res.data
+  } catch (error) { console.error(error) }
 }
 
-const fetchVenNames = async () => {
-  isLoading.value = true
+const saveConfig = async () => {
   try {
-    const res = await api.get('?route=admin/setting&action=list_venname')
-    venNames.value = res.data.data || []
-  } catch (error) { 
-    console.error("Error fetching ven names:", error) 
-  } finally {
-    isLoading.value = false
-  }
+    await api.post('?route=admin/google_settings&action=update_google_config', config.value)
+    Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1500, showConfirmButton: false })
+  } catch (error) { Swal.fire('ผิดพลาด', 'บันทึกไม่สำเร็จ', 'error') }
 }
 
-// --- การจัดการอัปโหลดไฟล์ ---
-const handleFileChange = (event) => {
-  selectedFile.value = event.target.files[0]
-}
+const handleFileChange = (e) => { selectedFile.value = e.target.files[0] }
 
 const uploadCredentials = async () => {
-  if (!selectedFile.value) return;
-
   const formData = new FormData();
   formData.append('credential_file', selectedFile.value);
-
   try {
-    Swal.fire({
-      title: 'กำลังอัปโหลด...',
-      text: 'ระบบกำลังอ่านข้อมูลจากไฟล์',
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
-
     const res = await api.post('?route=admin/google_settings&action=upload_credentials', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
-
     if (res.data.success) {
-      googleEmail.value = res.data.client_email; // อัปเดตอีเมลที่อ่านได้
-      selectedFile.value = null; // ล้างค่าตัวแปรไฟล์
-      if (fileInput.value) fileInput.value.value = ''; // ล้างช่อง input file
-      
-      Swal.fire('สำเร็จ', 'อัปโหลดไฟล์และอัปเดต Service Account เรียบร้อยแล้ว', 'success');
+      config.value.google_service_account = res.data.client_email;
+      selectedFile.value = null;
+      if (fileInput.value) fileInput.value.value = '';
+      Swal.fire('สำเร็จ', 'อัปโหลด Credentials เรียบร้อย', 'success');
     }
-  } catch (error) {
-    console.error(error);
-    Swal.fire('ผิดพลาด', error.response?.data?.error || 'ไม่สามารถอัปโหลดไฟล์ได้', 'error');
-  }
+  } catch (error) { Swal.fire('ผิดพลาด', 'อัปโหลดไม่สำเร็จ', 'error'); }
 }
 
-// --- การอัปเดต Calendar ID ทันทีที่พิมพ์เสร็จ ---
-const updateVenCalendarId = async (ven) => {
-  try {
-    await api.post('?route=admin/setting&action=update_calendar_id', {
-      id: ven.id,
-      google_calendar_id: ven.google_calendar_id
-    })
-    
-    // แจ้งเตือนเล็กๆ มุมขวาบน (Toast) เพื่อไม่ให้รบกวนการทำงาน
-    const Toast = Swal.mixin({ 
-      toast: true, 
-      position: 'top-end', 
-      showConfirmButton: false, 
-      timer: 2000 
-    })
-    Toast.fire({ 
-      icon: 'success', 
-      title: `บันทึกปฏิทินของเวร ${ven.name} แล้ว` 
-    })
-  } catch (error) { 
-    Swal.fire('ผิดพลาด', 'ไม่สามารถบันทึก Calendar ID ได้', 'error') 
-    // รีเฟรชข้อมูลกลับคืนถ้าบันทึกไม่ผ่าน
-    fetchVenNames(); 
-  }
-}
-
-// --- เมื่อโหลดหน้าเสร็จ ---
-onMounted(() => {
-  fetchSystemSettings()
-  fetchVenNames()
-})
+onMounted(fetchConfig)
 </script>
-
-<style scoped>
-.form-control:focus {
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
-}
-</style>
