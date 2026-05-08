@@ -67,7 +67,7 @@ const router = createRouter({
       path: '/director/schedule', 
       name: 'schedule', 
       component: () => import('../views/VenScheduleView.vue'), 
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true , hideFooter: true}
     },
     {
       path: '/director/schedule-list',
