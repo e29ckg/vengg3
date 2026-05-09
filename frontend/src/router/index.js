@@ -11,7 +11,8 @@ const router = createRouter({
     { 
       path: '/login', 
       name: 'login', 
-      component: LoginView 
+      component: LoginView ,
+      meta: { guestOnly: true }
     },
     { 
       path: '/home', 
@@ -22,19 +23,19 @@ const router = createRouter({
       path: '/admin/users', 
       name: 'admin-users', 
       component: () => import('../views/UserManagementView.vue'),
-      meta: { requiresAuth: true, role: 9 }
+      meta: { requiresAuth: true, role: [9] }
     },
     {
       path: '/admin/settings/system',
       name: 'SystemSettings',
       component: () => import('../views/admin/SystemSettingsView.vue'),
-      meta: { requiresAuth: true, role: 9 }
+      meta: { requiresAuth: true, role: [9] }
     },
     {
       path: '/admin/settings/agency',
       name: 'AgencySettings',
       component: () => import('../views/admin/AgencySettingsView.vue'),
-      meta: { requiresAuth: true, role: 9 }
+      meta: { requiresAuth: true, role: [9] }
     },
 
     // 🌟 เพิ่ม Route สำหรับตั้งค่า Google Calendar ตรงนี้ครับ
@@ -42,14 +43,14 @@ const router = createRouter({
       path: '/admin/settings/google-calendar',
       name: 'GoogleCalendarSettings',
       component: () => import('../views/admin/GoogleCalendarSettingsView.vue'),
-      meta: { requiresAuth: true, role: 9 } // เฉพาะ Admin เท่านั้น
+      meta: { requiresAuth: true, role: [9] } // เฉพาะ Admin เท่านั้น
     },
 
     {
       path: '/admin/settings/telegram',
       name: 'TelegramSettings',
       component: () => import('../views/admin/TelegramSettingsView.vue'),
-      meta: { requiresAuth: true, role: 9 }
+      meta: { requiresAuth: true, role: [9] }
     },
     { 
       path: '/director/ven-settings', 
@@ -117,7 +118,45 @@ const router = createRouter({
       component: () => import('../views/UserManualView.vue'),
       meta: { requiresAuth: true }
     },
+
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('../views/NotFoundView.vue') // อย่าลืมไปสร้างไฟล์นี้ด้วยนะครับ
+    }
   ]
 })
+
+// 🌟 โค้ดดักจับก่อนเปลี่ยนหน้า
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token'); // ดึง Token
+  const role = localStorage.getItem('role'); // ดึงข้อมูล User
+  let userRole = null;
+
+  if (role) {
+    userRole = Number(role); // ดึงสิทธิ์ผู้ใช้มาเช็ค
+  }
+
+  // 1. ถ้าหน้าที่จะไป ต้องล็อกอิน แต่ไม่มี Token
+  if (to.meta.requiresAuth && !token) {
+    return next('/login');
+  }
+
+  // 2. ถ้ามี Token แล้ว แต่พยายามเข้าหน้า Login อีก
+  if (to.meta.guestOnly && token) {
+    return next('/home');
+  }
+
+  // 3. 🌟 เช็คสิทธิ์ (Roles) ว่าเข้าหน้านี้ได้ไหม
+  if (to.meta.roles && to.meta.roles.length > 0) {
+    if (!to.meta.roles.includes(userRole)) {
+      // ถ้าสิทธิ์ไม่ตรง ให้เด้งกลับไปหน้า Home
+      return next('/home'); 
+    }
+  }
+
+  // ผ่านทุกเงื่อนไข ให้ไปต่อได้
+  next();
+});
 
 export default router
