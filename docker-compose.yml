@@ -25,7 +25,7 @@ services:
 
   backend:
     build:
-      context: ./backend  # 🌟 แก้ไขตรงนี้: ชี้ไปที่โฟลเดอร์ backend
+      context: ./backend
       dockerfile: Dockerfile
     container_name: vengg_web
     environment:
@@ -34,6 +34,7 @@ services:
       - "80:80"
     volumes:
       - .:/var/www/html/vengg3
+      # - /var/www/html/vengg3/backend/vendor  # 🌟 ป้องกันไม่ให้เครื่องเราไปทับโฟลเดอร์ vendor ใน Docker
     depends_on:
       - db
 
@@ -48,19 +49,20 @@ services:
       - "5173:5173"
     volumes:
       - ./frontend:/app
-      - /app/node_modules
+      - /app/node_modules  # 🌟 อันนี้ทำถูกแล้วครับ ป้องกัน node_modules หาย
     depends_on:
       - backend
 
   cron-notifier:
     build: 
-      context: ./backend  # 🌟 แก้ไขตรงนี้: ชี้ไปที่โฟลเดอร์ backend เช่นกัน
+      context: ./backend
       dockerfile: Dockerfile
     container_name: ven_cron_notifier
     environment:
       TZ: Asia/Bangkok
     volumes:
       - .:/var/www/html/vengg3
+      # - /var/www/html/vengg3/backend/vendor  # 🌟 ป้องกันโฟลเดอร์ vendor หายเช่นกัน
     command: sh -c "while true; do php /var/www/html/vengg3/backend/cron/daily_notify.php; sleep 60; done"
     depends_on:
       - db
