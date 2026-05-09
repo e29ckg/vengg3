@@ -113,7 +113,7 @@ const router = createRouter({
     },
     {
       path: '/manual',
-      name: 'options',
+      name: 'manual',
       component: () => import('../views/UserManualView.vue'),
       meta: { requiresAuth: true }
     },

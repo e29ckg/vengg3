@@ -22,7 +22,8 @@ class Ven {
                     vns.color AS backgroundColor,
                     IF(vn.dn LIKE '%กลางคืน%', '16:30:00', '08:30:00') AS ven_time,
                     vc.id AS ven_com_id,
-                    vns.id AS sub_id
+                    vns.id AS sub_id,
+                    vns.price
                   FROM " . $this->table_name . " v
                   LEFT JOIN profile p ON v.user_id = p.user_id
                   LEFT JOIN ven_name_sub vns ON v.ven_name_sub_id = vns.id
