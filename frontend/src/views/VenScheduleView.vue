@@ -56,7 +56,7 @@
 
           <div v-if="activeCommand" class="d-flex flex-column gap-2">            
             <label class="form-label small fw-bold text-muted mb-0">3. เลือกหน้าที่เพื่อจัดคน</label>
-            {{  main}}
+            
             <select class="form-select form-select-sm border-primary" v-model="activeSubDuty" @change="loadEligibleUsers">
               <option value="">-- เลือกหน้าที่ย่อย --</option>
               <option v-for="sub in subDuties" :key="sub.id" :value="sub">{{ sub.name }}</option>
@@ -144,6 +144,8 @@
                 <i v-else class="bi bi-lock-fill ms-1 mt-1 opacity-50 small" :style="{ color: getTextColor(schedule.color) }" title="คำสั่งนี้ถูกยืนยันแล้ว"></i>
               </div>
             </div>
+
+            
           </div>
         </div>
       </div>
@@ -564,14 +566,24 @@ const runAutoAssign = async () => {
 }
 
 const isClashing = (sch) => {
-  if (Number(sch.price) === 0) {return false; }
+  // 1. ถ้าเวรเป้าหมายนี้ price = 0 ให้ข้ามการตรวจสอบไปเลย
+  if (Number(sch.price) === 0) { return false; }
 
-  const userShifts = allSchedules.value.filter(s => s.user_id === sch.user_id)
-  const sameDay = userShifts.filter(s => parseInt(s.day) === parseInt(sch.day))
-  if (sameDay.length > 1 && sameDay.some(s => s.shift_type.includes('กลางวัน')) && sameDay.some(s => s.shift_type.includes('กลางคืน'))) return true
-  if (sch.shift_type.includes('กลางคืน') && userShifts.find(s => parseInt(s.day) === parseInt(sch.day)+1 && s.shift_type.includes('กลางวัน'))) return true
-  if (sch.shift_type.includes('กลางวัน') && userShifts.find(s => parseInt(s.day) === parseInt(sch.day)-1 && s.shift_type.includes('กลางคืน'))) return true
-  return false
+  // 2. 🌟 ดึงเฉพาะเวรของ User นี้ "และต้องไม่ใช่เวรที่ price = 0" มาตรวจสอบ
+  const userShifts = allSchedules.value.filter(s => s.user_id === sch.user_id && Number(s.price) !== 0);
+  
+  const sameDay = userShifts.filter(s => parseInt(s.day) === parseInt(sch.day));
+  
+  // เช็คเวรในวันเดียวกัน (มีทั้งกลางวันและกลางคืน)
+  if (sameDay.length > 1 && sameDay.some(s => s.shift_type.includes('กลางวัน')) && sameDay.some(s => s.shift_type.includes('กลางคืน'))) return true;
+  
+  // เช็คเวรข้ามวัน (กลางคืนวันนี้ ต่อด้วย กลางวันพรุ่งนี้)
+  if (sch.shift_type.includes('กลางคืน') && userShifts.find(s => parseInt(s.day) === parseInt(sch.day)+1 && s.shift_type.includes('กลางวัน'))) return true;
+  
+  // เช็คเวรข้ามวันย้อนหลัง (กลางวันวันนี้ ต่อจาก กลางคืนเมื่อวาน)
+  if (sch.shift_type.includes('กลางวัน') && userShifts.find(s => parseInt(s.day) === parseInt(sch.day)-1 && s.shift_type.includes('กลางคืน'))) return true;
+  
+  return false;
 }
 
 const getThaiDayShort = (day) => {
@@ -743,6 +755,25 @@ onMounted(async () => {
 .user-card, .schedule-item { cursor: grab; transition: 0.1s; }
 .user-card:active, .schedule-item:active { cursor: grabbing; transform: scale(0.95); opacity: 0.8; }
 .schedule-item { border-width: 1px !important; }
+
+.user-card {
+  cursor: grab; /* เปลี่ยนเมาส์เป็นรูปมือจับ */
+  transition: all 0.2s ease-in-out; /* ทำให้การเปลี่ยนเอฟเฟกต์ดูนุ่มนวล */
+}
+
+/* เอฟเฟกต์ตอนเอาเมาส์ไปชี้ (Hover) */
+.user-card:hover {
+  background-color: #f8f9fa !important; /* เปลี่ยนพื้นหลังเป็นสีเทาอ่อนๆ */
+  transform: translateY(-2px); /* ทำให้กล่องลอยขึ้นด้านบน 2px */
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15) !important; /* เพิ่มเงาให้เข้มขึ้น */
+}
+
+/* เอฟเฟกต์ตอนกำลังคลิกค้างเพื่อลาก (Active / Dragging) */
+.user-card:active {
+  cursor: grabbing; /* เปลี่ยนรูปเมาส์เป็นมือกำ (กำลังจับ) */
+  transform: translateY(0); /* ดึงกล่องกลับลงมา */
+  box-shadow: none !important; /* ลดเงาลงเวลาถูกกด */
+}
 
 /* 🌟 Custom Scrollbar */
 .user-list-container, .custom-scrollbar { overflow-y: auto; }

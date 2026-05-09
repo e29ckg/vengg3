@@ -28,6 +28,7 @@ class VenController {
                 'date' => $row['date'],
                 'backgroundColor' => $row['backgroundColor'],
                 'ven_time' => $row['ven_time'],
+                'price' => $row['price'],
                 'ven_com_id' => $row['ven_com_id'],
                 'sub_id' => $row['sub_id'],
 

@@ -57,24 +57,24 @@
               <div class="day-body p-1 flex-grow-1 overflow-auto custom-scrollbar">
                 
                 <div v-for="sch in getSchedulesForDay(day)" :key="sch.id" 
-     class="schedule-item mb-1 p-1 rounded-1 shadow-sm"
-     :class="{ 'flashing-24h': Number(sch.price) !== 0 && is24HourShift(sch) }"
-     :style="{ 
-       backgroundColor: Number(sch.price) === 0 ? sch.backgroundColor : (is24HourShift(sch) ? '' : (sch.user_id == currentUserId ? '#FFD700' : sch.backgroundColor)), 
-       color: Number(sch.price) === 0 ? '#fff' : (is24HourShift(sch) ? 'white' : (sch.user_id == currentUserId ? '#000' : '#fff'))
-     }"
-     @click="openShiftDetail(sch.id)">
-  
-  <div class="fw-bold" style="font-size: 0.7rem;">
-    <i class="bi bi-clock me-1"></i>{{ sch.ven_time.substring(0,5) }}
-    
-    <i v-if="Number(sch.price) !== 0 && is24HourShift(sch)" class="bi bi-exclamation-triangle-fill ms-1 text-danger"></i>
-    <i v-else-if="Number(sch.price) !== 0 && sch.user_id == currentUserId" class="bi bi-star-fill ms-1 text-warning"></i>
-  </div>
+                    class="schedule-item mb-1 p-1 rounded-1 shadow-sm"
+                    :class="{ 'flashing-24h': Number(sch.price) !== 0 && is24HourShift(sch) }"
+                    :style="{ 
+                      backgroundColor: Number(sch.price) === 0 ? sch.backgroundColor : (is24HourShift(sch) ? '' : (sch.user_id == currentUserId ? '#FFD700' : sch.backgroundColor)), 
+                      color: Number(sch.price) === 0 ? '#fff' : (is24HourShift(sch) ? 'white' : (sch.user_id == currentUserId ? '#000' : '#fff'))
+                    }"
+                    @click="openShiftDetail(sch.id)">
+                  
+                  <div class="fw-bold" style="font-size: 0.7rem;">
+                    <i class="bi bi-clock me-1"></i>{{ sch.ven_time.substring(0,5) }}
+                    
+                    <i v-if="Number(sch.price) !== 0 && is24HourShift(sch)" class="bi bi-exclamation-triangle-fill ms-1 text-danger"></i>
+                    <i v-else-if="Number(sch.price) !== 0 && sch.user_id == currentUserId" class="bi bi-star-fill ms-1 text-warning"></i>
+                  </div>
 
-  <div class="text-truncate fw-semibold" style="font-size: 0.85rem;">{{ sch.title }}</div>
+                  <div class="text-truncate fw-semibold" style="font-size: 0.85rem;">{{ sch.title }}</div>
 
-</div>
+                </div>
 
               </div>
             </div>
@@ -539,9 +539,11 @@ const check24HourViolation = (targetUserId, shiftDate, shiftTime) => {
 
 // 🌟 ปรับปรุงการตรวจสอบ 24 ชม. ให้ใช้ systemSettings
 const is24HourShift = (sch) => {
-  if (!systemSettings.value.check_24h_consecutive || !allSchedules.value) return false;
+  // 1. ถ้าปิดตั้งค่าไว้, ไม่มีข้อมูล หรือเวรเป้าหมายนี้ price = 0 ให้ข้ามการตรวจสอบไปเลย
+  if (!systemSettings.value.check_24h_consecutive || !allSchedules.value || sch.price == 0) return false;
   
-  const userShifts = allSchedules.value.filter(s => s.user_id == sch.user_id);
+  // 2. ดึงเฉพาะเวรของ User นี้ "และต้องไม่ใช่เวรที่ price = 0" มาตรวจสอบ
+  const userShifts = allSchedules.value.filter(s => s.user_id == sch.user_id && s.price != 0);
   const targetDate = new Date(sch.date);
   
   const yesterday = new Date(targetDate);
