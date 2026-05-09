@@ -1,3 +1,10 @@
+นี่คือ **README.md ฉบับอัปเดต** ที่เพิ่มรายละเอียดเกี่ยวกับการตั้งค่า Environment Variables (`.env`) สำหรับทั้งฝั่ง Frontend และ Backend อย่างชัดเจน เพื่อให้ระบบสามารถเชื่อมต่อและทำงานร่วมกันได้อย่างสมบูรณ์ครับ
+
+คุณสามารถคัดลอกเนื้อหาด้านล่างนี้ไปวางในไฟล์ `README.md` ของโปรเจกต์ได้เลยครับ:
+
+---
+
+```markdown
 # 📅 ระบบบริหารจัดการเวรนอกเวลาทำการ (Overtime Shift Management System)
 
 ระบบแอปพลิเคชันบนเว็บ (Web Application) สำหรับจัดการตารางเวรปฏิบัติราชการนอกเวลาทำการของหน่วยงาน ถูกออกแบบมาเพื่อลดความซ้ำซ้อนของการจัดเวร รองรับการจัดเวรแบบลากวาง (Drag & Drop) ระบบขอแลกเปลี่ยนเวรระหว่างเจ้าหน้าที่ การออกรายงานสำหรับการเงิน รวมถึงการแจ้งเตือนและการซิงค์ปฏิทินแบบอัตโนมัติ
@@ -47,34 +54,73 @@
 
 ---
 
-## 🚀 การติดตั้งและใช้งาน (Installation & Setup)
+## ⚙️ การตั้งค่า Environment Variables (.env)
 
-โปรเจกต์นี้รองรับการติดตั้ง 2 รูปแบบ ทั้งแบบ **ติดตั้งด้วย Docker (แนะนำ)** ที่สะดวกและรวดเร็ว หรือแบบ **ติดตั้งลงเครื่องโดยตรง (Manual Setup)** ### 🐳 ทางเลือกที่ 1: การติดตั้งด้วย Docker (Recommended)
-วิธีนี้เหมาะสำหรับการเซ็ตอัประบบอย่างรวดเร็ว โดยไม่ต้องลงเครื่องมือหลายตัวให้ยุ่งยาก
+ก่อนเริ่มการติดตั้งและการรันระบบ คุณจำเป็นต้องตั้งค่า Environment Variables เพื่อเชื่อมต่อระหว่าง Frontend, Backend และฐานข้อมูล
 
-**สิ่งที่ต้องมี (Prerequisites):**
-* [Docker Desktop](https://www.docker.com/products/docker-desktop) หรือ Docker Engine และ Docker Compose
-
-**ขั้นตอนการรันระบบ:**
-1. Clone โปรเจกต์ลงมาที่เครื่องของคุณ:
-   ```bash
-   git clone https://github.com/e29ckg/vengg3.git
-   cd vengg3
+### 1. ตั้งค่าฝั่ง Backend (เชื่อมต่อฐานข้อมูล)
+ไปที่โฟลเดอร์ `backend/` คัดลอกไฟล์ `.env.example` (ถ้ามี) หรือสร้างไฟล์ใหม่ชื่อ `.env` และกำหนดค่าดังนี้:
+```env
+# ตั้งค่าการเชื่อมต่อฐานข้อมูล
+DB_HOST=localhost
+DB_NAME=vengg_db
+DB_USER=root
+DB_PASS=root
+# หรือค่าพอร์ตอื่นๆ ตามการตั้งค่า Server/Docker ของคุณ
 
 ```
 
-2. รันคำสั่ง Docker Compose เพื่อสร้างและเปิดใช้งาน Container ทั้งหมด (Vue, PHP/Apache, MySQL):
+*(หมายเหตุ: หากโค้ดเดิมของคุณเก็บค่าคอนฟิกไว้ที่ `backend/src/Config/database.php` สามารถข้ามขั้นตอนนี้และไปแก้ที่ไฟล์ PHP โดยตรงได้เลย)*
+
+### 2. ตั้งค่าฝั่ง Frontend (เชื่อมต่อ API)
+
+ไปที่โฟลเดอร์ `frontend/` สร้างไฟล์ใหม่ชื่อ `.env` และกำหนดค่า Path ของ API ฝั่ง Backend:
+
+```env
+# URL ของ Backend API
+VITE_API_URL=http://localhost:8000/api
+# หรือ VITE_API_URL=http://localhost/vengg3/backend/public/ (สำหรับการรันผ่าน XAMPP)
+
+```
+
+---
+
+## 🚀 การติดตั้งและใช้งาน (Installation & Setup)
+
+โปรเจกต์นี้รองรับการติดตั้ง 2 รูปแบบ ทั้งแบบ **ติดตั้งด้วย Docker (แนะนำ)** ที่สะดวกและรวดเร็ว หรือแบบ **ติดตั้งลงเครื่องโดยตรง (Manual Setup)**
+
+### 🐳 ทางเลือกที่ 1: การติดตั้งด้วย Docker (Recommended)
+
+วิธีนี้เหมาะสำหรับการเซ็ตอัประบบอย่างรวดเร็ว โดยไม่ต้องลงเครื่องมือหลายตัวให้ยุ่งยาก
+
+**สิ่งที่ต้องมี:**
+
+* [Docker Desktop](https://www.docker.com/products/docker-desktop) หรือ Docker Engine และ Docker Compose
+
+**ขั้นตอนการรันระบบ:**
+
+1. Clone โปรเจกต์ลงมาที่เครื่องของคุณ:
+```bash
+git clone https://github.com/e29ckg/vengg3.git
+cd vengg3
+
+
+```
+
+
+2. ทำการตั้งค่าไฟล์ `.env` ตามหัวข้อ **การตั้งค่า Environment Variables** ด้านบน
+3. รันคำสั่ง Docker Compose เพื่อสร้างและเปิดใช้งาน Container ทั้งหมด (Vue, PHP/Apache, MySQL):
 ```bash
 docker-compose up -d --build
 
 ```
 
 
-3. **การจัดการฐานข้อมูล:** * เข้าสู่ระบบ phpMyAdmin ผ่าน Docker (มักจะตั้งไว้ที่ `http://localhost:8080`)
+4. **การจัดการฐานข้อมูล:** * เข้าสู่ระบบ phpMyAdmin ผ่าน Docker (มักจะตั้งไว้ที่ `http://localhost:8080`)
 * สร้างฐานข้อมูลใหม่ และ Import ไฟล์ `database.sql` ที่แนบมากับโปรเจกต์
 
 
-4. **เข้าใช้งานระบบ:** * Frontend (Vue.js): `http://localhost:5173` (หรือพอร์ตที่กำหนด)
+5. **เข้าใช้งานระบบ:** * Frontend (Vue.js): `http://localhost:5173` (หรือพอร์ตที่กำหนด)
 * Backend API: `http://localhost:8000`
 
 
@@ -85,7 +131,7 @@ docker-compose up -d --build
 
 สำหรับผู้ที่ใช้งาน Local Server เช่น XAMPP, MAMP หรือ WAMP
 
-**สิ่งที่ต้องมี (Prerequisites):**
+**สิ่งที่ต้องมี:**
 
 * [Node.js](https://nodejs.org/) (เวอร์ชัน 16 ขึ้นไป แนะนำ 18 LTS)
 * PHP (เวอร์ชัน 8.0 ขึ้นไป)
@@ -94,17 +140,13 @@ docker-compose up -d --build
 
 #### 🛠️ 1. ส่วนของ Backend (PHP & MySQL)
 
-1. นำโฟลเดอร์โปรเจกต์ไปวางไว้ในโฟลเดอร์ Web Server ของคุณ (เช่น `C:\xampp\htdocs\`)
+1. นำโฟลเดอร์โปรเจกต์ไปวางไว้ในโฟลเดอร์ Web Server ของคุณ (เช่น `C:\xampp\htdocs\vengg3`)
 2. **นำเข้าฐานข้อมูล (Import Database):**
-* เปิด phpMyAdmin และสร้างฐานข้อมูลใหม่ (เช่น `ven_management`)
+* เปิด phpMyAdmin และสร้างฐานข้อมูลใหม่ (เช่น `vengg_db`)
 * Import ไฟล์ `database.sql`
 
 
-3. **ตั้งค่าการเชื่อมต่อฐานข้อมูล:**
-* ไปที่ไฟล์ `backend/src/Config/database.php` (หรือไฟล์เชื่อมต่อ DB ของคุณ)
-* แก้ไข `DB_HOST`, `DB_NAME`, `DB_USER`, และ `DB_PASS` ให้ตรงกับเซิร์ฟเวอร์
-
-
+3. ทำการตั้งค่าการเชื่อมต่อฐานข้อมูลใน `.env` หรือ `database.php`
 4. **ติดตั้ง PHP Dependencies:**
 * เปิด Terminal ในโฟลเดอร์ `backend/` แล้วรัน:
 ```bash
@@ -132,16 +174,7 @@ npm install
 ```
 
 
-3. **ตั้งค่า API Endpoint:**
-* สร้างไฟล์ `.env` (ถ้ายังไม่มี) และกำหนด URL ของ Backend ให้ถูกต้อง เช่น:
-```env
-VITE_API_URL=http://localhost/your_project_name/backend/public/
-
-```
-
-
-
-
+3. สร้างและตั้งค่าไฟล์ `.env` สำหรับชี้เป้าหมายไปที่ Backend (ดูตัวอย่างที่หัวข้อด้านบน)
 4. รันระบบในโหมดการพัฒนา (Development):
 ```bash
 npm run dev
@@ -180,6 +213,14 @@ npm run build
 
 ## 👨‍💻 ข้อมูลการพัฒนา
 
-**พัฒนาโดย:** ศาลเยาวชนและครอบครับจังหวัดประจวบคีรีขันธ์
+**พัฒนาโดย:** ส่วนเทคโนโลยีสารสนเทศ
 
-**เวอร์ชัน:** 3.0.0
+**เวอร์ชัน:** 1.0.0
+
+```
+
+```
+
+
+
+
