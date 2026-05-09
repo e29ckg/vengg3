@@ -17,6 +17,14 @@
       <div class="card shadow-sm border-0 rounded-4">
         <div class="card-body p-0">
           <div class="table-responsive">
+
+            <div v-if="hasOrderChanged" class="alert alert-warning d-flex justify-content-between align-items-center py-2 mb-3 shadow-sm border-warning">
+  <div><i class="bi bi-info-circle-fill me-2"></i>คุณมีการเปลี่ยนแปลงลำดับอาวุโส อย่าลืมกดบันทึก</div>
+  <button class="btn btn-success btn-sm fw-bold px-4" @click="saveOrder">
+    <i class="bi bi-save me-1"></i> บันทึกลำดับใหม่
+  </button>
+</div>
+
             <table class="table table-hover align-middle mb-0">
               <thead class="table-light">
                 <tr>
@@ -30,47 +38,54 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-if="isLoading">
-                  <td colspan="6" class="text-center py-4"><div class="spinner-border text-primary"></div></td>
-                </tr>
-                <tr v-for="user in filteredUsers" :key="user.id" v-else>
-                  <td class="ps-4 text-muted">{{ user.srt }}</td>
-                  <td class="fw-bold">{{ user.username }}</td>
-                  <td>
-                    {{ user.full_name !== 'null null' ? user.full_name : '-' }}
-                    <span v-if="user.status == 0" class="badge bg-secondary ms-1" style="font-size: 0.65rem;">ย้าย/ระงับเวร</span>
-                  </td>
-                  <td>
-                    {{ user.position !== 'null null' ? user.position : '-' }}
-                  </td>
-                  <td>
-                    <span class="badge rounded-pill" :class="getRoleColor(user.role)">
-                      {{ getRoleName(user.role) }}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="badge rounded-pill" :class="user.status === 10 ? 'bg-success' : 'bg-danger'">
-                      {{ user.status === 10 ? 'ใช้งาน' : 'ล็อคระบบ' }}
-                    </span>
-                  </td>
-                  <td class="text-center pe-4">
-                    <button class="btn btn-sm btn-outline-primary rounded-circle me-1" title="แก้ไข" 
-                            data-bs-toggle="modal" data-bs-target="#editUserModal" @click="openEditModal(user)">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm rounded-circle me-1" 
-                            :class="user.status === 10 ? 'btn-outline-warning' : 'btn-outline-success'"
-                            :title="user.status === 10 ? 'ระงับการเข้าสู่ระบบ' : 'เปิดให้เข้าสู่ระบบ'"
-                            @click="toggleUserStatus(user.id, user.status)">
-                      <i class="bi" :class="user.status === 10 ? 'bi-lock-fill' : 'bi-unlock-fill'"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger rounded-circle" title="ลบผู้ใช้งาน" 
-                            @click="deleteUser(user.id)">
-                      <i class="bi bi-trash-fill"></i>
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
+    <tr v-if="isLoading">
+      <td colspan="7" class="text-center py-4"><div class="spinner-border text-primary"></div></td>
+    </tr>
+    
+    <tr v-for="(user, index) in filteredUsers" :key="user.id" v-else
+        draggable="true"
+        @dragstart="onDragStart($event, index)"
+        @dragover.prevent
+        @dragenter.prevent
+        @drop="onDrop($event, index)"
+        @dragend="onDragEnd"
+        :class="{'dragging-row': draggedIndex === index}"
+        style="transition: all 0.2s ease;">
+      
+      <td class="ps-3 text-center" style="width: 80px; cursor: grab;" title="คลิกค้างเพื่อลากเปลี่ยนลำดับ">
+        <i class="bi bi-grip-vertical text-muted fs-5"></i>
+        <span class="fw-bold text-muted ms-1">{{ index + 1 }}</span>
+      </td>
+
+      <td class="fw-bold">{{ user.username }}</td>
+      <td>
+        {{ user.full_name !== 'null null' ? user.full_name : '-' }}
+        <span v-if="user.status == 0" class="badge bg-secondary ms-1" style="font-size: 0.65rem;">ย้าย/ระงับเวร</span>
+      </td>
+      <td>{{ user.position !== 'null null' ? user.position : '-' }}</td>
+      <td>
+        <span class="badge rounded-pill" :class="getRoleColor(user.role)">
+          {{ getRoleName(user.role) }}
+        </span>
+      </td>
+      <td>
+        <span class="badge rounded-pill" :class="user.status === 10 ? 'bg-success' : 'bg-danger'">
+          {{ user.status === 10 ? 'ใช้งาน' : 'ล็อคระบบ' }}
+        </span>
+      </td>
+      <td class="text-center pe-4">
+        <button class="btn btn-sm btn-outline-primary rounded-circle me-1" data-bs-toggle="modal" data-bs-target="#editUserModal" @click="openEditModal(user)">
+          <i class="bi bi-pencil"></i>
+        </button>
+        <button class="btn btn-sm rounded-circle me-1" :class="user.status === 10 ? 'btn-outline-warning' : 'btn-outline-success'" @click="toggleUserStatus(user.id, user.status)">
+          <i class="bi" :class="user.status === 10 ? 'bi-lock-fill' : 'bi-unlock-fill'"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-danger rounded-circle" @click="deleteUser(user.id)">
+          <i class="bi bi-trash-fill"></i>
+        </button>
+      </td>
+    </tr>
+  </tbody>
             </table>
           </div>
         </div>
@@ -114,7 +129,7 @@
                   </div>
                   <div class="col-md-5">
                     <label class="form-label fw-semibold text-muted small mb-1">กลุ่มงาน</label>
-                    <select class="form-select" v-model="newUser.departments" required>
+                    <select class="form-select" v-model="newUser.department" required>
                       <option value="">เลือก</option>
                       <option v-for="d in departments" :key="d" :value="d">{{ d }}</option>
                     </select>
@@ -481,8 +496,71 @@ const deleteUser = async (id) => {
   }
 }
 
+// ตัวแปรเช็คการเปลี่ยนแปลงลำดับ และเก็บ index ของแถวที่กำลังโดนลาก
+const hasOrderChanged = ref(false);
+const draggedIndex = ref(null);
+
+// 🌟 เริ่มจับลาก
+const onDragStart = (event, index) => {
+  draggedIndex.value = index;
+  // ทำให้แถวโปร่งใสตอนลาก
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.dropEffect = 'move';
+};
+
+// 🌟 เมื่อปล่อยเมาส์ลงในตำแหน่งใหม่
+const onDrop = (event, dropIndex) => {
+  if (draggedIndex.value === null || draggedIndex.value === dropIndex) return;
+
+  // ดึงข้อมูลคนที่ถูกลากออกมา
+  const draggedItem = filteredUsers.value.splice(draggedIndex.value, 1)[0];
+  
+  // แทรกกลับเข้าไปในตำแหน่งใหม่
+  filteredUsers.value.splice(dropIndex, 0, draggedItem);
+  saveOrder();
+  hasOrderChanged.value = true;
+};
+
+// 🌟 เคลียร์ค่าเมื่อลากเสร็จ
+const onDragEnd = () => {
+  draggedIndex.value = null;
+};
+
+// 🌟 ฟังก์ชันบันทึกลำดับใหม่ลง Database (ใช้ตัวเดิมได้เลย)
+const saveOrder = async () => {
+  try {
+    const payload = filteredUsers.value.map((user, index) => ({
+      id: user.id,
+      srt: index + 1 // ให้เริ่มลำดับที่ 1
+    }));
+
+    const response = await api.post('?route=admin/users/update_order', payload);
+
+    if (response.data.success || response.data.status === 'success') {
+      Swal.fire({ icon: 'success', title: 'อัปเดตลำดับอาวุโสเรียบร้อยแล้ว', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false })
+      hasOrderChanged.value = false;
+    }
+  } catch (error) {
+    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกลำดับได้', 'error');
+    console.error(error);
+  }
+};
+
 onMounted(() => {
   fetchOptions()
   fetchUsers()
 })
 </script>
+
+<style scoped>
+.dragging-row {
+  opacity: 0.5;
+  background-color: #f8f9fa;
+}
+tr[draggable="true"]:hover {
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transform: scale(1.001);
+  z-index: 10;
+  position: relative;
+}
+</style>

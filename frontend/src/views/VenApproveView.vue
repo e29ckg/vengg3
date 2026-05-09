@@ -206,7 +206,7 @@ const handleEdit = async (item) => {
     try {
       // หมายเหตุ: การแก้ไขย้อนหลัง คุณอาจต้องใช้ Endpoint เฉพาะสำหรับการ Force Update
       const res = await api.post(`?route=admin/ven_approve&action=force_update`, { 
-        id: item.id, 
+        change_id: item.id, 
         status: parseInt(newStatus) 
       })
       if (res.data.success) {

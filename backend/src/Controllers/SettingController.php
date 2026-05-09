@@ -89,6 +89,39 @@ class SettingController {
             
         }
     }
+
+    public function forceUpdateChangeStatus() {
+        // รับข้อมูล JSON จาก Frontend
+        $data = json_decode(file_get_contents("php://input"));
+        
+        $change_id = $data->change_id ?? null;
+        $status = $data->status ?? null; // 0=รออนุมัติ, 1=อนุมัติ, 2=ไม่อนุมัติ
+
+        if (!$change_id || $status === null) {
+            echo json_encode(['success' => false, 'error' => 'ข้อมูลไม่ครบถ้วน']);
+            return;
+        }
+
+        // 🌟 แก้ไขตรงนี้: เรียกใช้งาน Model ให้ถูกต้องเหมือนฟังก์ชันอื่นๆ ในคลาส
+        require_once '../src/Models/Setting.php';
+        $settingModel = new Setting($this->db);
+        
+        // ส่งข้อมูลไปอัปเดตใน Model
+        $result = $settingModel->updateChangeStatus($change_id, $status);
+        
+        if ($result) {
+            echo json_encode([
+                'success' => true, 
+                'message' => 'อัปเดตสถานะและจัดการตารางเวรเรียบร้อยแล้ว'
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false, 
+                'error' => $result['error'] ?? 'เกิดข้อผิดพลาดในการบันทึกข้อมูล'
+            ]);
+        }
+    }
+
     public function getUsersBySubId($sub_id) {
         require_once '../src/Models/Setting.php';
         $settingModel = new Setting($this->db);

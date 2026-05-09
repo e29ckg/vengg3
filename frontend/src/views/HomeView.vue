@@ -684,6 +684,110 @@ const mySwappableShifts = computed(() => {
 });
 
 // ==========================================
+// 🌟 ฟังก์ชันขอยกเวรให้ผู้อื่น (Transfer)
+// ==========================================
+const confirmTransfer = async (targetUser) => {
+  const myShift = selectedVen.value;
+
+  // 🌟 ดักจับกฎ: ตรวจสอบวันที่ล่วงหน้าและย้อนหลัง
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const shiftDate = new Date(myShift.ven_date || myShift.date);
+  shiftDate.setHours(0, 0, 0, 0);
+
+  const diffTime = shiftDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  // กฎที่ 1: ตรวจสอบการเปลี่ยนเวรย้อนหลัง
+  if (!systemSettings.value.allow_retroactive_swap && diffDays < 0) {
+    return Swal.fire('ไม่สามารถทำรายการได้', 'ระบบไม่อนุญาตให้ส่งคำขอยกเวรย้อนหลังครับ', 'warning');
+  }
+
+  // กฎที่ 2: ตรวจสอบจำนวนวันล่วงหน้าขั้นต่ำ
+  if (diffDays >= 0 && diffDays < systemSettings.value.advance_swap_days) {
+    return Swal.fire('ไม่สามารถทำรายการได้', `ระเบียบของหน่วยงานระบุให้ต้องทำรายการล่วงหน้าอย่างน้อย ${systemSettings.value.advance_swap_days} วันครับ`, 'warning');
+  }
+
+  // สร้างชื่อเต็มของเพื่อนที่จะรับเวร
+  const targetName = targetUser.full_name || `${targetUser.prefix_name || ''}${targetUser.first_name || ''} ${targetUser.last_name || ''}`;
+
+  // 🌟 ตรวจสอบกฎ 24 ชั่วโมง (เช็คเฉพาะคนรับเวร เพราะเราเป็นคนทิ้งเวร)
+  let isThemViolated = false;
+  if (systemSettings.value.check_24h_consecutive) {
+    isThemViolated = check24HourViolation(targetUser.user_id, myShift.ven_date || myShift.date, myShift.ven_time);
+  }
+
+  // ถ้าเข้าข่าย 24 ชม. ให้เด้งเตือนสีแดง
+  if (isThemViolated) {
+    const msg = `การยกเวรครั้งนี้จะทำให้ <b>${targetName}</b> มีการปฏิบัติงานติดต่อกัน 24 ชั่วโมง<br><br>ยืนยันที่จะทำรายการหรือไม่?`;
+    
+    const confirm24h = await Swal.fire({
+      title: '⚠️ แจ้งเตือนการปฏิบัติงาน 24 ชั่วโมง!',
+      html: msg,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545', // สีแดง
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'รับทราบ ยืนยันยกเวร',
+      cancelButtonText: 'ยกเลิก'
+    });
+    if (!confirm24h.isConfirmed) return;
+  } else {
+    // ถ้าไม่ติด 24 ชม. ให้ขึ้นถามยืนยันปกติ
+    const confirmNormal = await Swal.fire({
+      title: 'ยืนยันการยกเวร?',
+      html: `คุณต้องการยกเวรวันที่ <b>${myShift.ven_date || myShift.date}</b><br>ให้ <b>${targetName}</b> ใช่หรือไม่?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6', // สีน้ำเงินสำหรับยกเวร
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'ใช่, ยืนยันยกเวร',
+      cancelButtonText: 'ยกเลิก'
+    });
+    if (!confirmNormal.isConfirmed) return;
+  }
+
+  // เริ่มส่ง API
+  try {
+    Swal.fire({ title: 'กำลังส่งคำขอ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    // 🌟 ส่งไปที่ API เดียวกับสลับเวรเป๊ะๆ แต่ตั้งค่า is_swap = 0
+    await api.post('?route=user/transfer&action=perform', {
+      schedule_id: myShift.id || myShift.ven_id, // รหัสเวรของเราที่ต้องการยกให้
+      new_user_id: targetUser.user_id,           // รหัสคนรับเวร
+      is_swap: 0                                 // 🌟 0 = ยกให้ (ไม่ใช่สลับ)
+      // ไม่ต้องส่ง s2_id เพราะไม่มีเวรที่นำมาแลก
+    });
+    
+    // สำเร็จ: ซ่อนฟอร์ม ปิด Modal และรีโหลดตาราง
+    showRecipientList.value = false;
+    if (detailModalInstance) detailModalInstance.hide();
+    fetchVenData(); 
+    
+    // ถามว่าจะไปหน้าประวัติไหม เหมือนกับตอนสลับเวร
+    const successResult = await Swal.fire({
+      title: 'ส่งคำขอสำเร็จ!',
+      html: `<div class="mb-2">ทำการส่งคำขอยกเวรเรียบร้อยแล้ว</div> รอการอนุมัติตามขั้นตอน`,
+      icon: 'success',
+      showCancelButton: true,
+      confirmButtonText: 'ไปหน้าประวัติ',
+      cancelButtonText: 'ปิดหน้านี้',
+      confirmButtonColor: '#198754'
+    });
+
+    if (successResult.isConfirmed) {
+      router.push('/user/history'); 
+    }
+
+  } catch (error) {
+    // ดึง error message ออกมาโชว์ถ้ามี
+    const errorMsg = error.response?.data?.error || error.response?.data?.message || 'ไม่สามารถส่งคำขอยกเวรได้';
+    Swal.fire('ผิดพลาด', errorMsg, 'error');
+  }
+};
+
+// ==========================================
 // 🌟 ฟังก์ชันขอสลับเวร (แลกเวร)
 // ==========================================
 const confirmSwap = async () => {

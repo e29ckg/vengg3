@@ -288,5 +288,28 @@ class User {
             ':user_id' => $user_id
         ]);
     }
+public function update_order($data) {
+        try {
+            $this->conn->beginTransaction();
+            
+            // วนลูปอัปเดตลำดับ (srt) ตาม ID
+            $stmt = $this->conn->prepare("UPDATE profile SET srt = :srt WHERE user_id = :id");
+            foreach ($data as $item) {
+                $stmt->execute([
+                    ':srt' => $item['srt'],
+                    ':id'  => $item['id']
+                ]);
+            }
+            
+            $this->conn->commit();
+            
+            // 🌟 เพิ่มบรรทัดนี้: เพื่อส่งสัญญาณกลับไปว่าทำสำเร็จแล้ว
+            return true;
+            
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            return false;
+        }
+    }
 }
 ?>

@@ -906,6 +906,8 @@ class Setting {
         $stmt = $this->conn->prepare("UPDATE system_settings SET user_options = :val WHERE id = 1");
         return $stmt->execute([':val' => $json]);
     }
+
+    
     
     
 }
