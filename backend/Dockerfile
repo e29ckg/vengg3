@@ -23,4 +23,5 @@ WORKDIR /var/www/html
 COPY . .
 
 # 🌟 4. สั่งรัน composer install เพื่อโหลด vendor ทั้งหมดอัตโนมัติ
-RUN composer install --no-dev --optimize-autoloader
+# RUN composer install --no-dev --optimize-autoloader
+RUN composer update --no-dev --optimize-autoloader
