@@ -223,6 +223,15 @@ switch ($route) {
         }
         break;
     
+    case 'admin/users/update_order':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            AuthMiddleware::checkAdmin($connection); // 🔒 ยาม VIP
+            $controller = new UserController($connection);
+            $controller->update_order();
+        }
+        break;
+    break;
+    
     case 'admin/user/delete':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             AuthMiddleware::checkAdmin($connection); // 🔒 ยาม VIP
@@ -232,24 +241,24 @@ switch ($route) {
         break;
 
     // 🌟 1. ดึงข้อมูลไปแสดงใน Dropdown และหน้าตั้งค่า (เปิดให้ทุกคนเข้าถึงได้)
-        case 'admin/user/options':
-            $optionController = new OptionController($connection);
-            $optionController->getOptions();
-            break;
+    case 'admin/user/options':
+        $optionController = new OptionController($connection);
+        $optionController->getOptions();
+        break;
 
-        // 🌟 2. แอดมินกดปุ่มเพิ่มข้อมูล
-        case 'admin/options/add':
-            AuthMiddleware::checkAdmin($connection); // ล็อกสิทธิ์เฉพาะแอดมิน
-            $optionController = new OptionController($connection);
-            $optionController->addOption();
-            break;
+    // 🌟 2. แอดมินกดปุ่มเพิ่มข้อมูล
+    case 'admin/options/add':
+        AuthMiddleware::checkAdmin($connection); // ล็อกสิทธิ์เฉพาะแอดมิน
+        $optionController = new OptionController($connection);
+        $optionController->addOption();
+        break;
 
-        // 🌟 3. แอดมินกดปุ่มถังขยะลบข้อมูล
-        case 'admin/options/delete':
-            AuthMiddleware::checkAdmin($connection); // ล็อกสิทธิ์เฉพาะแอดมิน
-            $optionController = new OptionController($connection);
-            $optionController->deleteOption();
-            break;
+    // 🌟 3. แอดมินกดปุ่มถังขยะลบข้อมูล
+    case 'admin/options/delete':
+        AuthMiddleware::checkAdmin($connection); // ล็อกสิทธิ์เฉพาะแอดมิน
+        $optionController = new OptionController($connection);
+        $optionController->deleteOption();
+        break;
 
     // ใน switch ของ index.php
     // ==========================================
@@ -450,7 +459,7 @@ switch ($route) {
 
                 $description = "เวรประจำวันที่ " . date('d/m/Y', strtotime($date)) . "\n";
                 foreach ($groupedByDuty as $dutyName => $dutyShifts) {
-                    $description .= "---------------------\n" . $dutyName . "\n---------------------\n";
+                    $description .= "---------------------\n" . "📌".$dutyName . "\n---------------------\n";
                     foreach ($dutyShifts as $sch) {
                         $uName = trim($sch['user_name']) ?: "(ยังไม่มีผู้ลงเวร)";
                         $description .= "👨‍💼 " . $uName . "\n";
@@ -504,51 +513,54 @@ switch ($route) {
         AuthMiddleware::checkAdmin($connection); 
         $action = $_GET['action'] ?? '';
         if ($action === 'list') {
-                try {
-                    // Query ดึงรายการคำขอเปลี่ยนเวร/สลับเวร พร้อม JOIN ข้อมูลที่เกี่ยวข้อง
-                    $query = "SELECT 
-                                vc.id, 
-                                vc.change_no, 
-                                vc.status, 
-                                vc.is_swap, 
-                                vc.created_at,
-                                vc.user1_id, 
-                                vc.user2_id,
-                                -- ชื่อคนขอ (User A)
-                                CONCAT_WS(' ', p1.prefix_name, p1.first_name, p1.last_name) AS user1_name,
-                                -- ชื่อคนรับ/คนถูกสลับ (User B)
-                                CONCAT_WS(' ', p2.prefix_name, p2.first_name, p2.last_name) AS user2_name,
-                                -- ข้อมูลเวรที่ 1
-                                vs1.ven_date AS s1_date, 
-                                -- vs1.ven_time AS s1_time,
-                                -- ข้อมูลเวรที่ 2 (กรณีสลับเวร)
-                                vs2.ven_date AS s2_date, 
-                                -- vs2.ven_time AS s2_time,
-                                -- ข้อมูลหน้าที่
-                                vns.name AS duty_role,
-                                vn.name AS duty_main
-                              FROM ven_change vc
-                              LEFT JOIN profile p1 ON vc.user1_id = p1.user_id
-                              LEFT JOIN profile p2 ON vc.user2_id = p2.user_id
-                              LEFT JOIN ven_schedule vs1 ON vc.s1_id = vs1.id
-                              LEFT JOIN ven_schedule vs2 ON vc.s2_id = vs2.id
-                              LEFT JOIN ven_name_sub vns ON vs1.ven_name_sub_id = vns.id
-                              LEFT JOIN ven_com vcom ON vs1.ven_com_id = vcom.id
-                              LEFT JOIN ven_name vn ON vcom.ven_name_id = vn.id
-                              -- เรียงลำดับ: เอาที่ยังไม่อนุมัติ (status=0) ขึ้นก่อน และตามด้วยวันที่ล่าสุด
-                              ORDER BY vc.status ASC, vc.created_at DESC";
-                    
-                    $stmt = $connection->query($query);
-                    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                    http_response_code(200);
-                    echo json_encode($results);
-                    exit;
-                } catch (PDOException $e) {
-                    http_response_code(500);
-                    echo json_encode(['error' => 'Database Error: ' . $e->getMessage()]);
-                }
+            try {
+                // Query ดึงรายการคำขอเปลี่ยนเวร/สลับเวร พร้อม JOIN ข้อมูลที่เกี่ยวข้อง
+                $query = "SELECT 
+                            vc.id, 
+                            vc.change_no, 
+                            vc.status, 
+                            vc.is_swap, 
+                            vc.created_at,
+                            vc.user1_id, 
+                            vc.user2_id,
+                            -- ชื่อคนขอ (User A)
+                            CONCAT_WS(' ', p1.prefix_name, p1.first_name, p1.last_name) AS user1_name,
+                            -- ชื่อคนรับ/คนถูกสลับ (User B)
+                            CONCAT_WS(' ', p2.prefix_name, p2.first_name, p2.last_name) AS user2_name,
+                            -- ข้อมูลเวรที่ 1
+                            vs1.ven_date AS s1_date, 
+                            -- vs1.ven_time AS s1_time,
+                            -- ข้อมูลเวรที่ 2 (กรณีสลับเวร)
+                            vs2.ven_date AS s2_date, 
+                            -- vs2.ven_time AS s2_time,
+                            -- ข้อมูลหน้าที่
+                            vns.name AS duty_role,
+                            vn.name AS duty_main
+                            FROM ven_change vc
+                            LEFT JOIN profile p1 ON vc.user1_id = p1.user_id
+                            LEFT JOIN profile p2 ON vc.user2_id = p2.user_id
+                            LEFT JOIN ven_schedule vs1 ON vc.s1_id = vs1.id
+                            LEFT JOIN ven_schedule vs2 ON vc.s2_id = vs2.id
+                            LEFT JOIN ven_name_sub vns ON vs1.ven_name_sub_id = vns.id
+                            LEFT JOIN ven_com vcom ON vs1.ven_com_id = vcom.id
+                            LEFT JOIN ven_name vn ON vcom.ven_name_id = vn.id
+                            -- เรียงลำดับ: เอาที่ยังไม่อนุมัติ (status=0) ขึ้นก่อน และตามด้วยวันที่ล่าสุด
+                            ORDER BY vc.status ASC, vc.created_at DESC";
+                
+                $stmt = $connection->query($query);
+                $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                http_response_code(200);
+                echo json_encode($results);
+                exit;
+            } catch (PDOException $e) {
+                http_response_code(500);
+                echo json_encode(['error' => 'Database Error: ' . $e->getMessage()]);
+                exit;
             }
+        }
             
+        if($action === 'force_update'){
+
             $data = json_decode(file_get_contents("php://input"), true);
             $change_id = $data['change_id'] ?? null;
             
@@ -589,8 +601,10 @@ switch ($route) {
             } catch (PDOException $e) {
                 http_response_code(500); echo json_encode(['error' => 'Database Error: ' . $e->getMessage()]);
             }
-            break;
+        }
 
+            
+            
     
 
    // ==========================================

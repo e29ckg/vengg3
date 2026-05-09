@@ -136,6 +136,25 @@ class UserController {
             http_response_code(500);
             echo json_encode(["error" => "เกิดข้อผิดพลาด ไม่สามารถลบผู้ใช้ได้"]);
         }
+    }  
+    
+    public function update_order() {
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        if (!is_array($data)) {
+            http_response_code(400);
+            echo json_encode(["error" => "data not format"]);
+            return;
+        }
+
+        $userModel = new User($this->db);
+        if ($userModel->update_order($data)) {
+            http_response_code(200);
+            echo json_encode(["status" => "success", "message" => "สำเร็จ"]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["error" => "เกิดข้อผิดพลาด ไม่สามารถเรียงลำดับผู้ใช้ได้"]);
+        }        
     }   
 }
 ?>

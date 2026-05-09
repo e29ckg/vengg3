@@ -25,7 +25,7 @@
                   <div class="col"><input type="text" class="form-control form-control-sm" v-model="item.position" placeholder="ตำแหน่ง" :disabled="!item.is_active" :required="item.is_active"></div>
                   <div class="col-auto">
                     <div class="form-check form-switch mt-1 ms-2" title="เปิด/ปิดการใช้งาน">
-                      <input class="form-check-input" type="checkbox" v-model="item.is_active">
+                      <input class="form-check-input" type="checkbox" v-model="item.is_active"  @change="saveSettings">
                     </div>
                   </div>
                   <div class="col-auto" v-if="index > 0">
@@ -46,7 +46,7 @@
                   <div class="col"><input type="text" class="form-control form-control-sm" v-model="item.position" placeholder="ตำแหน่ง" :disabled="!item.is_active"></div>
                   <div class="col-auto">
                     <div class="form-check form-switch mt-1 ms-2" title="เปิด/ปิดการใช้งาน">
-                      <input class="form-check-input" type="checkbox" v-model="item.is_active">
+                      <input class="form-check-input" type="checkbox" v-model="item.is_active"  @change="saveSettings">
                     </div>
                   </div>
                   <div class="col-auto" v-if="index > 0">
@@ -67,7 +67,7 @@
                   <div class="col"><input type="text" class="form-control form-control-sm" v-model="item.position" placeholder="ตำแหน่ง" :disabled="!item.is_active"></div>
                   <div class="col-auto">
                     <div class="form-check form-switch mt-1 ms-2" title="เปิด/ปิดการใช้งาน">
-                      <input class="form-check-input" type="checkbox" v-model="item.is_active">
+                      <input class="form-check-input" type="checkbox" v-model="item.is_active" @change="saveSettings">
                     </div>
                   </div>
                   <div class="col-auto" v-if="index > 0">
@@ -143,7 +143,8 @@ const saveSettings = async () => {
   loading.value = true
   try {
     await api.post('?route=admin/agency_settings', settings.value)
-    Swal.fire('สำเร็จ', 'บันทึกข้อมูลหน่วยงานและผู้ลงนามเรียบร้อยแล้ว', 'success')
+    // await swa.fire('สำเร็จ', 'บันทึกข้อมูลหน่วยงานและผู้ลงนามเรียบร้อยแล้ว', 'success')
+    Swal.fire({ icon: 'success', title: 'สำเร็จ', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false })
   } catch (err) {
     Swal.fire('ผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error')
   } finally {
