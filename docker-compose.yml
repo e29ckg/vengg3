@@ -34,7 +34,6 @@ services:
       - "80:80"
     volumes:
       - .:/var/www/html/vengg3  
-      - .:/var/www/html/vengg3/backend/vendor  
     depends_on:
       - db
 
