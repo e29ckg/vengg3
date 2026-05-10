@@ -249,11 +249,14 @@ const downloadWord = async (historyData) => {
       command_num: historyData.com_num || "..........", 
       command_date: historyData.com_date || "-",
       ven_name: historyData.duty_main,
+      ven_name_full: historyData.duty_main_full,
       duty_role: historyData.duty_role,
       ven_date: historyData.ven_date,
+      
       ven_time: historyData.dn || historyData.duty_main,
       duty_main: historyData.duty_main,
       duty_main_full: historyData.duty_main_full || historyData.duty_main
+
     };
 
     const changeDataObj = {
@@ -263,7 +266,10 @@ const downloadWord = async (historyData) => {
       user2_name: historyData.user2_name,
       user1_dep: historyData.user1_dep || "", 
       user2_dep: historyData.user2_dep || "",
-      ref_change_no: historyData.ref_change_no ? `(อ้างถึงใบเปลี่ยนเวรเลขที่ ${historyData.ref_change_no})` : ""
+      s1_date: historyData.s1_date,
+      s2_date: historyData.s2_date,
+      is_swap: historyData.is_swap,
+      
     }
 
     await exportShiftChangeToWord(changeDataObj, venDetail);

@@ -804,7 +804,9 @@ class Setting {
                          vc.is_swap, vc.s2_id,           -- 🌟 เพิ่มตัวแปรสำหรับระบบสลับเวร
                          vs2.ven_date AS s2_date,        -- 🌟 ดึงวันที่ของเวรที่ถูกนำมาสลับด้วย (ถ้ามี)
                          vs.ven_date AS s1_date,        -- 🌟 ดึงวันที่ของเวรที่ 1 (เวรหลัก)
-                         vn.name AS duty_main, vns.name AS duty_role,
+                         vn.name AS duty_main, 
+                         vn.name_full AS duty_main_full,
+                         vns.name AS duty_role,
                          vc.user1_id, vc.user2_id,
                          vcom.com_num AS com_num, 
                          vcom.com_date AS com_date,
@@ -815,7 +817,7 @@ class Setting {
 
                          (SELECT prev.change_no 
                             FROM ven_change prev 
-                            WHERE prev.s1_id = vc.s1_id 
+                            WHERE (prev.s1_id = vc.s1_id OR prev.s2_id = vc.s1_id)
                             AND prev.status = 1 
                             AND prev.created_at < vc.created_at
                             ORDER BY prev.created_at DESC 
