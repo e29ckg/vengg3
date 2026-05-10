@@ -583,6 +583,7 @@ switch ($route) {
 
             $data = json_decode(file_get_contents("php://input"), true);
             $change_id = $data['change_id'] ?? null;
+            $status = $data['status'] ?? 1;
             
             if (!$change_id) {
                 http_response_code(400); echo json_encode(['error' => 'ไม่พบรหัสการเปลี่ยนเวร']); break;
@@ -600,19 +601,19 @@ switch ($route) {
                     // 🌟 2. อัปเดตตารางเวร ให้สถานะกลับมาเป็น 1 (อนุมัติสมบูรณ์)
                     if ($changeReq['is_swap'] == 1) {
                         // อัปเดตกลับเป็น 1 ทั้งคู่
-                        $stmt1 = $connection->prepare("UPDATE $tableName SET status = 1 WHERE id = ?");
-                        $stmt1->execute([$changeReq['s1_id']]);
-                        $stmt2 = $connection->prepare("UPDATE $tableName SET status = 1 WHERE id = ?");
-                        $stmt2->execute([$changeReq['s2_id']]);
+                        $stmt1 = $connection->prepare("UPDATE $tableName SET status = ? WHERE id = ?");
+                        $stmt1->execute([$status, $changeReq['s1_id']]);
+                        $stmt2 = $connection->prepare("UPDATE $tableName SET status = ? WHERE id = ?");
+                        $stmt2->execute([$status, $changeReq['s2_id']]);
                     } else {
                         // อัปเดตกลับเป็น 1 แค่เวรเดียว
-                        $stmt1 = $connection->prepare("UPDATE $tableName SET status = 1 WHERE id = ?");
-                        $stmt1->execute([$changeReq['s1_id']]);
+                        $stmt1 = $connection->prepare("UPDATE $tableName SET status = ? WHERE id = ?");
+                        $stmt1->execute([$status, $changeReq['s1_id']]);
                     }
                     
                     // 3. เปลี่ยนสถานะใบคำขอเป็น "อนุมัติแล้ว"
-                    $stmtUpdate = $connection->prepare("UPDATE ven_change SET status = 1 WHERE id = ?");
-                    $stmtUpdate->execute([$change_id]);
+                    $stmtUpdate = $connection->prepare("UPDATE ven_change SET status = ? WHERE id = ?");
+                    $stmtUpdate->execute([$status, $change_id]);
                     
                     echo json_encode(['success' => true, 'message' => 'อนุมัติการเปลี่ยนเวรเรียบร้อยแล้ว']);
                 } else {
