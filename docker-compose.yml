@@ -34,7 +34,6 @@ services:
       - "80:80"
     volumes:
       - .:/var/www/html/vengg3
-      # - /var/www/html/vengg3/backend/vendor  # 🌟 ป้องกันไม่ให้เครื่องเราไปทับโฟลเดอร์ vendor ใน Docker
     depends_on:
       - db
 
@@ -62,7 +61,6 @@ services:
       TZ: Asia/Bangkok
     volumes:
       - .:/var/www/html/vengg3
-      # - /var/www/html/vengg3/backend/vendor  # 🌟 ป้องกันโฟลเดอร์ vendor หายเช่นกัน
     command: sh -c "while true; do php /var/www/html/vengg3/backend/cron/daily_notify.php; sleep 60; done"
     depends_on:
       - db

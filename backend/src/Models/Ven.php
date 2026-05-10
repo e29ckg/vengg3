@@ -125,7 +125,7 @@ public function getChangeHistory($ven_id) {
                 /* 🌟 แก้ไข vc. เป็น vch. ให้ตรงกับตารางหลักด้านล่าง */
                 (SELECT prev.change_no 
                  FROM ven_change prev 
-                 WHERE prev.s1_id = vch.s1_id 
+                 WHERE (prev.s1_id = vch.s1_id OR prev.s2_id = vch.s1_id)
                    AND prev.status = 1 
                    AND prev.created_at < vch.created_at 
                  ORDER BY prev.created_at DESC 

@@ -237,7 +237,8 @@ class Setting {
                         p.prefix_name, 
                         p.first_name, 
                         p.last_name, 
-                        CONCAT_WS(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, ''), ' ', IFNULL(p.last_name, '')) AS full_name
+                        CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS full_name
+
                   FROM ven_user vu
                   JOIN user u ON vu.user_id = u.id
                   JOIN profile p ON u.id = p.user_id
@@ -803,18 +804,20 @@ class Setting {
                          vc.is_swap, vc.s2_id,           -- 🌟 เพิ่มตัวแปรสำหรับระบบสลับเวร
                          vs2.ven_date AS s2_date,        -- 🌟 ดึงวันที่ของเวรที่ถูกนำมาสลับด้วย (ถ้ามี)
                          vs.ven_date AS s1_date,        -- 🌟 ดึงวันที่ของเวรที่ 1 (เวรหลัก)
-                         vn.name AS duty_main, vns.name AS duty_role,
+                         vn.name AS duty_main, 
+                         vn.name_full AS duty_main_full,
+                         vns.name AS duty_role,
                          vc.user1_id, vc.user2_id,
                          vcom.com_num AS com_num, 
                          vcom.com_date AS com_date,
-                         CONCAT_WS(' ', p1.prefix_name, p1.first_name, p1.last_name) AS user1_name,
-                         CONCAT_WS(' ', p2.prefix_name, p2.first_name, p2.last_name) AS user2_name,
+                         CONCAT_WS(' ', CONCAT(IFNULL(p1.prefix_name, ''), IFNULL(p1.first_name, '')), p1.last_name)AS user1_name,
+                         CONCAT_WS(' ', CONCAT(IFNULL(p2.prefix_name, ''), IFNULL(p2.first_name, '')), p2.last_name)AS user2_name,
                          p1.position AS user1_dep,
                          p2.position AS user2_dep,
 
                          (SELECT prev.change_no 
                             FROM ven_change prev 
-                            WHERE prev.s1_id = vc.s1_id 
+                            WHERE (prev.s1_id = vc.s1_id OR prev.s2_id = vc.s1_id)
                             AND prev.status = 1 
                             AND prev.created_at < vc.created_at
                             ORDER BY prev.created_at DESC 
@@ -830,7 +833,7 @@ class Setting {
                   LEFT JOIN profile p2 ON vc.user2_id = p2.user_id
                   WHERE vc.user1_id = :u1 OR vc.user2_id = :u2
                   ORDER BY vc.created_at DESC
-                  LIMIT 100";
+                  LIMIT 50";
                   
         $stmt = $this->conn->prepare($query);
         $stmt->execute([':u1' => $user_id, ':u2' => $user_id]);
