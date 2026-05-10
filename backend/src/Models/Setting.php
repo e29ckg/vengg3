@@ -833,7 +833,7 @@ class Setting {
                   LEFT JOIN profile p2 ON vc.user2_id = p2.user_id
                   WHERE vc.user1_id = :u1 OR vc.user2_id = :u2
                   ORDER BY vc.created_at DESC
-                  LIMIT 100";
+                  LIMIT 50";
                   
         $stmt = $this->conn->prepare($query);
         $stmt->execute([':u1' => $user_id, ':u2' => $user_id]);
