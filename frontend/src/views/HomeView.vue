@@ -140,11 +140,15 @@
                       </div>
 
                       <template v-if="!isPastShift(selectedVen.ven_date || selectedVen.date, selectedVen.ven_time) || systemSettings.allow_retroactive_swap">                        
-                        <button v-if="!showRecipientList" 
-                                class="btn btn-warning rounded-pill fw-bold text-dark shadow-sm py-2 w-100" 
-                                @click="loadRecipients">
-                          <i class="bi bi-arrow-right-circle me-1"></i> ยกเวรนี้ให้ผู้อื่น (โอนขาด)
-                        </button>
+                       <button v-if="!showRecipientList" 
+        class="btn btn-warning rounded-pill fw-bold text-dark shadow-sm py-2 w-100" 
+        @click="loadRecipients" 
+        :disabled="selectedVen?.status != 1">
+  <i class="bi bi-arrow-right-circle me-1"></i> ยกเวรนี้ให้ผู้อื่น (โอนขาด)
+</button>
+<div v-if="selectedVen?.status != 1" class="text-danger small mt-2 text-center">
+                          <i class="bi bi-exclamation-circle"></i> สถานะไม่พร้อมที่จะดำเนินการ
+                        </div>
       
                         <div v-if="showRecipientList" class="mt-3 text-start border border-warning rounded-3 p-2 bg-white shadow-sm">
                           <label class="form-label fw-bold small text-primary mb-2 px-1">เลือกผู้ที่ต้องการยกเวรให้:</label>
@@ -200,12 +204,15 @@
                         
                         <button class="btn btn-warning rounded-pill fw-bold text-dark shadow-sm py-2 w-100" 
                                 @click="confirmSwap"
-                                :disabled="!selectedMyShiftId">
+                                :disabled="!selectedMyShiftId || selectedVen?.status != 1">
                           <i class="bi bi-check-circle me-1"></i> ยืนยันขอสลับเวร
                         </button>
 
                         <div v-if="mySwappableShifts.length === 0" class="text-danger small mt-2 text-center">
                           <i class="bi bi-exclamation-circle"></i> คุณไม่มีเวรในคำสั่งและหน้าที่เดียวกันที่นำมาแลกได้
+                        </div>
+                        <div v-if="selectedVen?.status != 1" class="text-danger small mt-2 text-center">
+                          <i class="bi bi-exclamation-circle"></i> สถานะไม่พร้อมที่จะดำเนินการ
                         </div>
                       </template>
                       
