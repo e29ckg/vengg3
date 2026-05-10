@@ -176,7 +176,6 @@ switch ($route) {
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user && password_verify($data['old_password'], $user['password_hash'])) {
-            // 2. ถ้ารหัสเดิมถูก ให้อัปเดตเป็นรหัสใหม่ (เข้ารหัสด้วย)
             $newHash = password_hash($data['new_password'], PASSWORD_DEFAULT);
             $stmtUpdate = $connection->prepare("UPDATE user SET password_hash = ? WHERE id = ?");
             $stmtUpdate->execute([$newHash, $userId]);
@@ -189,7 +188,6 @@ switch ($route) {
         break;
 
     case 'admin/user/list':
-        // 🔒 เรียกใช้ยาม VIP (ต้องเป็น Admin เท่านั้นถึงผ่านได้)
         AuthMiddleware::checkDirector($connection);        
         $controller = new UserController($connection);
         $controller->listUsers();
@@ -197,7 +195,6 @@ switch ($route) {
     
     case 'admin/user/create':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // 🔒 เรียกใช้ยาม VIP
             AuthMiddleware::checkAdmin($connection);
             
             $controller = new UserController($connection);
@@ -210,7 +207,7 @@ switch ($route) {
     
     case 'admin/user/status':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            AuthMiddleware::checkAdmin($connection); // 🔒 ยาม VIP
+            AuthMiddleware::checkAdmin($connection); 
             $controller = new UserController($connection);
             $controller->changeStatus();
         }
@@ -530,9 +527,7 @@ switch ($route) {
         require_once '../src/Models/Setting.php';
         $settingModel = new Setting($connection);
         echo json_encode($settingModel->getVenTimes());
-        break;
-
-    
+        break;    
 
     case 'admin/ven_approve':
         AuthMiddleware::checkAdmin($connection); 
