@@ -62,6 +62,11 @@
                 </router-link>
               </li>
               <li>
+                <router-link class="dropdown-item" to="/admin/options" active-class="active fw-bold">
+                  <i class="bi bi-card-list"></i> จัดการคำนำหน้า ตำแหน่ง กลุ่มงาน
+                </router-link>
+              </li>
+              <li>
                 <router-link to="/admin/settings/agency" class="dropdown-item" active-class="active fw-bold">
                   <i class="bi bi-building me-2 text-primary"></i> ตั้งค่าข้อมูลหน่วยงาน
                 </router-link>
@@ -71,11 +76,6 @@
                   <i class="bi bi-gear-wide-connected me-2 text-dark"></i> ตั้งค่าระบบ
                 </router-link>
               </li>  
-              <li>
-                <router-link class="dropdown-item" to="/admin/options" active-class="active fw-bold">
-                  <i class="bi bi-card-list"></i> จัดการคำนำหน้า ตำแหน่ง กลุ่มงาน
-                </router-link>
-              </li>
               <li><hr class="dropdown-divider"></li>            
               <li>
                 <router-link to="/admin/settings/google-calendar" class="dropdown-item py-2" active-class="active fw-bold bg-primary text-white">

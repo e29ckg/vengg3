@@ -237,7 +237,8 @@ class Setting {
                         p.prefix_name, 
                         p.first_name, 
                         p.last_name, 
-                        CONCAT_WS(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, ''), ' ', IFNULL(p.last_name, '')) AS full_name
+                        CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS full_name
+
                   FROM ven_user vu
                   JOIN user u ON vu.user_id = u.id
                   JOIN profile p ON u.id = p.user_id
@@ -807,8 +808,8 @@ class Setting {
                          vc.user1_id, vc.user2_id,
                          vcom.com_num AS com_num, 
                          vcom.com_date AS com_date,
-                         CONCAT_WS(' ', p1.prefix_name, p1.first_name, p1.last_name) AS user1_name,
-                         CONCAT_WS(' ', p2.prefix_name, p2.first_name, p2.last_name) AS user2_name,
+                         CONCAT_WS(' ', CONCAT(IFNULL(p1.prefix_name, ''), IFNULL(p1.first_name, '')), p1.last_name)AS user1_name,
+                         CONCAT_WS(' ', CONCAT(IFNULL(p2.prefix_name, ''), IFNULL(p2.first_name, '')), p2.last_name)AS user2_name,
                          p1.position AS user1_dep,
                          p2.position AS user2_dep,
 

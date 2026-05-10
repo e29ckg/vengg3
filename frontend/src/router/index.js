@@ -23,58 +23,55 @@ const router = createRouter({
       path: '/admin/users', 
       name: 'admin-users', 
       component: () => import('../views/UserManagementView.vue'),
-      meta: { requiresAuth: true, role: [9] }
+      meta: { requiresAuth: true, roles: [9] } // 🌟 แก้เป็น roles (มี s)
     },
     {
       path: '/admin/settings/system',
       name: 'SystemSettings',
       component: () => import('../views/admin/SystemSettingsView.vue'),
-      meta: { requiresAuth: true, role: [9] }
+      meta: { requiresAuth: true, roles: [9] } // 🌟 แก้เป็น roles (มี s)
     },
     {
       path: '/admin/settings/agency',
       name: 'AgencySettings',
       component: () => import('../views/admin/AgencySettingsView.vue'),
-      meta: { requiresAuth: true, role: [9] }
+      meta: { requiresAuth: true, roles: [9] } // 🌟 แก้เป็น roles (มี s)
     },
-
-    // 🌟 เพิ่ม Route สำหรับตั้งค่า Google Calendar ตรงนี้ครับ
     {
       path: '/admin/settings/google-calendar',
       name: 'GoogleCalendarSettings',
       component: () => import('../views/admin/GoogleCalendarSettingsView.vue'),
-      meta: { requiresAuth: true, role: [9] } // เฉพาะ Admin เท่านั้น
+      meta: { requiresAuth: true, roles: [9] } // 🌟 แก้เป็น roles (มี s)
     },
-
     {
       path: '/admin/settings/telegram',
       name: 'TelegramSettings',
       component: () => import('../views/admin/TelegramSettingsView.vue'),
-      meta: { requiresAuth: true, role: [9] }
+      meta: { requiresAuth: true, roles: [9] } // 🌟 แก้เป็น roles (มี s)
     },
     { 
       path: '/director/ven-settings', 
       name: 'ven-settings', 
       component: () => import('../views/VenSettingView.vue') ,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, roles: [2, 9] } // 🌟 เติมสิทธิ์
     },
     { 
       path: '/director/commands', 
       name: 'commands', 
       component: () => import('../views/VenCommandView.vue'), 
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, roles: [2, 9] } // 🌟 เติมสิทธิ์
     },
     { 
       path: '/director/schedule', 
       name: 'schedule', 
       component: () => import('../views/VenScheduleView.vue'), 
-      meta: { requiresAuth: true , hideFooter: true}
+      meta: { requiresAuth: true , hideFooter: true, roles: [2, 9]} // 🌟 เติมสิทธิ์
     },
     {
       path: '/director/schedule-list',
       name: 'ven-schedule-list',
       component: () => import('../views/VenScheduleListView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, roles: [2, 9] } // 🌟 เติมสิทธิ์
     },
     {
       path: '/director/approvals',
@@ -86,7 +83,7 @@ const router = createRouter({
         path: '/staff/swap',
         name: 'staff-swap',
         component: () => import('../views/VenSwapView.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true } // พนักงานทั่วไปเข้าได้
     },
     {
       path: '/finance/report',
@@ -98,43 +95,42 @@ const router = createRouter({
       path: '/user/history',
       name: 'ven-history',
       component: () => import('../views/VenChangeHistoryView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true } // พนักงานทั่วไปเข้าได้
     },
     {
       path: '/profile',
       name: 'profile',
       component: () => import('../views/ProfileView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true } // พนักงานทั่วไปเข้าได้
     },
     {
       path: '/admin/options',
       name: 'options',
       component: () => import('../views/AdminOptionsView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, roles: [9] } // 🌟 เติมสิทธิ์ (เดิมลืมใส่)
     },
     {
       path: '/manual',
       name: 'manual',
       component: () => import('../views/UserManualView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true } // พนักงานทั่วไปเข้าได้
     },
-
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
-      component: () => import('../views/NotFoundView.vue') // อย่าลืมไปสร้างไฟล์นี้ด้วยนะครับ
+      component: () => import('../views/NotFoundView.vue')
     }
   ]
 })
 
-// 🌟 โค้ดดักจับก่อนเปลี่ยนหน้า
+// 🌟 โค้ดดักจับก่อนเปลี่ยนหน้า (เหมือนเดิม ทำงานถูกต้องแล้วเมื่อคีย์ตรงกัน)
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token'); // ดึง Token
-  const role = localStorage.getItem('role'); // ดึงข้อมูล User
+  const token = localStorage.getItem('token'); 
+  const role = localStorage.getItem('role'); 
   let userRole = null;
 
   if (role) {
-    userRole = Number(role); // ดึงสิทธิ์ผู้ใช้มาเช็ค
+    userRole = Number(role); 
   }
 
   // 1. ถ้าหน้าที่จะไป ต้องล็อกอิน แต่ไม่มี Token
@@ -150,7 +146,7 @@ router.beforeEach((to, from, next) => {
   // 3. 🌟 เช็คสิทธิ์ (Roles) ว่าเข้าหน้านี้ได้ไหม
   if (to.meta.roles && to.meta.roles.length > 0) {
     if (!to.meta.roles.includes(userRole)) {
-      // ถ้าสิทธิ์ไม่ตรง ให้เด้งกลับไปหน้า Home
+      // ถ้าสิทธิ์ไม่ตรง (เช่น user ปกติมาเข้าหน้า admin) ให้เด้งกลับไปหน้า Home
       return next('/home'); 
     }
   }
