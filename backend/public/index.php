@@ -260,7 +260,7 @@ switch ($route) {
         $optionController->deleteOption();
         break;
 
-    // ใน switch ของ index.php
+    
     // ==========================================
     // ⚙️ ดึงข้อมูลการตั้งค่าระบบ (สำหรับพนักงานทั่วไปใช้อ่านกฎ)
     // ==========================================
@@ -440,13 +440,36 @@ switch ($route) {
 
         try {
             // ล้าง Event เก่าของเดือนนี้ในปฏิทินกลาง (เพื่อ Re-sync ใหม่)
-            $timeMin = date('c', strtotime($month . '-01 00:00:00'));
-            $timeMax = date('c', strtotime($month . '-01 +1 month 00:00:00'));
-            $results = $service->events->listEvents($calId, ['timeMin' => $timeMin, 'timeMax' => $timeMax, 'q' => 'เวรประจำวันที่']);
-            
-            foreach ($results->getItems() as $oldEvent) {
+$timeMin = date('c', strtotime($month . '-01 00:00:00'));
+$timeMax = date('c', strtotime($month . '-01 +1 month 00:00:00'));
+
+// 1. ตั้งค่าการดึงข้อมูล (เอา 'q' ออก และใส่ singleEvents)
+$optParams = [
+    'timeMin' => $timeMin,
+    'timeMax' => $timeMax,
+    'singleEvents' => true, // 🌟 สำคัญ: บังคับให้ดึง Event ตามช่วงเวลาเป๊ะๆ
+    'maxResults' => 2500    // ดึงมาเยอะๆ เผื่อมี Event เยอะใน 1 เดือน
+];
+
+$results = $service->events->listEvents($calId, $optParams);
+$events = $results->getItems();
+
+// 2. วนลูปเช็คชื่อด้วย PHP แล้วค่อยลบ
+if (!empty($events)) {
+    foreach ($events as $oldEvent) {
+        $summary = $oldEvent->getSummary(); // ดึงชื่อ Event
+        
+        // 🌟 ใช้ PHP ตรวจสอบคำภาษาไทย (แม่นยำกว่า)
+        if (strpos($summary, 'เวรประจำวันที่') !== false) {
+            try {
                 $service->events->delete($calId, $oldEvent->getId());
+            } catch (Exception $e) {
+                // เก็บ Error ไว้ดู เผื่อลบไม่ได้เพราะสิทธิ์ไม่พอ
+                error_log("ไม่สามารถลบ Event ID: " . $oldEvent->getId() . " - " . $e->getMessage());
             }
+        }
+    }
+}
 
             // วนลูปสร้างกิจกรรมใหม่รายวัน
             foreach ($groupedByDate as $date => $shifts) {
@@ -460,7 +483,7 @@ switch ($route) {
 
                 $description = "เวรประจำวันที่ " . date('d/m/Y', strtotime($date)) . "\n";
                 foreach ($groupedByDuty as $dutyName => $dutyShifts) {
-                    $description .= "---------------------\n" . "📌".$dutyName . "\n---------------------\n";
+                    $description .= "---------------------\n" . "📌".$dutyName . "\n";
                     foreach ($dutyShifts as $sch) {
                         $uName = trim($sch['user_name']) ?: "(ยังไม่มีผู้ลงเวร)";
                         $description .= "👨‍💼 " . $uName . "\n";
