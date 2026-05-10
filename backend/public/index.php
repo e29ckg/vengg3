@@ -524,10 +524,9 @@ switch ($route) {
                             vc.created_at,
                             vc.user1_id, 
                             vc.user2_id,
-                            -- ชื่อคนขอ (User A)
-                            CONCAT_WS(' ', p1.prefix_name, p1.first_name, p1.last_name) AS user1_name,
-                            -- ชื่อคนรับ/คนถูกสลับ (User B)
-                            CONCAT_WS(' ', p2.prefix_name, p2.first_name, p2.last_name) AS user2_name,
+                            -- ชื่อคนขอ (User A)                            
+                            CONCAT_WS(' ', CONCAT(IFNULL(p1.prefix_name, ''), IFNULL(p1.first_name, '')), p1.last_name) AS user1_name,
+                            CONCAT_WS(' ', CONCAT(IFNULL(p2.prefix_name, ''), IFNULL(p2.first_name, '')), p2.last_name) AS user2_name,
                             -- ข้อมูลเวรที่ 1
                             vs1.ven_date AS s1_date, 
                             -- vs1.ven_time AS s1_time,
@@ -536,7 +535,8 @@ switch ($route) {
                             -- vs2.ven_time AS s2_time,
                             -- ข้อมูลหน้าที่
                             vns.name AS duty_role,
-                            vn.name AS duty_main
+                            vn.name AS duty_main,
+                            vn.name_full AS duty_main_full
                             FROM ven_change vc
                             LEFT JOIN profile p1 ON vc.user1_id = p1.user_id
                             LEFT JOIN profile p2 ON vc.user2_id = p2.user_id
@@ -603,6 +603,7 @@ switch ($route) {
                 http_response_code(500); echo json_encode(['error' => 'Database Error: ' . $e->getMessage()]);
             }
         }
+        break;
 
             
             

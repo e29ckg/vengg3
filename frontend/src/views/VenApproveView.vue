@@ -172,7 +172,7 @@ const handleApprove = async (id, status, change_no) => {
       Swal.fire({ title: 'กำลังประมวลผล...', didOpen: () => Swal.showLoading() })
       
       // 🌟 ส่ง API ไปอัปเดตและสลับตารางเวร (หากอนุมัติ)
-      const res = await api.post(`?route=admin/ven_approve`, { change_id: id, status: status })
+      const res = await api.post(`?route=admin/ven_approve&action=force_update`, { change_id: id, status: status })
       
       if (res.data.success) {
         Swal.fire('สำเร็จ', `ทำรายการ${actionText}เรียบร้อยแล้ว`, 'success')

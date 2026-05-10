@@ -54,7 +54,7 @@ class VenController {
         }
 
         $ven = new Ven($this->db);
-        $stmt = $ven->getVenDetail($id);
+        $stmt = $ven->getVenDetail($id);    
         
         if ($stmt->rowCount() > 0) {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
