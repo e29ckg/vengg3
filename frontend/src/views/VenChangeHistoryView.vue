@@ -269,7 +269,7 @@ const downloadWord = async (historyData) => {
       s1_date: historyData.s1_date,
       s2_date: historyData.s2_date,
       is_swap: historyData.is_swap,
-      
+      ref_change_no: historyData.ref_change_no
     }
 
     await exportShiftChangeToWord(changeDataObj, venDetail);
