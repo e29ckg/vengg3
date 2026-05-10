@@ -678,7 +678,8 @@ const mySwappableShifts = computed(() => {
     return shift.user_id === currentUserId.value && // ต้องเป็นเวรของฉันเอง
            myShiftDate !== targetDate && // 🌟 กรองเวรในวันเดียวกันออก (ไม่ให้สลับวันเดียวกัน)
            shift.ven_com_id === selectedVen.value.ven_com_id && // ต้องอยู่คำสั่งเดียวกัน
-           (shift.ven_name_sub_id === selectedVen.value.ven_name_sub_id || shift.sub_id === selectedVen.value.sub_id) && // ต้องเป็นหน้าที่เดียวกัน
+          //  (shift.ven_name_sub_id === selectedVen.value.ven_name_sub_id || shift.sub_id === selectedVen.value.sub_id) && // ต้องเป็นหน้าที่เดียวกัน
+           shift.sub_id === selectedVen.value.sub_id && // ต้องเป็นหน้าที่เดียวกัน
            new Date(myShiftDate) >= new Date(); // ต้องเป็นเวรในอนาคต (หรือวันนี้)
   });
 });
