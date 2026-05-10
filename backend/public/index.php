@@ -413,6 +413,7 @@ switch ($route) {
             LEFT JOIN ven_name vn ON vc.ven_name_id = vn.id
             LEFT JOIN profile p ON vs.user_id = p.user_id 
             WHERE DATE_FORMAT(vs.ven_date, '%Y-%m') = ?
+            ORDER BY vn.srt ASC, vns.srt ASC;
         ");
         $stmt->execute([$month]); // 🌟 ใช้ตัวแปร $month 
         $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
