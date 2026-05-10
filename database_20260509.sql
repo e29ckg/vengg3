@@ -126,7 +126,7 @@ CREATE TABLE `telegram_settings` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-INSERT INTO `telegram_settings` VALUES('1','7785178042:AAHHa-qbxlyJy7Ff0F3QS_F0NEQr5Qbk3Wc','7873635913','1','1','1');
+INSERT INTO `telegram_settings` VALUES('1','xxxx','xxxx','1','1','1');
 
 
 DROP TABLE IF EXISTS `user`;
