@@ -6,7 +6,7 @@
       <router-view />
     </main>
 
-    <footer v-if="!$route.meta.hideFooter" class="footer-fixed bg-white border-top py-2 shadow-sm">
+    <footer v-if="!$route.meta.hideFooter" class="footer-fixed bg-white border-top py-2 shadow-sm d-print-none">
       <div class="container-fluid px-4">
         <div class="d-flex justify-content-between align-items-center">
           <div class="text-muted small">
