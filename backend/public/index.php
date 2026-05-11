@@ -716,14 +716,6 @@ switch ($route) {
             
             $action = $_GET['action'] ?? '';
             $data = json_decode(file_get_contents("php://input"), true);
-
-            if ($action == 'update_calendar_id') {
-                $stmt = $connection->prepare("UPDATE ven_name SET google_calendar_id = ? WHERE id = ?");
-                $stmt->execute([$data['google_calendar_id'], $data['id']]);
-                echo json_encode(['success' => true]);
-                exit;
-            }
-
             
             // 1.1 โหลดข้อมูลทั้งหมด (เวรหลัก + หน้าที่ย่อยซ้อนกัน)
             if ($action === 'ven_full') {
