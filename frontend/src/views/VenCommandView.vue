@@ -39,8 +39,8 @@
               <div class="d-flex align-items-center gap-2 flex-wrap">
                 <div class="form-check form-switch me-2 fs-5 mb-0" title="เปิด/ปิด การใช้งานคำสั่งนี้">
                   <input class="form-check-input custom-switch cursor-pointer" type="checkbox" role="switch" 
-                         :checked="com.status == 1" 
-                         @change="toggleStatus(com.id, $event.target.checked ? 1 : 0)">
+                        :checked="com.status == 1" 
+                        @change="toggleStatus(com, $event)">
                 </div>
                 
                 <button class="btn btn-primary btn-sm fw-bold rounded-pill px-3 shadow-sm d-flex align-items-center" @click="goToSchedule(com)">
@@ -349,11 +349,64 @@ const submitCommand = async () => {
 }
 
 // เปลี่ยนสถานะคำสั่ง (เปิด/ปิด)
-const toggleStatus = async (id, status) => {
-  await api.post('?route=admin/ven_com&action=toggle_status', { id, status })
-  const com = commands.value.find(c => c.id === id)
-  if (com) com.status = status
-}
+// เปลี่ยนสถานะคำสั่ง (เปิด/ปิด) พร้อม SweetAlert
+const toggleStatus = async (com, event) => {
+  // 1. ดึงค่าสถานะใหม่ที่ผู้ใช้เพิ่งกดสับสวิตช์ (true = จะเปิด, false = จะปิด)
+  const isChecked = event.target.checked;
+  const newStatus = isChecked ? 1 : 0;
+  const actionText = isChecked ? 'เปิด' : 'ปิด'; // ข้อความสำหรับแจ้งเตือน
+
+  // 2. เด้งถามยืนยันด้วย SweetAlert
+  const result = await Swal.fire({
+    title: `ยืนยันการ${actionText}ใช้งาน?`,
+    text: `คุณต้องการ${actionText}การใช้งานคำสั่งนี้ใช่หรือไม่?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: isChecked ? '#198754' : '#dc3545', // สีเขียวตอนเปิด สีแดงตอนปิด
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: `ใช่, ${actionText}เลย!`,
+    cancelButtonText: 'ยกเลิก'
+  });
+
+  // 3. ถ้าผู้ใช้กดยืนยัน
+  if (result.isConfirmed) {
+    try {
+      // แสดง Loading หมุนๆ
+      Swal.fire({
+        title: 'กำลังบันทึก...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      // ยิง API ไปอัปเดตข้อมูล
+      await api.post('?route=admin/ven_com&action=toggle_status', { 
+        id: com.id, 
+        status: newStatus 
+      });
+
+      // ถ้าสำเร็จ ให้อัปเดตค่าในตัวแปรตาราง
+      com.status = newStatus;
+
+      // แสดงข้อความสำเร็จ
+      Swal.fire({
+        icon: 'success',
+        title: 'สำเร็จ',
+        text: `ทำการ${actionText}การใช้งานเรียบร้อยแล้ว`,
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+    } catch (error) {
+      console.error(error);
+      // 🌟 ถ้าเซิร์ฟเวอร์พัง ให้ดีดสวิตช์กลับไปที่เดิม
+      event.target.checked = !isChecked;
+      Swal.fire('ผิดพลาด', 'ไม่สามารถบันทึกสถานะได้', 'error');
+    }
+  } else {
+    // 🌟 ถ้าผู้ใช้กด "ยกเลิก" ให้ดีดสวิตช์กลับไปที่เดิม
+    event.target.checked = !isChecked;
+  }
+};
 
 // ลบคำสั่ง
 // ฟังก์ชันสำหรับกดปุ่มลบ
