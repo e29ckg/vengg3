@@ -874,7 +874,7 @@ class Setting {
 
     public function updateSystemSetting($key, $value) {
     // รายชื่อฟิลด์ที่อนุญาตให้อัปเดตได้ (Security White-list)
-    $allowed_keys = ['allow_retroactive_swap', 'check_24h_consecutive', 'notify_change_request','advance_swap_days','allow_swap', 'maintenance_mode','system_name'];
+    $allowed_keys = ['allow_retroactive_swap', 'check_24h_consecutive', 'notify_change_request','advance_swap_days','allow_swap', 'maintenance_mode','system_name','compact_schedule_view'];
     
     if (!in_array($key, $allowed_keys)) {
         return false;

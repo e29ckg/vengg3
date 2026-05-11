@@ -8,7 +8,6 @@
           </div>
           <div class="card-body p-4">
             <form @submit.prevent="saveSettings">
-              
               <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-display me-2"></i>ข้อมูลทั่วไป</h6>
               <div class="mb-4">
                 <label class="form-label text-muted small fw-bold">ชื่อระบบ (System Name)</label>
@@ -21,6 +20,14 @@
                   required
                 >
                 <div class="form-text">ชื่อนี้จะไปปรากฏที่แถบเมนู (Navbar) และหัวเว็บ</div>
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="compactView" 
+                      v-model="settings.compact_schedule_view" @change="updateSingleSetting('compact_schedule_view', settings.compact_schedule_view)" >
+                <label class="form-check-label fw-bold" for="compactView">
+                  แสดงปฏิทินตารางเวรแบบกะทัดรัด (บรรทัดเดียว)
+                </label>
+                <div class="form-text">หากเปิดใช้งาน ปฏิทินจะแสดงไอคอนพระอาทิตย์/พระจันทร์แทนตัวเลขเวลา เพื่อประหยัดพื้นที่</div>
               </div>
 
               <hr class="my-4">
@@ -126,7 +133,8 @@ const settings = ref({
   advance_swap_days: 0,
   maintenance_mode: false,
   allow_retroactive_swap: false, 
-  check_24h_consecutive: true    
+  check_24h_consecutive: true,
+  compact_schedule_view :false
 })
 
 const fetchSettings = async () => {
@@ -138,9 +146,9 @@ const fetchSettings = async () => {
         allow_swap: res.data.allow_swap == 1 || res.data.allow_swap === true,
         advance_swap_days: parseInt(res.data.advance_swap_days) || 0,        
         maintenance_mode: res.data.maintenance_mode == 1 || res.data.maintenance_mode === true,
-        // 🌟 เพิ่ม 2 บรรทัดนี้ เพื่อให้ดึงข้อมูลจาก DB มาแสดงที่สวิตช์
         allow_retroactive_swap: res.data.allow_retroactive_swap == 1 || res.data.allow_retroactive_swap === true,
-        check_24h_consecutive: res.data.check_24h_consecutive == 1 || res.data.check_24h_consecutive === true
+        check_24h_consecutive: res.data.check_24h_consecutive == 1 || res.data.check_24h_consecutive === true,
+        compact_schedule_view: res.data.compact_schedule_view == 1 || res.data.compact_schedule_view === true
       }
     }
   } catch (err) {
@@ -156,7 +164,8 @@ const saveSettings = async () => {
       allow_swap: settings.value.allow_swap ? 1 : 0,
       maintenance_mode: settings.value.maintenance_mode ? 1 : 0,
       allow_retroactive_swap: settings.value.allow_retroactive_swap ? 1 : 0, 
-      check_24h_consecutive: settings.value.check_24h_consecutive ? 1 : 0    
+      check_24h_consecutive: settings.value.check_24h_consecutive ? 1 : 0,   
+      compact_schedule_view: settings.value.compact_schedule_view ? 1 : 0    
     }
     await api.post('?route=admin/system_settings', payload)
     Swal.fire('สำเร็จ', 'อัปเดตการตั้งค่าระบบเรียบร้อยแล้ว', 'success')
