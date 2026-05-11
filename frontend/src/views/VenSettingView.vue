@@ -2,7 +2,7 @@
   <div class="bg-light min-vh-100">
     <div class="container py-5">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>ชื่อเวร / กลุ่มหน้าที่</h3>
+        <h3 class="fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>ชื่อเวร / กลุ่มหน้าที่ / ผู้มีสิทธ์อยู่เวร</h3>
         <button class="btn btn-success fw-bold px-4 shadow-sm rounded-pill" @click="addMainVen">
           <i class="bi bi-plus-circle me-2"></i>เพิ่มชื่อเวร
         </button>
