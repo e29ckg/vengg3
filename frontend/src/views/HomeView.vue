@@ -49,10 +49,14 @@
             <div class="day-cell border rounded-3 d-flex flex-column bg-white shadow-sm transition-hover" 
                  v-for="day in daysInMonth" :key="day">
               
-              <div class="day-header fw-bold border-bottom px-2 py-1 text-end"
-                   :class="{ 'bg-primary text-white': isToday(day), 'bg-light text-secondary': !isToday(day) }">
-                {{ day }}
-              </div>
+              <div class="day-header fw-bold border-bottom px-2 py-1 text-end bg-light">
+  <span v-if="day" 
+        class="d-inline-block text-center" 
+        :class="{ 'bg-primary text-white rounded-circle shadow-sm': isToday(day), 'text-secondary': !isToday(day) }"
+        :style="isToday(day) ? 'width: 28px; height: 28px; line-height: 28px;' : ''">
+    {{ day }}
+  </span>
+</div>
               
               <div class="day-body p-1 flex-grow-1 overflow-auto custom-scrollbar">                
                 
