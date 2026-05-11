@@ -32,7 +32,7 @@
               <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/ven-settings"><i class="bi bi-gear"></i> เตรียม ชื่อเวร/ผู้มีสิทธ์อยู่เวร</router-link></li>
               <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/commands"><i class="bi bi-file-earmark-text"></i> จัดการคำสั่งเวร</router-link></li>
               <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/schedule"><i class="bi bi-calendar-check"></i> จัดเวร</router-link></li>
-              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/schedule-list"><i class="bi bi-card-list"></i> รายการการจัดเวร</router-link></li>
+              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/schedule-list"><i class="bi bi-card-list"></i> รายงานการจัดเวร</router-link></li>
               <li><hr class="dropdown-divider"></li>
               <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/approvals"><i class="bi bi-check-circle"></i> อนุมัติใบเปลี่ยนเวร</router-link></li>
             </ul>
