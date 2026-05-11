@@ -20,7 +20,22 @@ class Ven {
                     v.ven_date AS date, 
                     CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS title,
                     vns.color AS backgroundColor,
-                    IF(vn.dn LIKE '%กลางคืน%', '16:30:00', '08:30:00') AS ven_time,
+
+                    /* 🌟 1. ใช้ CASE WHEN ในการกำหนดเวลาเริ่มต้น (สำหรับนำไปใช้เรียงลำดับและตัด .substring(0,5)) */
+                    CASE 
+                        WHEN vn.dn LIKE '%nightCourt%' THEN '16:30:00'
+                        WHEN vn.dn LIKE '%กลางคืน%' THEN '16:30:00'
+                        WHEN vn.dn LIKE '%กลางวัน%' THEN '08:30:00'
+                        ELSE '08:30:00' 
+                    END AS ven_time,
+                    
+                    /* 🌟 2. (แถม) เผื่อส่งข้อความเวลาเต็มๆ ไปแสดงในหน้า Modal ค้นหาหรือปริ้นเอกสาร */
+                    CASE 
+                        WHEN vn.dn LIKE '%nightCourt%' THEN '16.30 - 20.00'
+                        WHEN vn.dn LIKE '%กลางคืน%' THEN '16.30 - 08.30'
+                        ELSE '08.30 - 16.30'
+                    END AS ven_time_text,
+
                     vc.id AS ven_com_id,
                     vns.id AS sub_id,
                     vns.price
@@ -67,7 +82,22 @@ class Ven {
 
                     vn.name AS duty_main,
                     vn.name_full AS duty_main_full,
-                    IF(vn.dn LIKE '%กลางคืน%', '16:30:00', '08:30:00') AS ven_time,
+                    
+                    /* 🌟 1. ใช้ CASE WHEN ในการกำหนดเวลาเริ่มต้น (สำหรับนำไปใช้เรียงลำดับและตัด .substring(0,5)) */
+                    CASE 
+                        WHEN vn.dn LIKE '%nightCourt%' THEN '16:30:00'
+                        WHEN vn.dn LIKE '%กลางคืน%' THEN '16:30:00'
+                        WHEN vn.dn LIKE '%กลางวัน%' THEN '08:30:00'
+                        ELSE '08:30:00' 
+                    END AS ven_time,
+                    
+                    /* 🌟 2. (แถม) เผื่อส่งข้อความเวลาเต็มๆ ไปแสดงในหน้า Modal ค้นหาหรือปริ้นเอกสาร */
+                    CASE 
+                        WHEN vn.dn LIKE '%nightCourt%' THEN '16.30 - 20.00'
+                        WHEN vn.dn LIKE '%กลางคืน%' THEN '16.30 - 08.30'
+                        ELSE '08.30 - 16.30'
+                    END AS ven_time_text,
+
                     vc.id AS ven_com_id,
                     vc.com_num AS command_num,
                     vc.com_date AS command_date,

@@ -7,18 +7,33 @@ import { saveAs } from 'file-saver';
 const Docxtemplater = docxtemplater;
 
 // ฟังก์ชันช่วยจัดรูปแบบเวลา
-const formatVenTime = (timeStr) => {
-    if (!timeStr) return "";
-    
-    // ถ้าเวลาเริ่มที่ 16.30 หรือช่วงบ่าย/ค่ำ มักจะเป็นเวรข้ามคืน (เช็คทั้งแบบ : และ .)
+// ฟังก์ชันช่วยจัดรูปแบบเวลา
+const formatVenTime = (venDetail) => {
+    // 1. ถ้า Backend มีการส่ง ven_time_text (เช่น 16.30 - 20.00 น.) มาให้แล้ว ให้ใช้เลย (แม่นยำที่สุด)
+    if (venDetail.ven_time_text) {
+        if(venDetail.ven_time_text === '16.30 - 08.30'){return `${venDetail.ven_time_text} นาฬิกา ของวันรุ่งขึ้น`}
+        return `${venDetail.ven_time_text} นาฬิกา` ;
+    }
+
+    const timeStr = venDetail.ven_time_text || "";
+    const dutyName = venDetail.ven_name || venDetail.duty_role || "";
+
+    // 2. ถ้าเป็นเวร nightCourt
+    if (dutyName.toLowerCase().includes('nightCourt')) {
+        return "16.30 - 20.00 น.";
+    }
+
+    // 3. ถ้าเป็นเวรกลางคืนปกติข้ามวัน
     if (timeStr.includes("16:30") || timeStr.includes("16.30")) {
         return "16.30 - 08.30 น. ของวันรุ่งขึ้น";
     }
-    // ถ้าเป็นเวรเช้า
+
+    // 4. ถ้าเป็นเวรเช้า
     if (timeStr.includes("08:30") || timeStr.includes("08.30")) {
         return "08.30 – 16.30 น.";
     }
-    return timeStr; // คืนค่าเดิมถ้าไม่เข้าเงื่อนไข
+
+    return `${timeStr} น.`; // คืนค่าเดิมถ้าไม่เข้าเงื่อนไข
 };
 
 // ฟังก์ชันแปลงวันที่ yyyy-mm-dd เป็นภาษาไทย
@@ -64,7 +79,7 @@ export const exportShiftChangeToWord = async (changeData, venDetail) => {
             ven_name_full: venDetail.ven_name || venDetail.duty_role, 
             ven_date: formatThaiDate(venDetail.ven_date),
             command_date: formatThaiDate(venDetail.command_date),
-            ven_time: formatVenTime(venDetail.ven_time),
+            ven_time: formatVenTime(venDetail),
             command_num: venDetail.command_num,
             duty_main: venDetail.duty_main,
             duty_main_full: venDetail.duty_main_full,

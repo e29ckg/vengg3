@@ -54,7 +54,7 @@
                 {{ day }}
               </div>
               
-              <div class="day-body p-1 flex-grow-1 overflow-auto custom-scrollbar">
+              <div class="day-body p-1 flex-grow-1 overflow-auto custom-scrollbar">                
                 
                 <div v-for="sch in getSchedulesForDay(day)" :key="sch.id" 
                     class="schedule-item mb-1 p-1 rounded-1 shadow-sm"
@@ -63,23 +63,31 @@
                       backgroundColor: Number(sch.price) === 0 ? sch.backgroundColor : (is24HourShift(sch) ? '' : (sch.user_id == currentUserId ? '#FFD700' : sch.backgroundColor)), 
                       color: Number(sch.price) === 0 ? '#fff' : (is24HourShift(sch) ? 'white' : (sch.user_id == currentUserId ? '#000' : '#fff'))
                     }"
-                    @click="openShiftDetail(sch.id)">
-                  
-                  <div class="fw-bold" style="font-size: 0.7rem;">
-                    <i class="bi bi-clock me-1"></i>{{ sch.ven_time.substring(0,5) }}
-                    
-                    <i v-if="Number(sch.price) !== 0 && is24HourShift(sch)" class="bi bi-exclamation-triangle-fill ms-1 text-danger"></i>
-                    <i v-else-if="Number(sch.price) !== 0 && sch.user_id == currentUserId" class="bi bi-star-fill ms-1 text-warning"></i>
-                  </div>
+                    @click="openShiftDetail(sch.id)"
+                    :title="`เวลา: ${sch.ven_time.substring(0,5)} น.`"> <template v-if="!systemSettings.compact_schedule_view">
+                    <div class="fw-bold" style="font-size: 0.7rem;">
+                      <i class="bi bi-clock me-1"></i>{{ sch.ven_time.substring(0,5) }}
+                      <i v-if="Number(sch.price) !== 0 && is24HourShift(sch)" class="bi bi-exclamation-triangle-fill ms-1 text-danger"></i>
+                      <i v-else-if="Number(sch.price) !== 0 && sch.user_id == currentUserId" class="bi bi-star-fill ms-1 text-warning"></i>
+                    </div>
+                    <div class="text-truncate fw-semibold" style="font-size: 0.85rem;">{{ sch.title }}</div>
+                  </template>
 
-                  <div class="text-truncate fw-semibold" style="font-size: 0.85rem;">{{ sch.title }}</div>
-
+                  <template v-else>
+                    <div class="d-flex align-items-center fw-semibold text-truncate" style="font-size: 0.85rem;">
+                      <i class="bi me-1" :class="getTimeIcon(sch)"></i>
+                      
+                      <span class="text-truncate flex-grow-1">{{ sch.title }}</span>
+                      
+                      <i v-if="Number(sch.price) !== 0 && is24HourShift(sch)" class="bi bi-exclamation-triangle-fill ms-1 text-danger"></i>
+                      <i v-else-if="Number(sch.price) !== 0 && sch.user_id == currentUserId" class="bi bi-star-fill ms-1 text-warning"></i>
+                    </div>
+                  </template>
                 </div>
 
               </div>
             </div>
           </div>
-
         </div>
         <Teleport to="body">
           <div class="modal fade" id="venDetailModal" tabindex="-1" aria-hidden="true">
@@ -105,9 +113,9 @@
                   <div class="bg-light border rounded-3 p-3 text-start mb-4 shadow-sm">
                     <p class="mb-2"><i class="bi bi-calendar-event me-2 text-primary"></i> 
                       <strong>{{ formatDate(selectedVen.ven_date || selectedVen.date) }}</strong> 
-                      <span v-if="selectedVen.ven_time">(เวลา {{ selectedVen.ven_time.substring(0,5) }} น.)</span>
+                      <span v-if="selectedVen.ven_time">(เวลา {{ selectedVen.ven_time_text }} น.)</span>
                     </p>
-                    <p class="mb-2"><i class="bi bi-moon-stars me-2 text-warning"></i> {{ selectedVen.duty_main }}</p>
+                    <p class="mb-2"><i class="bi me-2 text-warning" :class="getTimeIcon(selectedVen)"></i> {{ selectedVen.duty_main }}</p>
                     
                     <p v-if="selectedVen.command_num" class="mb-2 text-muted small">
                       <i class="bi bi-file-earmark-text me-2"></i> คำสั่งเลขที่ {{ selectedVen.command_num }} 
@@ -140,13 +148,12 @@
                       </div>
 
                       <template v-if="!isPastShift(selectedVen.ven_date || selectedVen.date, selectedVen.ven_time) || systemSettings.allow_retroactive_swap">                        
-                       <button v-if="!showRecipientList" 
-        class="btn btn-warning rounded-pill fw-bold text-dark shadow-sm py-2 w-100" 
-        @click="loadRecipients" 
-        :disabled="selectedVen?.status != 1">
-  <i class="bi bi-arrow-right-circle me-1"></i> ยกเวรนี้ให้ผู้อื่น (โอนขาด)
-</button>
-<div v-if="selectedVen?.status != 1" class="text-danger small mt-2 text-center">
+                       <button v-if="!showRecipientList" class="btn btn-warning rounded-pill fw-bold text-dark shadow-sm py-2 w-100" 
+                                  @click="loadRecipients" 
+                                  :disabled="selectedVen?.status != 1">
+                            <i class="bi bi-arrow-right-circle me-1"></i> ยกเวรนี้ให้ผู้อื่น (โอนขาด)
+                          </button>
+                          <div v-if="selectedVen?.status != 1" class="text-danger small mt-2 text-center">
                           <i class="bi bi-exclamation-circle"></i> สถานะไม่พร้อมที่จะดำเนินการ
                         </div>
       
@@ -298,7 +305,8 @@ const systemSettings = ref({
   allow_swap: true,
   advance_swap_days: 3,
   allow_retroactive_swap: false,
-  check_24h_consecutive: true
+  check_24h_consecutive: true,
+  compact_schedule_view: false
 });
 
 // ฟังก์ชันดึงข้อมูลการตั้งค่าระบบ
@@ -310,12 +318,21 @@ const fetchSystemSettings = async () => {
         allow_swap: res.data.allow_swap == 1,
         advance_swap_days: parseInt(res.data.advance_swap_days) || 0,
         allow_retroactive_swap: res.data.allow_retroactive_swap == 1,
-        check_24h_consecutive: res.data.check_24h_consecutive == 1
+        check_24h_consecutive: res.data.check_24h_consecutive == 1,
+        compact_schedule_view: res.data.compact_schedule_view == 1
       };
     }
   } catch (error) {
     console.error('Error fetching settings:', error);
   }
+};
+
+const getTimeIcon = (sch) => {
+  const timeText = sch.ven_time_text || sch.ven_time || "";
+  if (timeText.includes('08.30 - 16.30') || timeText.includes('08:30')) {return 'bi-brightness-high-fill text-warning';}
+  if (timeText.includes('20.00') || timeText.includes('nightCourt')) { return 'bi-sunset-fill text-danger';}
+  if (timeText.includes('16.30 - 08.30') || timeText.includes('16:30')) { return 'bi-moon-stars-fill text-info';}
+  return 'bi-clock-fill text-secondary'; 
 };
 
 const fetchUserInfo = async () => {
@@ -745,7 +762,7 @@ const confirmTransfer = async (targetUser) => {
     // ถ้าไม่ติด 24 ชม. ให้ขึ้นถามยืนยันปกติ
     const confirmNormal = await Swal.fire({
       title: 'ยืนยันการยกเวร?',
-      html: `คุณต้องการยกเวรวันที่ <b>${myShift.ven_date || myShift.date}</b><br>ให้ <b>${targetName}</b> ใช่หรือไม่?`,
+      html: `คุณต้องการยกเวรวันที่ <b>${formatDate(myShift.ven_date) || myShift.date}</b><br>ให้ <b>${targetName}</b> ใช่หรือไม่?`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#3085d6', // สีน้ำเงินสำหรับยกเวร
