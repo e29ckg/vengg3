@@ -2,35 +2,48 @@
   <div class="bg-light min-vh-100 d-flex flex-column pb-4">
     <div class="container-fluid py-4 px-4 flex-grow-1 d-flex flex-column">
       <div class="card shadow-sm border-0 rounded-4 flex-grow-1 d-flex flex-column overflow-hidden">        
-        <div class="card-header bg-white border-bottom-0 pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
-          <h4 class="fw-bold mb-0 text-primary">
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-3 px-3 px-md-4 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+  
+        <div class="text-center text-lg-start">
+          <h4 class="fw-bold mb-2 text-primary">
             <i class="bi bi-calendar3 me-2"></i>ตารางเวรเดือน {{ formatMonthThai(currentMonth) }}
           </h4>
-          
-          <div class="mt-1">
-            <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill small fw-normal">
-              <i class="bi bi-info-circle me-1"></i>
-              <span v-if="systemSettings.advance_swap_days > 0">
-                ต้องทำรายการล่วงหน้าอย่างน้อย {{ systemSettings.advance_swap_days }} วัน
-              </span>
-              <span v-else>สามารถทำรายการแลกเปลี่ยนเวรได้ภายในวันเดียวกัน</span>
+          <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill small fw-normal">
+            <i class="bi bi-info-circle me-1"></i>
+            <span v-if="systemSettings.advance_swap_days > 0">
+              ต้องทำรายการล่วงหน้าอย่างน้อย {{ systemSettings.advance_swap_days }} วัน
             </span>
+            <span v-else>สามารถทำรายการแลกเปลี่ยนเวรได้ภายในวันเดียวกัน</span>
+          </span>
+        </div>
+
+        <div class="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center">
+          
+          <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border flex-nowrap" style="width: auto;">
+            <button class="btn btn-light border-end px-3" @click="changeMonth(-1)" title="เดือนก่อนหน้า">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            
+            <select class="form-select border-0 text-center fw-bold bg-white cursor-pointer" v-model="selMonth" @change="updateCurrentMonth" style="min-width: 120px;">
+              <option v-for="(m, idx) in thaiMonths" :key="idx" :value="String(idx + 1).padStart(2, '0')">{{ m }}</option>
+            </select>
+            
+            <select class="form-select border-0 border-start text-center fw-bold bg-white cursor-pointer" v-model="selYear" @change="updateCurrentMonth" style="min-width: 90px;">
+              <option v-for="y in yearList" :key="y" :value="y">{{ y }}</option>
+            </select>
+            
+            <button class="btn btn-light border-start px-3" @click="changeMonth(1)" title="เดือนถัดไป">
+              <i class="bi bi-chevron-right"></i>
+            </button>
           </div>
 
-          <div class="d-flex gap-2">
-            <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border">
-              <button class="btn btn-light border-end" @click="changeMonth(-1)"><i class="bi bi-chevron-left"></i></button>
-              <select class="form-select border-0 text-center fw-bold bg-white" v-model="selMonth" @change="updateCurrentMonth" style="width: 120px;">
-                <option v-for="(m, idx) in thaiMonths" :key="idx" :value="String(idx + 1).padStart(2, '0')">{{ m }}</option>
-              </select>
-              <select class="form-select border-0 border-start text-center fw-bold bg-white" v-model="selYear" @change="updateCurrentMonth" style="width: 100px;">
-                <option v-for="y in yearList" :key="y" :value="y">{{ y }}</option>
-              </select>
-              <button class="btn btn-light border-start" @click="changeMonth(1)"><i class="bi bi-chevron-right"></i></button>
-            </div>
-            <button class="btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm" @click="goToToday">วันนี้</button>
-          </div>
+          <button class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" @click="goToToday">
+            วันนี้
+          </button>
+          
         </div>
+
+      </div>
 
         <div v-if="isLoading" class="text-center py-5 flex-grow-1 d-flex flex-column justify-content-center">
           <div class="spinner-border text-primary mx-auto mb-2" role="status"></div>
