@@ -317,8 +317,8 @@ const isScheduleEditable = (sch) => {
 }
 
 // --- API & Logic ---
-const fetchCommands = async () => { commands.value = (await api.get('?route=admin/ven_com&action=list')).data || [] }
-const fetchMonthSchedules = async () => { allSchedules.value = (await api.get(`?route=admin/ven_schedule&action=list_month&month=${currentMonth.value}`)).data || [] }
+const fetchCommands = async () => { commands.value = (await api.get('?route=admin/ven_com/list&action=list')).data || [] }
+const fetchMonthSchedules = async () => { allSchedules.value = (await api.get(`?route=admin/ven_schedule/list_month&month=${currentMonth.value}`)).data || [] }
 
 const onMonthChange = () => {
   activeCommand.value = ''; activeSubDuty.value = ''; subDuties.value = []; eligibleUsers.value = []
@@ -327,14 +327,14 @@ const onMonthChange = () => {
 
 const onCommandChange = async () => {
   if (!activeCommand.value) return
-  const res = await api.get(`?route=admin/setting&action=ven_full`)
+  const res = await api.get(`?route=admin/ven_schedule/ven_name_list`)
   const main = res.data.data.find(v => v.id === activeCommand.value.ven_name_id)
   subDuties.value = main?.subs?.sort((a, b) => a.srt - b.srt) || []
   activeSubDuty.value = ''; eligibleUsers.value = []
 }
 
 const loadEligibleUsers = async () => {
-  if (activeSubDuty.value) eligibleUsers.value = (await api.get(`?route=admin/ven_user&action=get_by_sub&sub_id=${activeSubDuty.value.id}`)).data || []
+  if (activeSubDuty.value) eligibleUsers.value = (await api.get(`?route=admin/ven_schedule/user_list_by_sub&sub_id=${activeSubDuty.value.id}`)).data || []
 }
 
 // --- Drag & Drop ---
@@ -388,7 +388,7 @@ const toggleCommandStatus = async (newStatus) => {
 
   if (result.isConfirmed) {
     try {
-      await api.post('?route=admin/ven_com&action=update_status', { id: activeCommand.value.id, status: newStatus });
+      await api.post('?route=admin/ven_com/update_status', { id: activeCommand.value.id, status: newStatus });
       activeCommand.value.status = newStatus;
       await fetchCommands();
       const updatedCom = commands.value.find(c => c.id === activeCommand.value.id);
@@ -441,7 +441,7 @@ const onDrop = async (e, day) => {
     }
 
     // บันทึกเมื่อไม่มีปัญหา หรือแอดมินกดยืนยันแล้ว
-    await api.post('?route=admin/ven_schedule&action=add', { date: `${currentMonth.value}-${String(day).padStart(2,'0')}`, com_id: activeCommand.value.id, sub_id: activeSubDuty.value.id, user_id: uID })
+    await api.post('?route=admin/ven_schedule/add', { date: `${currentMonth.value}-${String(day).padStart(2,'0')}`, com_id: activeCommand.value.id, sub_id: activeSubDuty.value.id, user_id: uID })
     fetchMonthSchedules()
   } 
   
@@ -484,8 +484,8 @@ const onDrop = async (e, day) => {
       if (!confirm.isConfirmed) return;
     }
 
-    await api.post('?route=admin/ven_schedule&action=remove', { id: old.id })
-    await api.post('?route=admin/ven_schedule&action=add', { date: `${currentMonth.value}-${String(day).padStart(2,'0')}`, com_id: old.com_id, sub_id: old.sub_id, user_id: old.user_id })
+    await api.post('?route=admin/ven_schedule/remove', { id: old.id })
+    await api.post('?route=admin/ven_schedule/add', { date: `${currentMonth.value}-${String(day).padStart(2,'0')}`, com_id: old.com_id, sub_id: old.sub_id, user_id: old.user_id })
     fetchMonthSchedules()
   }
 }
@@ -501,7 +501,7 @@ const removeSchedule = async (id) => {
   }
 
   if ((await Swal.fire({ title: 'ลบชื่อนี้?', icon: 'warning', showCancelButton: true })).isConfirmed) { 
-    await api.post('?route=admin/ven_schedule&action=remove', { id }); 
+    await api.post('?route=admin/ven_schedule/remove', { id }); 
     fetchMonthSchedules();
   } 
 }
@@ -522,7 +522,7 @@ const clearSubDutySchedules = async () => {
   if (result.isConfirmed) {
     Swal.fire({ title: 'กำลังลบข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     const toDel = allSchedules.value.filter(s => s.com_id === activeCommand.value.id && s.sub_id === activeSubDuty.value.id);
-    await Promise.all(toDel.map(s => api.post('?route=admin/ven_schedule&action=remove', { id: s.id })));
+    await Promise.all(toDel.map(s => api.post('?route=admin/ven_schedule/remove', { id: s.id })));
     fetchMonthSchedules();
     Swal.fire('สำเร็จ', `ล้างข้อมูลหน้าที่ "${activeSubDuty.value.name}" เรียบร้อยแล้ว`, 'success');
   }
@@ -554,7 +554,7 @@ const runAutoAssign = async () => {
   
   if (payloads.length) {
     Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() })
-    for (const payload of payloads) { await api.post('?route=admin/ven_schedule&action=add', payload) }
+    for (const payload of payloads) { await api.post('?route=admin/ven_schedule/add', payload) }
     autoAssignModalInstance.hide()
     peoplePerDay.value = 1 
     fetchMonthSchedules()
@@ -688,7 +688,7 @@ const syncToGoogle = async () => {
 
     try {
       // เรียก API ไปยัง Backend PHP ของเรา
-      const response = await api.post('?route=admin/ven_schedule&action=sync_google', {
+      const response = await api.post('?route=admin/ven_schedule/sync_google', {
         month: monthToSync 
       });
 

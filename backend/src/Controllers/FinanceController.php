@@ -1,19 +1,16 @@
 <?php
 // backend/src/Controllers/FinanceController.php
 
-require_once '../src/Models/FinanceModel.php';
-
 class FinanceController {
-    private $db;
+    private $financeModel;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct($financeModel) {
+        $this->financeModel = $financeModel;
     }
 
     // ฟังก์ชันรับ Request ดึงรายการคำสั่งตามเดือน (ดัดแปลงจาก getCommonReport)
     public function getCommands($monthYear) {
-        $financeModel = new FinanceModel($this->db);
-        $stmt = $financeModel->getCommandsByMonth($monthYear);
+        $stmt = $this->financeModel->getCommandsByMonth($monthYear);
         $rowCount = $stmt->rowCount();
         
         if ($rowCount > 0) {
@@ -31,16 +28,14 @@ class FinanceController {
     }
 
     public function getFinanceReport($monthYear, $commandId = null) {
-        $financeModel = new FinanceModel($this->db);
-        
         // 1. หาจำนวนวันทั้งหมดของเดือนนั้น (ด้วย PHP พื้นฐาน)
         $totalDaysInMonth = (int) date('t', strtotime($monthYear . '-01'));
 
         // 2. ดึงรายการ "วันหยุดราชการ" (จากเวรกลางวัน)
-        $holidays = $financeModel->getHolidaysFromDayShift($monthYear, $commandId);
+        $holidays = $this->financeModel->getHolidaysFromDayShift($monthYear, $commandId);
 
         // 3. ดึงข้อมูลรายงานบุคคล
-        $stmt = $financeModel->getFinanceReportByMonth($monthYear, $commandId);
+        $stmt = $this->financeModel->getFinanceReportByMonth($monthYear, $commandId);
         $reportList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // ส่งข้อมูลทั้งก้อนกลับไปให้ Vue.js

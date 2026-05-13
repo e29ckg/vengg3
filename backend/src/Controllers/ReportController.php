@@ -1,19 +1,17 @@
 <?php
 // backend/src/Controllers/ReportController.php
 
-require_once '../src/Models/Report.php';
-
 class ReportController {
-    private $db;
+    private $reportModel;
 
-    public function __construct($db) {
-        $this->db = $db;
+    // รับ Model เข้ามาใช้งาน
+    public function __construct($reportModel) {
+        $this->reportModel = $reportModel;
     }
 
     // ฟังก์ชันรับ Request ดึงข้อมูลเวรทั้งหมด หรือตามเดือน
     public function getCommonReport($monthYear) {
-        $reportModel = new Report($this->db);
-        $stmt = $reportModel->getVenCommands($monthYear);
+        $stmt = $this->reportModel->getVenCommands($monthYear);
         $rowCount = $stmt->rowCount();
         if ($rowCount > 0) {
             $commands = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -27,10 +25,8 @@ class ReportController {
 
  // ฟังก์ชันรับ Request ดึงรายการผู้อยู่เวรตาม ID คำสั่ง
     public function getScheduleDetails($commandId) {
-        $reportModel = new Report($this->db);
-        
         // เรียกใช้ Model ของคุณ
-        $stmt = $reportModel->getSchedulesByCommandId($commandId);
+        $stmt = $this->reportModel->getSchedulesByCommandId($commandId);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // ตัวแปรสำหรับเก็บข้อมูลที่จัดกลุ่มแล้ว
