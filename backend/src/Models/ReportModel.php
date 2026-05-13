@@ -1,7 +1,7 @@
 <?php
-// backend/src/Models/Report.php
+// backend/src/Models/ReportModel.php
 
-class Report  {
+class ReportModel  {
     private $conn;
 
     public function __construct($db) {

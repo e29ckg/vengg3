@@ -155,6 +155,54 @@ class UserController {
             http_response_code(500);
             echo json_encode(["error" => "เกิดข้อผิดพลาด ไม่สามารถเรียงลำดับผู้ใช้ได้"]);
         }        
-    }   
+    }  
+
+    public function uploadAvatar($userId, $file, $baseDir) {
+        // เช็คว่ามีการส่งไฟล์มา และไม่มี Error
+        if (isset($file) && $file['error'] === UPLOAD_ERR_OK) {
+            
+            $uploadDir = $baseDir . '/uploads/avatars/';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+
+            $fileTmpPath = $file['tmp_name'];
+            $fileName = $file['name'];
+            $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            // ตรวจสอบนามสกุลไฟล์
+            $allowedfileExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            if (in_array($fileExtension, $allowedfileExtensions)) {
+                
+                // 🌟 1. ดึงชื่อไฟล์รูปเดิมจาก Model
+                $oldAvatar = $this->userModel->getAvatar($userId);
+
+                // ตั้งชื่อไฟล์ใหม่
+                $newFileName = 'user_' . $userId . '_' . time() . '.' . $fileExtension;
+                $dest_path = $uploadDir . $newFileName;
+
+                // ทำการย้ายไฟล์
+                if (move_uploaded_file($fileTmpPath, $dest_path)) {
+                    
+                    // 🌟 2. ถ้าย้ายไฟล์ใหม่สำเร็จ ให้ลบรูปเดิมทิ้ง
+                    if (!empty($oldAvatar) && file_exists($uploadDir . $oldAvatar)) {
+                        unlink($uploadDir . $oldAvatar);
+                    }
+
+                    // 🌟 3. อัปเดตชื่อไฟล์ลงฐานข้อมูล
+                    if ($this->userModel->updateAvatar($userId, $newFileName)) {
+                        echo json_encode(["success" => true, "avatar" => $newFileName]);
+                        return;
+                    }
+                }
+            } else {
+                http_response_code(400); 
+                echo json_encode(["error" => "รองรับเฉพาะไฟล์รูปภาพ (jpg, png, gif, webp) เท่านั้น"]); 
+                return;
+            }
+        }
+        
+        // กรณีอัปโหลดไม่สำเร็จหรือไม่มีไฟล์มา
+        http_response_code(400); 
+        echo json_encode(["error" => "ไม่สามารถอัปโหลดไฟล์ได้"]);
+    } 
 }
 ?>

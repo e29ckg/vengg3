@@ -74,40 +74,49 @@
               <div class="day-body p-1 flex-grow-1 overflow-auto custom-scrollbar">                
                 
                 <div v-for="sch in getSchedulesForDay(day)" :key="sch.id" 
-                    class="schedule-item mb-1 p-1 rounded-1 shadow-sm"
-                    :class="{ 'flashing-24h': Number(sch.price) !== 0 && is24HourShift(sch) }"
-                    :style="{ 
-                      backgroundColor: Number(sch.price) === 0 ? sch.backgroundColor : (is24HourShift(sch) ? '' : (sch.user_id == currentUserId ? '#FFD700' : sch.backgroundColor)), 
-                      color: Number(sch.price) === 0 ? '#fff' : (is24HourShift(sch) ? 'white' : (sch.user_id == currentUserId ? '#000' : '#fff'))
-                    }"
-                    @click="openShiftDetail(sch.id)"
-                    :title="`เวลา: ${sch.ven_time.substring(0,5)} น.`"> <template v-if="!systemSettings.compact_schedule_view">
-                    <div class="fw-bold" style="font-size: 0.7rem;">
-                      <i class="bi bi-clock me-1"></i>{{ sch.ven_time.substring(0,5) }}
-                      <i v-if="Number(sch.price) !== 0 && is24HourShift(sch)" class="bi bi-exclamation-triangle-fill ms-1 text-danger"></i>
-                      <i v-else-if="Number(sch.price) !== 0 && sch.user_id == currentUserId" class="bi bi-star-fill ms-1 text-warning"></i>
-                    </div>
-                    <div class="text-truncate fw-semibold" style="font-size: 0.85rem;">{{ sch.title }}</div>
-                  </template>
+     class="schedule-item mb-1 p-1 rounded-1 shadow-sm"
+     :class="{ 
+       'flashing-24h': Number(sch.price) !== 0 && is24HourShift(sch),
+       'border border-warning border-2': Number(sch.price) !== 0 && hasDuplicateShift(sch) 
+     }"
+     :style="{ 
+       backgroundColor: Number(sch.price) === 0 ? sch.backgroundColor : (is24HourShift(sch) ? '' : (sch.user_id == currentUserId ? '#FFD700' : sch.backgroundColor)), 
+       color: Number(sch.price) === 0 ? '#fff' : (is24HourShift(sch) ? 'white' : (sch.user_id == currentUserId ? '#000' : '#fff'))
+     }"
+     @click="openShiftDetail(sch.id)"
+     :title="`เวลา: ${sch.ven_time.substring(0,5)} น.`"> 
+     
+  <template v-if="!systemSettings.compact_schedule_view">
+    <div class="fw-bold d-flex align-items-center" style="font-size: 0.7rem;">
+      <i class="bi bi-clock me-1"></i>{{ sch.ven_time.substring(0,5) }}
+      
+      <i v-if="Number(sch.price) !== 0 && is24HourShift(sch)" class="bi bi-exclamation-triangle-fill ms-1 text-danger" title="เวรติดกัน 24 ชม."></i>
+      
+      <i v-else-if="Number(sch.price) !== 0 && hasDuplicateShift(sch)" class="bi bi-exclamation-circle-fill ms-1 text-warning fs-6" title="มีเวรซ้ำในวันเดียวกัน"></i>
+      
+      <i v-else-if="Number(sch.price) !== 0 && sch.user_id == currentUserId" class="bi bi-star-fill ms-1 text-warning" title="เวรของคุณ"></i>
+    </div>
+    <div class="text-truncate fw-semibold" style="font-size: 0.85rem;">{{ sch.title }}</div>
+  </template>
 
-                  <template v-else>
-                    <div class="d-flex align-items-center fw-semibold text-truncate" style="font-size: 0.85rem;">
-                      <i class="bi me-1" :class="getTimeIcon(sch)"></i>
-                      
-                      <span class="text-truncate flex-grow-1">{{ sch.title }}</span>
-                      
-                      <i v-if="Number(sch.price) !== 0 && is24HourShift(sch)" class="bi bi-exclamation-triangle-fill ms-1 text-danger"></i>
-                      <i v-else-if="Number(sch.price) !== 0 && sch.user_id == currentUserId" class="bi bi-star-fill ms-1 text-warning"></i>
-                    </div>
-                  </template>
-                </div>
+  <template v-else>
+    <div class="d-flex align-items-center fw-semibold text-truncate" style="font-size: 0.85rem;">
+      <i class="bi me-1" :class="getTimeIcon(sch)"></i>
+      <span class="text-truncate flex-grow-1">{{ sch.title }}</span>
+      
+      <i v-if="Number(sch.price) !== 0 && is24HourShift(sch)" class="bi bi-exclamation-triangle-fill ms-1 text-danger" title="เวรติดกัน 24 ชม."></i>
+      <i v-else-if="Number(sch.price) !== 0 && hasDuplicateShift(sch)" class="bi bi-exclamation-circle-fill ms-1 text-warning fs-6" title="มีเวรซ้ำในวันเดียวกัน"></i>
+      <i v-else-if="Number(sch.price) !== 0 && sch.user_id == currentUserId" class="bi bi-star-fill ms-1 text-warning" title="เวรของคุณ"></i>
+    </div>
+  </template>
+</div>
 
               </div>
             </div>
           </div>
         </div>
         <Teleport to="body">
-          <div class="modal fade" id="venDetailModal" tabindex="-1" aria-hidden="true">
+          <div class="modal fade" id="venDetailModal" tabindex="-1" >
             <div class="modal-dialog modal-dialog-centered">
               <div class="modal-content border-0 shadow-lg rounded-4" v-if="selectedVen">
                 
@@ -543,7 +552,7 @@ const loadRecipients = async () => {
     const sub_id = selectedVen.value.sub_id || selectedVen.value.ven_name_sub_id; 
     if (!sub_id) return Swal.fire('ข้อมูลไม่ครบถ้วน', 'ไม่พบรหัสหน้าที่', 'warning');
 
-    const res = await api.get(`?route=ven/eligible_users&action=get_by_sub&sub_id=${sub_id}`);
+    const res = await api.get(`?route=ven/eligible_users/get_by_sub&sub_id=${sub_id}`);
     recipients.value = res.data.filter(u => u.user_id != currentUserId.value);
     showRecipientList.value = true;
 
@@ -577,15 +586,21 @@ const check24HourViolation = (targetUserId, shiftDate, shiftTime) => {
 
   return false;
 };
-
 // 🌟 ปรับปรุงการตรวจสอบ 24 ชม. ให้ใช้ systemSettings
 const is24HourShift = (sch) => {
   // 1. ถ้าปิดตั้งค่าไว้, ไม่มีข้อมูล หรือเวรเป้าหมายนี้ price = 0 ให้ข้ามการตรวจสอบไปเลย
   if (!systemSettings.value.check_24h_consecutive || !allSchedules.value || sch.price == 0) return false;
   
-  // 2. ดึงเฉพาะเวรของ User นี้ "และต้องไม่ใช่เวรที่ price = 0" มาตรวจสอบ
-  const userShifts = allSchedules.value.filter(s => s.user_id == sch.user_id && s.price != 0);
-  const targetDate = new Date(sch.date);
+  // 🌟 2. ดึงเฉพาะเวรของ User นี้ "และต้องไม่ใช่เวรที่ price = 0" 
+  // 🌟 เพิ่มเงื่อนไข s.id !== sch.id เพื่อให้มันไม่เอา "ตัวมันเอง" มานับซ้ำ!
+  const userShifts = allSchedules.value.filter(s => 
+      s.user_id == sch.user_id && 
+      s.price != 0 && 
+      s.id !== sch.id
+  );
+  
+  // รองรับกรณีที่ชื่อฟิลด์วันที่อาจจะเป็น date หรือ ven_date
+  const targetDate = new Date(sch.date || sch.ven_date);
   
   const yesterday = new Date(targetDate);
   yesterday.setDate(yesterday.getDate() - 1);
@@ -594,17 +609,65 @@ const is24HourShift = (sch) => {
 
   const yesterdayStr = yesterday.toISOString().split('T')[0];
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  
+  // ให้ตัวแปรวันที่อ้างอิงให้ถูกต้อง
+  const schDate = sch.date || sch.ven_date;
 
-  if (sch.ven_time.includes("08:30")) {
-    return userShifts.some(s => (s.date === yesterdayStr && s.ven_time.includes("16:30")) || 
-                               (s.date === sch.date && s.ven_time.includes("16:30")));
+  if (!sch.ven_time_text) return false;
+
+  // 🌟 1. กรณีเวรกลางวัน (08.30 - 16.30)
+  if (sch.ven_time_text.includes('08.30 - 16.30') || sch.ven_time_text.includes('08:30 - 16:30')) {
+    
+    return userShifts.some(s => {
+      const sDate = s.date || s.ven_date;
+      return (sDate === yesterdayStr && (s.ven_time_text.includes("16.30 - 08.30") || s.ven_time_text.includes("16:30 - 08:30"))) || 
+             (sDate === schDate && (s.ven_time_text.includes("16.30 - 08.30") || s.ven_time_text.includes("16:30 - 08:30"))) || 
+             (sDate === schDate && (s.ven_time_text.includes("08.30 - 16.30") || s.ven_time_text.includes("08:30 - 16:30")));
+    });
+
+  // 🌟 2. กรณีเวรกลางคืน (16.30 - 08.30)
+  } else if (sch.ven_time_text.includes('16.30 - 08.30') || sch.ven_time_text.includes('16:30 - 08:30')) {
+    
+    return userShifts.some(s => {
+      const sDate = s.date || s.ven_date;
+      return (sDate === schDate && (s.ven_time_text.includes("16.30 - 08.30") || s.ven_time_text.includes("16:30 - 08:30"))) || 
+             (sDate === schDate && (s.ven_time_text.includes("08.30 - 16.30") || s.ven_time_text.includes("08:30 - 16:30"))) ||
+             (sDate === schDate && (s.ven_time_text.includes("16.00 - 20.00") || s.ven_time_text.includes("16:00 - 20:00"))) ||
+             (sDate === tomorrowStr && (s.ven_time_text.includes("08.30 - 16.30") || s.ven_time_text.includes("08:30 - 16:30")));
+    });
+
+  // 🌟 3. กรณีเวรเย็น (16.30 - 20.00)
+  } else if (sch.ven_time_text.includes('16.30 - 20.00') || sch.ven_time_text.includes('16:30 - 20:00')) {
+    
+    return userShifts.some(s => {
+      const sDate = s.date || s.ven_date;
+      return (sDate === schDate && (s.ven_time_text.includes("16.30 - 20.00") || s.ven_time_text.includes("16:30 - 20:00"))) || 
+             (sDate === schDate && (s.ven_time_text.includes("16.30 - 08.30") || s.ven_time_text.includes("16:30 - 08:30")));
+    });
+
   } else {
-    return userShifts.some(s => (s.date === sch.date && s.ven_time.includes("08:30")) || 
-                               (s.date === tomorrowStr && s.ven_time.includes("08:30")));
+    return false; 
   }
+}
+
+// 🌟 ฟังก์ชันตรวจสอบว่าคนนี้มีเวรซ้ำในวันเดียวกันหรือไม่
+const hasDuplicateShift = (sch) => {
+  // ถ้าไม่มี ID คนเข้าเวร หรือเป็นเวรที่ไม่ได้เงิน (เช่น เวรเปล่าๆ) ให้ข้ามไป
+  if (!sch.user_id || Number(sch.price) === 0) return false;
+
+  // ค้นหาในตารางเวรทั้งหมดของเดือนนี้ ว่าในวันเดียวกัน มีชื่อคนนี้กี่กะ
+  const count = allSchedules.value.filter(s => 
+    s.date === sch.date &&
+    s.ven_time === sch.ven_time && 
+    s.user_id === sch.user_id && 
+    Number(s.price) !== 0
+  ).length;
+
+  // ถ้าเจอมากกว่า 1 กะ แปลว่าอยู่เวรซ้ำในวันเดียวกัน
+  return count > 1;
 };
 
-// 🌟 ฟังก์ชันสำหรับกดยกเลิกใบเปลี่ยนเวร
+// 🌟  ฟังก์ชันสำหรับกดยกเลิกใบเปลี่ยนเวร
 // const cancelRequest = async (changeId) => {
 //   // 1. ถามยืนยันก่อนยกเลิก
 //   const result = await Swal.fire({
@@ -795,7 +858,7 @@ const confirmTransfer = async (targetUser) => {
     Swal.fire({ title: 'กำลังส่งคำขอ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
     // 🌟 ส่งไปที่ API เดียวกับสลับเวรเป๊ะๆ แต่ตั้งค่า is_swap = 0
-    await api.post('?route=user/transfer&action=perform', {
+    await api.post('?route=ven/transfer/perform', {
       schedule_id: myShift.id || myShift.ven_id, // รหัสเวรของเราที่ต้องการยกให้
       new_user_id: targetUser.user_id,           // รหัสคนรับเวร
       is_swap: 0                                 // 🌟 0 = ยกให้ (ไม่ใช่สลับ)
@@ -905,7 +968,7 @@ const confirmSwap = async () => {
     Swal.fire({ title: 'กำลังส่งคำขอ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
     // 🌟 เตรียม payload ส่งให้ Backend พร้อม Flag: is_swap = 1
-    await api.post('?route=user/transfer&action=perform', {
+    await api.post('?route=ven/transfer/perform', {
       schedule_id: myShift.id || myShift.ven_id, // รหัสเวรของเรา (หลัก)
       new_user_id: theirShift.user_id,           // รหัสเจ้าของเวรที่เราไปขอแลกด้วย
       is_swap: 1,                                // บอก Backend ว่านี่คือการสลับเวร

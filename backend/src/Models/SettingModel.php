@@ -1,7 +1,7 @@
 <?php
-// backend/src/Models/Setting.php
+// backend/src/Models/SettingModel.php
 
-class Setting {
+class SettingModel {
     private $conn;
 
     public function __construct($db) {
@@ -346,6 +346,8 @@ class Setting {
                          s.ven_name_sub_id as sub_id, sub.name as sub_name, sub.color,
                          IF(n.dn LIKE '%กลางคืน%', '16:30:00', '08:30:00') AS ven_time,
                          sub.price,
+                         n.id as ven_name_id, 
+                         n.name as ven_name,
                          n.dn as shift_type
                   FROM ven_schedule s
                   JOIN user u ON s.user_id = u.id
@@ -637,28 +639,27 @@ class Setting {
     }
 
     // อัปเดตการตั้งค่าระบบ
-    public function updateSystemSettings($data) {
-        try {
-            $sql = "UPDATE system_settings SET 
-                        system_name = :system_name, 
-                        allow_swap = :allow_swap, 
-                        advance_swap_days = :advance_swap_days,
-                        maintenance_mode = :maintenance_mode,
-                        allow_retroactive_swap = :allow_retroactive_swap,
-                        check_24h_consecutive = :check_24h_consecutive
-                    WHERE id = 1";
-            $stmt = $this->conn->prepare($sql);
-            return $stmt->execute([
-                ':system_name' => $data['system_name'],
-                ':allow_swap' => $data['allow_swap'],
-                ':advance_swap_days' => $data['advance_swap_days'],
-                ':maintenance_mode' => $data['maintenance_mode'],
-                ':allow_retroactive_swap' => $data['allow_retroactive_swap'], 
-                ':check_24h_consecutive' => $data['check_24h_consecutive']    
-            ]);
-        } catch (PDOException $e) {
-            return false;
+    public function updateSystemSetting($key, $value) {
+        // รายชื่อฟิลด์ที่อนุญาตให้อัปเดตได้ (ตั้งค่าให้ตรงกับ Database ของคุณ)
+        $allowedKeys = [
+            'allow_swap', 
+            'allow_retroactive_swap', 
+            'check_24h_consecutive', 
+            'maintenance_mode',
+            'compact_schedule_view',
+            'system_name'
+        ];
+
+        // ตรวจสอบว่า key ที่ส่งมาอยู่ในรายชื่อที่อนุญาตหรือไม่
+        if (!in_array($key, $allowedKeys)) {
+            return false; 
         }
+
+        // หากผ่านการตรวจสอบแล้ว ให้อัปเดตข้อมูล
+        $sql = "UPDATE system_settings SET `$key` = :val WHERE id = 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':val', $value);
+        return $stmt->execute();
     }
 
     // ==========================================
@@ -872,20 +873,7 @@ class Setting {
         }
     }
 
-    public function updateSystemSetting($key, $value) {
-    // รายชื่อฟิลด์ที่อนุญาตให้อัปเดตได้ (Security White-list)
-    $allowed_keys = ['allow_retroactive_swap', 'check_24h_consecutive', 'notify_change_request','advance_swap_days','allow_swap', 'maintenance_mode','system_name','compact_schedule_view'];
-    
-    if (!in_array($key, $allowed_keys)) {
-        return false;
-    }
-
-    $query = "UPDATE system_settings SET $key = :val WHERE id = 1";
-    $stmt = $this->conn->prepare($query);
-    return $stmt->execute([':val' => $value]);
-}
-
-// 🌟 ดึงข้อมูลตัวเลือกทั้งหมด (หรือส่งค่าเริ่มต้นถ้ายังไม่มีข้อมูล)
+    // 🌟 ดึงข้อมูลตัวเลือกทั้งหมด (หรือส่งค่าเริ่มต้นถ้ายังไม่มีข้อมูล)
     public function getUserOptions() {
         $stmt = $this->conn->prepare("SELECT user_options FROM system_settings WHERE id = 1");
         $stmt->execute();
@@ -909,6 +897,8 @@ class Setting {
         $stmt = $this->conn->prepare("UPDATE system_settings SET user_options = :val WHERE id = 1");
         return $stmt->execute([':val' => $json]);
     }
+
+       
 
     
     

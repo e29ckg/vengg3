@@ -241,7 +241,7 @@ const venData = ref([])
 
 const fetchVenFullData = async () => {
   try {
-    const response = await api.get('?route=admin/setting&action=ven_full')
+    const response = await api.get('?route=admin/ven/setting&action=ven_full')
     
     // 🌟 เช็คว่า API ทำงานสำเร็จ (success: true) และมีข้อมูล (data) อยู่จริง
     if (response.data && response.data.success && Array.isArray(response.data.data)) {
@@ -280,7 +280,7 @@ const deleteVenName = async (id) => {
 
   if (result.isConfirmed) {
     try {
-      await api.post(`?route=admin/setting&action=delete_ven_name`, { id })
+      await api.post(`?route=admin/ven/setting&action=delete_ven_name`, { id })
       fetchVenFullData()
       Swal.fire('ลบสำเร็จ!', 'ข้อมูลกลุ่มเวรถูกลบเรียบร้อยแล้ว', 'success')
     } catch (error) {
@@ -303,7 +303,7 @@ const deleteSubDuty = async (id) => {
 
   if (result.isConfirmed) {
     try {
-      await api.post(`?route=admin/setting&action=delete_sub_duty`, { id })
+      await api.post(`?route=admin/ven/setting&action=delete_sub_duty`, { id })
       fetchVenFullData()
       Swal.fire('ลบสำเร็จ!', 'ข้อมูลหน้าที่ย่อยถูกลบเรียบร้อยแล้ว', 'success')
     } catch (error) {
@@ -351,7 +351,7 @@ const addMainVen = () => {
 const editMainVen = async (ven) => {
   Swal.fire({ title: 'กำลังดึงข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
   try {
-    const response = await api.get(`?route=admin/setting&table=ven_name&action=get_by_id&id=${ven.id}`);
+    const response = await api.get(`?route=admin/ven/setting&table=ven_name&action=get_by_id&id=${ven.id}`);
     const data = response.data;
     if (data) {
       isEditingMain.value = true;
@@ -375,7 +375,7 @@ const editMainVen = async (ven) => {
 const submitMainVen = async () => {
   try {
     const action = isEditingMain.value ? 'update_venname' : 'create_venname' 
-    await api.post(`?route=admin/setting&table=ven_name&action=${action}`, mainForm.value)
+    await api.post(`?route=admin/ven/setting&table=ven_name&action=${action}`, mainForm.value)
     mainModalInstance.hide() // 🌟 ใช้ API ของ Bootstrap Modal แทนการจำลองคลิก
     Swal.fire('สำเร็จ', 'บันทึกชื่อเวรหลักเรียบร้อย', 'success')
     fetchVenFullData()
@@ -410,7 +410,7 @@ const openSubModal = (mode, venNameId, sub = null) => {
 const submitSubVen = async () => {
   try {
     const action = isEditingSub.value ? 'update_sub' : 'create_sub'
-    await api.post(`?route=admin/setting&table=ven_name_sub&action=${action}`, subForm.value)
+    await api.post(`?route=admin/ven/setting&table=ven_name_sub&action=${action}`, subForm.value)
     subModalInstance.hide() // 🌟 ใช้คำสั่ง Hide ของ Bootstrap 
     Swal.fire('สำเร็จ', 'บันทึกข้อมูลหน้าที่ย่อยเรียบร้อย', 'success')
     fetchVenFullData()
@@ -444,7 +444,7 @@ const onDropSub = async (dropIndex, venId) => {
   const payload = ven.subs.map(sub => ({ id: sub.id, srt: sub.srt }))
 
   try {
-    await api.post('?route=admin/setting&table=ven_name_sub&action=update_order', payload)
+    await api.post('?route=admin/ven/setting&table=ven_name_sub&action=update_order', payload)
     draggedIndex.value = null
     draggedVenId.value = null
   } catch (error) {
@@ -468,7 +468,7 @@ const fetchAllUsers = async () => {
 }
 
 const fetchAssignedUsers = async (subId) => {
-  const res = await api.get(`?route=admin/ven_user&action=get_by_sub&sub_id=${subId}`)
+  const res = await api.get(`?route=admin/ven_user/get_by_sub&sub_id=${subId}`)
   assignedUsers.value = res.data || []
 }
 
@@ -495,18 +495,18 @@ const openManageUsersModal = async (sub) => {
 }
 
 const addUserToSub = async (userId) => {
-  await api.post('?route=admin/ven_user&action=add', { sub_id: activeManageSub.value.id, user_id: userId })
+  await api.post('?route=admin/ven_user/add', { sub_id: activeManageSub.value.id, user_id: userId })
   await fetchAssignedUsers(activeManageSub.value.id) 
 }
 
 const removeUserFromSub = async (vuId) => {
-  await api.post('?route=admin/ven_user&action=remove', { vu_id: vuId })
+  await api.post('?route=admin/ven_user/remove', { vu_id: vuId })
   await fetchAssignedUsers(activeManageSub.value.id) 
 }
 
 const saveUserOrder = async () => {
   const orderedIds = assignedUsers.value.map(u => u.vu_id)
-  await api.post('?route=admin/ven_user&action=update_order', { ordered_ids: orderedIds })
+  await api.post('?route=admin/ven_user/update_order', { ordered_ids: orderedIds })
 }
 
 const moveUserUp = async (index) => {

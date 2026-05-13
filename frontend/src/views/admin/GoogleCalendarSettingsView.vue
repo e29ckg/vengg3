@@ -111,14 +111,14 @@ const fileInput = ref(null)
 
 const fetchConfig = async () => {
   try {
-    const res = await api.get('?route=admin/google_settings&action=get_google_config')
+    const res = await api.get('?route=admin/google_settings/get')
     config.value = res.data
   } catch (error) { console.error(error) }
 }
 
 const saveConfig = async () => {
   try {
-    await api.post('?route=admin/google_settings&action=update_google_config', config.value)
+    await api.post('?route=admin/google_settings/update', config.value)
     Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1500, showConfirmButton: false })
   } catch (error) { Swal.fire('ผิดพลาด', 'บันทึกไม่สำเร็จ', 'error') }
 }
@@ -129,7 +129,7 @@ const uploadCredentials = async () => {
   const formData = new FormData();
   formData.append('credential_file', selectedFile.value);
   try {
-    const res = await api.post('?route=admin/google_settings&action=upload_credentials', formData, {
+    const res = await api.post('?route=admin/google_settings/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     if (res.data.success) {

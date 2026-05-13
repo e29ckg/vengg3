@@ -1,5 +1,5 @@
 <?php
-require_once '../src/Models/Setting.php';
+require_once '../src/Models/SettingModel.php';
 
 class OptionController {
     private $db;

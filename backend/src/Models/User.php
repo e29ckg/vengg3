@@ -311,5 +311,17 @@ public function update_order($data) {
             return false;
         }
     }
+
+    public function getAvatar($userId) {
+        $stmt = $this->conn->prepare("SELECT avatar FROM profile WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        return $stmt->fetchColumn();
+    }
+
+    // อัปเดตชื่อไฟล์รูปโปรไฟล์ใหม่
+    public function updateAvatar($userId, $fileName) {
+        $stmt = $this->conn->prepare("UPDATE profile SET avatar = ? WHERE user_id = ?");
+        return $stmt->execute([$fileName, $userId]);
+    }
 }
 ?>

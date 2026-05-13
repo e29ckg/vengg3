@@ -257,13 +257,13 @@ const yearList = computed(() => {
 
 // ดึงข้อมูลคำสั่งทั้งหมด
 const fetchCommands = async () => {
-  const res = await api.get('?route=admin/ven_com&action=list')
+  const res = await api.get('?route=admin/ven_com/list')
   commands.value = res.data || []
 }
 
 // ดึงรายชื่อเวรหลัก
 const fetchVenNames = async () => {
-  const res = await api.get('?route=admin/setting&action=list_venname')
+  const res = await api.get('?route=admin/ven/setting&action=list_venname')
       venNames.value = res.data.data || []
 }
 
@@ -338,7 +338,7 @@ const submitCommand = async () => {
     }
 
     const action = isEditing.value ? 'update' : 'create'
-    await api.post(`?route=admin/ven_com&action=${action}`, payload)
+    await api.post(`?route=admin/ven_com/${action}`, payload)
     
     document.getElementById('closeComModal').click()
     Swal.fire({ title: 'สำเร็จ', text: 'บันทึกคำสั่งเวรเรียบร้อยแล้ว', icon: 'success', timer: 1500, showConfirmButton: false })
@@ -379,7 +379,7 @@ const toggleStatus = async (com, event) => {
       });
 
       // ยิง API ไปอัปเดตข้อมูล
-      await api.post('?route=admin/ven_com&action=toggle_status', { 
+      await api.post('?route=admin/ven_com/toggle_status', { 
         id: com.id, 
         status: newStatus 
       });
@@ -523,7 +523,7 @@ const syncToGoogle = async (monthToSync) => {
 
   const result = await Swal.fire({
     title: 'ส่งเวรขึ้น Google Calendar?',
-    text: `ระบบจะนำข้อมูลการจัดเวรของเดือน ${monthToSync} ส่งขึ้นไปอัปเดตบน Google Calendar`,
+    text: `ระบบจะนำข้อมูลการจัดเวรของเดือน ${formatMonthThai(monthToSync)} ส่งขึ้นไปอัปเดตบน Google Calendar`,
     icon: 'info',
     showCancelButton: true,
     confirmButtonColor: '#db4437',
@@ -544,7 +544,7 @@ const syncToGoogle = async (monthToSync) => {
 
     try {
       // ยิง API ไปที่ Backend เดิมที่เราทำไว้
-      const response = await api.post('?route=admin/ven_schedule&action=sync_google', {
+      const response = await api.post('?route=admin/ven_schedule/sync_google', {
         month: monthToSync 
       });
 
