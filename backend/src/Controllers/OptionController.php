@@ -1,13 +1,15 @@
 <?php
-require_once '../src/Models/SettingModel.php';
+// backend/src/Controllers/OptionController.php
+
+require_once __DIR__ . '/../Models/SettingModel.php';
 
 class OptionController {
-    private $db;
+    
     private $settingModel;
 
-    public function __construct($db) {
-        $this->db = $db;
-        $this->settingModel = new Setting($db);
+    // 🌟 รับ $settingModel เข้ามาใช้งาน
+    public function __construct($settingModel) {
+        $this->settingModel = $settingModel;
     }
 
     // ดึงข้อมูลส่งให้ Frontend
@@ -20,7 +22,7 @@ class OptionController {
     // เพิ่มตัวเลือกใหม่
     public function addOption() {
         $data = json_decode(file_get_contents("php://input"), true);
-        $type = $data['type'] ?? ''; // prefix, position, หรือ department
+        $type = $data['type'] ?? ''; 
         $value = trim($data['value'] ?? '');
 
         if (empty($type) || empty($value)) {
@@ -29,7 +31,6 @@ class OptionController {
             return;
         }
 
-        // จับคู่คีย์ที่ส่งมาจาก Frontend ให้ตรงกับ Array ในระบบ
         $keyMap = ['prefix' => 'prefixes', 'position' => 'positions', 'department' => 'departments'];
         if (!array_key_exists($type, $keyMap)) {
             http_response_code(400);
@@ -40,9 +41,8 @@ class OptionController {
         $arrayKey = $keyMap[$type];
         $options = $this->settingModel->getUserOptions();
 
-        // เช็คว่ามีค่านี้อยู่แล้วหรือยัง ถ้ายังไม่มีให้เพิ่มเข้าไป
         if (!in_array($value, $options[$arrayKey])) {
-            $options[$arrayKey][] = $value; // เพิ่มค่าใหม่ต่อท้าย Array
+            $options[$arrayKey][] = $value; 
             
             if ($this->settingModel->saveUserOptions($options)) {
                 echo json_encode(["success" => true]);
@@ -73,7 +73,6 @@ class OptionController {
         $options = $this->settingModel->getUserOptions();
 
         if (isset($options[$arrayKey])) {
-            // กรองเอาตัวที่ต้องการลบออก (ลบ $value ออกจาก Array)
             $options[$arrayKey] = array_values(array_filter($options[$arrayKey], function($item) use ($value) {
                 return $item !== $value;
             }));
@@ -84,6 +83,10 @@ class OptionController {
                 http_response_code(500);
                 echo json_encode(["error" => "ไม่สามารถลบข้อมูลได้"]);
             }
+        } else {
+             http_response_code(400);
+             echo json_encode(["error" => "ไม่พบข้อมูลที่ต้องการลบ"]);
         }
     }
 }
+?>

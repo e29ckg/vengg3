@@ -165,7 +165,7 @@ const prefixes = ref([]);
 // 🌟 2. สร้างฟังก์ชันดึงข้อมูลตัวเลือก
 const fetchOptions = async () => {
   try {
-    const res = await api.get('?route=admin/user/options')
+    const res = await api.get('?route=admin/options/get')
     if (res.data) {
       // สมมติว่า Backend ส่งข้อมูลมาเป็น { positions: [...], departments: [...] }
       positions.value = res.data.positions || [];
