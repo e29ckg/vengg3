@@ -12,7 +12,7 @@
           <div class="text-muted small">
             <span class="fw-bold text-primary"><i class="bi bi-calendar2-check"></i> ระบบบริหารจัดการเวรนอกเวลาทำการ</span> 
             <span class="ms-2 opacity-50">|</span>
-            <span class="ms-2">Version 3.0.0</span>
+            <span class="ms-2">Version 3.0.1</span>
             <router-link to="/manual" class="ms-2 text-decoration-none text-secondary">
               <i class="bi bi-question-circle me-1"></i>คู่มือการใช้งาน
             </router-link>
