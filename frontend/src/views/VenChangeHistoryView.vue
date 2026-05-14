@@ -252,6 +252,8 @@ const downloadWord = async (historyData) => {
       ven_name_full: historyData.duty_main_full,
       duty_role: historyData.duty_role,
       ven_date: historyData.ven_date,
+      ven_time: historyData.ven_time,
+      ven_time_text: historyData.ven_time_text,
       
       ven_time: historyData.dn || historyData.duty_main,
       duty_main: historyData.duty_main,
