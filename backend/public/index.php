@@ -46,9 +46,6 @@ $route = isset($_GET['route']) ? $_GET['route'] : '';
 $db = new Database();
 $connection = $db->getConnection();
 
-// 🌟 ฟังก์ชันตัวช่วยสำหรับอัปเดต Google Calendar เฉพาะวันที่กำหนด
-
-
 // --- ระบบ Routing ---
 switch ($route) {
     case 'test':
@@ -249,7 +246,6 @@ switch ($route) {
         break;      
 
     
-    // ------------------------------------------------
     // ดึงประวัติการเปลี่ยนเวรส่วนตัว
     case 'user/ven_change_history':
         $userData = AuthMiddleware::checkToken($connection);
@@ -291,14 +287,10 @@ switch ($route) {
     // 🌟 ระบบโอนเวร / สลับเวร
     // ==========================================
     case 'ven/transfer/perform':
-        // ตรวจสอบสิทธิ์ว่าล็อกอินหรือยัง และดึง ID ของพนักงาน
         $userData = AuthMiddleware::checkToken($connection);
         $currentUserId = is_array($userData) ? $userData['id'] : $userData->id;
-
         $transferModel = new VenTransferModel($connection);
-        // สังเกตว่าเราส่ง $connection ไปให้ Controller ด้วยเพื่อให้ส่งต่อให้ updateGoogleCalendarDay ได้
-        $transferController = new VenTransferController($transferModel, $connection);
-        
+        $transferController = new VenTransferController($transferModel, $connection);        
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = json_decode(file_get_contents("php://input"), true);
             $transferController->perform($currentUserId, $data);
@@ -310,11 +302,9 @@ switch ($route) {
 
     // 🌟 สำหรับยกเลิกใบเปลี่ยนเวร
     case 'ven/transfer/cancel':
-        AuthMiddleware::checkToken($connection);
-        
+        AuthMiddleware::checkToken($connection);        
         $transferModel = new VenTransferModel($connection);
-        $transferController = new VenTransferController($transferModel, $connection);
-        
+        $transferController = new VenTransferController($transferModel, $connection);        
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = json_decode(file_get_contents("php://input"), true);
             $transferController->cancel($data);
@@ -334,10 +324,8 @@ switch ($route) {
     case 'user/profile/upload_avatar':
         $userData = AuthMiddleware::checkToken($connection);
         $userId = is_array($userData) ? $userData['id'] : $userData->id;
-
         $userModel = new User($connection);
         $userController = new UserController($userModel);
-
         $file = isset($_FILES['avatar']) ? $_FILES['avatar'] : null;
         $userController->uploadAvatar($userId, $file, __DIR__);
         break;
@@ -348,16 +336,12 @@ switch ($route) {
         $venSettingController = new VenSettingController($settingModel);            
         $action = $_GET['action'] ?? '';
         $data = json_decode(file_get_contents("php://input"), true);
-        
-        // 4. ส่งให้ Controller จัดการ
         $venSettingController->handleAction($action, $data);
         break;
 
-
     // ==========================================
     // 🌟 การจัดการผู้อยู่เวร (ผูกคนเข้ากับหน้าที่ย่อย)
-    // ==========================================
-    
+    // ==========================================    
     case 'admin/ven_user/get_by_sub':
         AuthMiddleware::checkDirector($connection);
         $userController = new VenUserController(new SettingModel($connection));
@@ -485,26 +469,18 @@ switch ($route) {
     // ⚙️ การเงิน ออกรายงาน (Financ Report)
     // ==========================================
     case 'finance/report':
-        // 1. เช็คสิทธิ์ (เช่น ต้องเข้าระบบแล้ว หรือถ้าต้องการเฉพาะแอดมินให้ใช้ checkAdmin)
         AuthMiddleware::checkToken($connection); 
-
-        // 2. เรียกใช้ Model และ Controller
         $financeModel = new FinanceModel($connection);
         $financeController = new FinanceController($financeModel);
-        
-        // 3. รับพารามิเตอร์และส่งให้ Controller
         $month = $_GET['month'] ?? date('Y-m');
         $command_id = $_GET['command_id'] ?? null;
         $financeController->getFinanceReport($month, $command_id);
         break;
 
-    // โค้ดสำหรับดึงรายการคำสั่งส่งให้ Dropdown
     case 'get_commands':
-        AuthMiddleware::checkToken($connection);
-        
+        AuthMiddleware::checkToken($connection);        
         $financeModel = new FinanceModel($connection);
-        $financeController = new FinanceController($financeModel);
-        
+        $financeController = new FinanceController($financeModel);        
         $month = $_GET['month'] ?? date('Y-m');
         $financeController->getCommands($month);
         break;
@@ -513,11 +489,9 @@ switch ($route) {
     // ⚙️ ดึงข้อมูลการตั้งค่าระบบ (สำหรับพนักงานทั่วไปใช้อ่านกฎ)
     // ==========================================
     case 'system_settings':
-        AuthMiddleware::checkToken($connection); 
-        
+        AuthMiddleware::checkToken($connection);
         $settingModel = new SettingModel($connection); 
         $settingController = new SettingController($settingModel);
-        
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $settingController->getSettings();
         } else {
@@ -530,11 +504,9 @@ switch ($route) {
     // ⚙️ ตั้งค่าระบบ (System Settings)
     // ==========================================
     case 'admin/system_settings':
-        AuthMiddleware::checkAdmin($connection);
-        
+        AuthMiddleware::checkAdmin($connection);        
         $settingModel = new SettingModel($connection);
-        $settingController = new SettingController($settingModel);
-        
+        $settingController = new SettingController($settingModel);        
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $settingController->getSettings();
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -551,15 +523,12 @@ switch ($route) {
     case 'admin/agency_settings':
         $settingModel = new SettingModel($connection);
         $settingController = new SettingController($settingModel);
-
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             AuthMiddleware::checkToken($connection); 
             $settingController->getAgencySettings();
-
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             AuthMiddleware::checkAdmin($connection);
             $settingController->updateAgencySettings();
-
         } else {
             http_response_code(405);
             echo json_encode(["error" => "Method Not Allowed"]);
@@ -568,20 +537,16 @@ switch ($route) {
 
     case 'admin/settings/update_toggle':
         AuthMiddleware::checkAdmin($connection); 
-
         $settingModel = new SettingModel($connection);
-        $settingController = new SettingController($settingModel);
-        
+        $settingController = new SettingController($settingModel);        
         $settingController->updateToggle();
         break;
         
     // 🌟 สำรองข้อมูล (เฉพาะรูปภาพ .zip)
     case 'admin/backup/images':
         AuthMiddleware::checkAdmin($connection);
-
         $backupModel = new BackupModel($connection);
-        $backupController = new BackupController($backupModel);
-        
+        $backupController = new BackupController($backupModel);        
         $backupController->downloadImages(__DIR__);
         break;
 
@@ -619,8 +584,7 @@ switch ($route) {
 
     // ==========================================
     // 📢 ระบบตั้งค่าการแจ้งเตือน Telegram
-    // ==========================================        
-    // ดึงค่าการตั้งค่าไปแสดงที่หน้าฟอร์ม
+    // ==========================================   
     case 'admin/telegram_settings':
         AuthMiddleware::checkAdmin($connection);
         $settingModel = new SettingModel($connection);

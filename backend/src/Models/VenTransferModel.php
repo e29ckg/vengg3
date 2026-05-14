@@ -69,7 +69,6 @@ class VenTransferModel {
             return ['success' => false, 'error' => 'Database Error: ' . $e->getMessage(), 'code' => 500];
         }
     }
-    // ... ฟังก์ชัน performTransfer เดิม ...
 
     // 🌟 ยกเลิกการเปลี่ยนเวร (คืนค่าเดิม)
     public function cancelTransfer($change_id) {

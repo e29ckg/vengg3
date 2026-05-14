@@ -815,6 +815,20 @@ class SettingModel {
                          CONCAT_WS(' ', CONCAT(IFNULL(p2.prefix_name, ''), IFNULL(p2.first_name, '')), p2.last_name)AS user2_name,
                          p1.position AS user1_dep,
                          p2.position AS user2_dep,
+                         /* 🌟 1. ใช้ CASE WHEN ในการกำหนดเวลาเริ่มต้น (สำหรับนำไปใช้เรียงลำดับและตัด .substring(0,5)) */
+                    CASE 
+                        WHEN vn.dn LIKE '%nightCourt%' THEN '16:30:00'
+                        WHEN vn.dn LIKE '%กลางคืน%' THEN '16:30:00'
+                        WHEN vn.dn LIKE '%กลางวัน%' THEN '08:30:00'
+                        ELSE '08:30:00' 
+                    END AS ven_time,
+                    
+                    /* 🌟 2. (แถม) เผื่อส่งข้อความเวลาเต็มๆ ไปแสดงในหน้า Modal ค้นหาหรือปริ้นเอกสาร */
+                    CASE 
+                        WHEN vn.dn LIKE '%nightCourt%' THEN '16.30 - 20.00'
+                        WHEN vn.dn LIKE '%กลางคืน%' THEN '16.30 - 08.30'
+                        ELSE '08.30 - 16.30'
+                    END AS ven_time_text,
 
                          (SELECT prev.change_no 
                             FROM ven_change prev 
