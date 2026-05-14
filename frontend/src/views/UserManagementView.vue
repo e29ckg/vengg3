@@ -356,7 +356,7 @@ const editingUser = ref({
 // --- ดึงข้อมูลตอนเริ่ม ---
 const fetchOptions = async () => {
   try {
-    const response = await api.get('?route=admin/user/options')
+    const response = await api.get('?route=admin/options/get')
     prefixes.value = response.data.prefixes
     positions.value = response.data.positions
     departments.value = response.data.departments

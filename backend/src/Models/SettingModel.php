@@ -872,32 +872,27 @@ class SettingModel {
             return false;
         }
     }
+    
 
-    // 🌟 ดึงข้อมูลตัวเลือกทั้งหมด (หรือส่งค่าเริ่มต้นถ้ายังไม่มีข้อมูล)
+    // 🌟 ดึงตัวเลือกทั้งหมด (คำนำหน้า, ตำแหน่ง, ฝ่าย)
     public function getUserOptions() {
         $stmt = $this->conn->prepare("SELECT user_options FROM system_settings WHERE id = 1");
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($row && !empty($row['user_options'])) {
-            return json_decode($row['user_options'], true);
-        }
-
-        // ค่าเริ่มต้น (เผื่อฐานข้อมูลยังว่างเปล่า)
-        return [
-            "prefixes" => ["นาย", "นาง", "นางสาว"],
-            "positions" => ["ผู้พิพากษา", "ผู้อำนวยการฯ", "นิติกร", "เจ้าพนักงานศาลยุติธรรม"],
-            "departments" => ["กลุ่มงานอำนวยการ", "กลุ่มงานคลัง", "กลุ่มงานบริการประชาชนฯ"]
+        
+        return $row ? json_decode($row['user_options'], true) : [
+            'prefixes' => [],
+            'positions' => [],
+            'departments' => []
         ];
     }
 
-    // 🌟 บันทึกข้อมูลตัวเลือกกลับลงฐานข้อมูล
-    public function saveUserOptions($optionsArray) {
-        $json = json_encode($optionsArray, JSON_UNESCAPED_UNICODE);
-        $stmt = $this->conn->prepare("UPDATE system_settings SET user_options = :val WHERE id = 1");
-        return $stmt->execute([':val' => $json]);
+    // 🌟 บันทึกตัวเลือกทั้งหมดลงฐานข้อมูล
+    public function saveUserOptions($options) {
+        $jsonOptions = json_encode($options, JSON_UNESCAPED_UNICODE);
+        $stmt = $this->conn->prepare("UPDATE system_settings SET user_options = ? WHERE id = 1");
+        return $stmt->execute([$jsonOptions]);
     }
-
        
 
     

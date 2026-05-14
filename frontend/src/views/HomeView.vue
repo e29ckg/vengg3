@@ -746,7 +746,7 @@ const cancelChange = async (changeId) => {
       });
 
       // 2. ยิง API ไปยกเลิกและอัปเดต Google Calendar
-      const res = await api.post('?route=ven/cancel_change', { change_id: changeId });
+      const res = await api.post('?route=ven/transfer/cancel', { change_id: changeId });
       
       // 3. ปิด Loading และแสดงข้อความสำเร็จ
       if (res.data.success) {

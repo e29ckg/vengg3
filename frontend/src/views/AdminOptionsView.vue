@@ -154,7 +154,7 @@ const newItems = ref({
 // ดึงข้อมูลทั้งหมด
 const fetchOptions = async () => {
   try {
-    const res = await api.get('?route=admin/user/options')
+    const res = await api.get('?route=admin/options/get')
     if (res.data) {
       options.value.prefixes = res.data.prefixes || []
       options.value.positions = res.data.positions || []

@@ -312,6 +312,13 @@ public function update_order($data) {
         }
     }
 
+    // 🌟 ดึงข้อมูลโปรไฟล์ส่วนตัว
+    public function getProfile($userId) {
+        $stmt = $this->conn->prepare("SELECT avatar, prefix_name, first_name, last_name, position, department, phone, bank_account, bank_comment FROM profile WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     public function getAvatar($userId) {
         $stmt = $this->conn->prepare("SELECT avatar FROM profile WHERE user_id = ?");
         $stmt->execute([$userId]);
@@ -322,6 +329,27 @@ public function update_order($data) {
     public function updateAvatar($userId, $fileName) {
         $stmt = $this->conn->prepare("UPDATE profile SET avatar = ? WHERE user_id = ?");
         return $stmt->execute([$fileName, $userId]);
+    }
+
+    // 🌟 อัปเดตข้อมูลโปรไฟล์ส่วนตัว
+    public function updateProfile($userId, $data) {
+        $sql = "UPDATE profile 
+                SET prefix_name=?, first_name=?, last_name=?, position=?, department=?, phone=?, bank_account=?, bank_comment=? 
+                WHERE user_id=?";
+        
+        $stmt = $this->conn->prepare($sql);
+        
+        return $stmt->execute([
+            $data['prefix_name'] ?? null, 
+            $data['first_name'] ?? null, 
+            $data['last_name'] ?? null, 
+            $data['position'] ?? null, 
+            $data['department'] ?? null, 
+            $data['phone'] ?? null, 
+            $data['bank_account'] ?? null, 
+            $data['bank_comment'] ?? null, 
+            $userId
+        ]);
     }
 }
 ?>

@@ -69,4 +69,58 @@ class VenTransferModel {
             return ['success' => false, 'error' => 'Database Error: ' . $e->getMessage(), 'code' => 500];
         }
     }
+    // ... ฟังก์ชัน performTransfer เดิม ...
+
+    // 🌟 ยกเลิกการเปลี่ยนเวร (คืนค่าเดิม)
+    public function cancelTransfer($change_id) {
+        try {
+            $this->conn->beginTransaction();
+
+            $stmt = $this->conn->prepare("
+                SELECT vc.*, vs1.ven_date AS date1, vs2.ven_date AS date2 
+                FROM ven_change vc
+                LEFT JOIN ven_schedule vs1 ON vc.s1_id = vs1.id
+                LEFT JOIN ven_schedule vs2 ON vc.s2_id = vs2.id
+                WHERE vc.id = ?
+            ");
+            $stmt->execute([$change_id]);
+            $changeReq = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$changeReq) {
+                $this->conn->rollBack();
+                return ['success' => false, 'error' => 'ไม่พบข้อมูลใบเปลี่ยนเวร', 'code' => 404];
+            }
+
+            $tableName = "ven_schedule";
+            
+            // คืนค่าชื่อเดิมกลับมา และตั้งสถานะเป็น 1
+            if ($changeReq['is_swap'] == 1) {
+                $stmt1 = $this->conn->prepare("UPDATE $tableName SET user_id = ?, status = 1 WHERE id = ?");
+                $stmt1->execute([$changeReq['user1_id'], $changeReq['s1_id']]);
+                
+                $stmt2 = $this->conn->prepare("UPDATE $tableName SET user_id = ?, status = 1 WHERE id = ?");
+                $stmt2->execute([$changeReq['user2_id'], $changeReq['s2_id']]);
+            } else {
+                $stmt1 = $this->conn->prepare("UPDATE $tableName SET user_id = ?, status = 1 WHERE id = ?");
+                $stmt1->execute([$changeReq['user1_id'], $changeReq['s1_id']]);
+            }
+
+            // ลบใบคำขอทิ้ง
+            $stmtDel = $this->conn->prepare("DELETE FROM ven_change WHERE id = ?");
+            $stmtDel->execute([$change_id]);
+
+            $this->conn->commit();
+
+            return [
+                'success' => true,
+                'data' => $changeReq // คืนค่าข้อมูลใบคำขอกลับไปให้ Controller อัปเดตปฏิทิน
+            ];
+
+        } catch (PDOException $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            return ['success' => false, 'error' => 'Database Error: ' . $e->getMessage(), 'code' => 500];
+        }
+    }
 }

@@ -201,7 +201,7 @@ const cancelRequest = async (changeId, scheduleId) => {
   if (result.isConfirmed) {
     try {
       Swal.fire({ title: 'กำลังยกเลิก...', didOpen: () => Swal.showLoading() })
-      await api.post('?route=ven/cancel_change', { change_id: changeId, schedule_id: scheduleId })
+      await api.post('?route=ven/transfer/cancel', { change_id: changeId, schedule_id: scheduleId })
       Swal.fire('สำเร็จ', 'ยกเลิกคำขอและคืนค่าตารางเวรเรียบร้อย', 'success')
       fetchHistory()
     } catch (error) {

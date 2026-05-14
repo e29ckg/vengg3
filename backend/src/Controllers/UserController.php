@@ -4,15 +4,15 @@
 require_once '../src/Models/User.php';
 
 class UserController {
-    private $db;
+    
+    private $userModel;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct($userModel) {
+        $this->userModel = $userModel;
     }
 
     public function listUsers() {
-        $userModel = new User($this->db);
-        $stmt = $userModel->getAllUsers();
+        $stmt = $this->userModel->getAllUsers();
         
         $users_arr = array();
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -56,8 +56,7 @@ class UserController {
             return;
         }
 
-        $userModel = new User($this->db);
-        $result = $userModel->createUser($data);
+        $result = $this->userModel->createUser($data);
 
         if ($result['success']) {
             http_response_code(201); // 201 Created
@@ -78,15 +77,13 @@ class UserController {
             echo json_encode(["error" => "ข้อมูลไม่ครบถ้วน"]);
             return;
         }
-
-        $userModel = new User($this->db);
         
         // 1. ทำการเปลี่ยนสถานะการเข้าใช้งาน
-        if ($userModel->toggleStatus($data['id'], $data['status'])) {
+        if ($this->userModel->toggleStatus($data['id'], $data['status'])) {
             
             // 🌟 2. ถ้าสถานะถูกปรับเป็น 0 (ระงับ) ให้สั่งปรับ srt = 999 ด้วย
             if ($data['status'] == 0) {
-                $userModel->setLowestSeniority($data['id']);
+                $this->userModel->setLowestSeniority($data['id']);
             }
             
             http_response_code(200);
@@ -107,8 +104,7 @@ class UserController {
             return;
         }
 
-        $userModel = new User($this->db);
-        $result = $userModel->updateUser($data);
+        $result = $this->userModel->updateUser($data);
 
         if ($result['success']) {
             http_response_code(200);
@@ -128,8 +124,7 @@ class UserController {
             return;
         }
 
-        $userModel = new User($this->db);
-        if ($userModel->deleteUser($data['id'])) {
+        if ($this->userModel->deleteUser($data['id'])) {
             http_response_code(200);
             echo json_encode(["message" => "ลบผู้ใช้สำเร็จ"]);
         } else {
@@ -147,8 +142,7 @@ class UserController {
             return;
         }
 
-        $userModel = new User($this->db);
-        if ($userModel->update_order($data)) {
+        if ($this->userModel->update_order($data)) {
             http_response_code(200);
             echo json_encode(["status" => "success", "message" => "สำเร็จ"]);
         } else {
@@ -204,5 +198,47 @@ class UserController {
         http_response_code(400); 
         echo json_encode(["error" => "ไม่สามารถอัปโหลดไฟล์ได้"]);
     } 
+
+    // 🌟 ส่งข้อมูลโปรไฟล์กลับไปให้ Vue.js
+    public function getProfile($userId) {
+        if (!$userId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ไม่พบข้อมูลผู้ใช้งาน']);
+            return;
+        }
+
+        // เรียกใช้ Model แทนการเขียน SQL โดยตรง
+        $profile = $this->userModel->getProfile($userId);
+
+        if ($profile) {
+            echo json_encode($profile);
+        } else {
+            // ป้องกัน Error กรณีไม่มีข้อมูลในตาราง profile ให้ส่งค่าว่างกลับไป
+            echo json_encode([
+                'avatar' => null, 'prefix_name' => '', 'first_name' => '', 
+                'last_name' => '', 'position' => '', 'department' => '', 
+                'phone' => '', 'bank_account' => '', 'bank_comment' => ''
+            ]);
+        }
+    }
+
+    public function updateProfile($userId) {
+        if (!$userId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ไม่พบข้อมูลผู้ใช้งาน']);
+            return;
+        }
+
+        // รับข้อมูล JSON ที่ส่งมาจากหน้าเว็บ
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        // ส่งให้ Model ทำการบันทึกลงฐานข้อมูล
+        if ($this->userModel->updateProfile($userId, $data)) {
+            echo json_encode(["success" => true, "message" => "อัปเดตข้อมูลโปรไฟล์สำเร็จ"]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["error" => "ไม่สามารถอัปเดตข้อมูลได้"]);
+        }
+    }
 }
 ?>
