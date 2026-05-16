@@ -154,10 +154,9 @@ export const exportShiftChangeToWord = async (changeData, venDetail) => {
     }
 };
 
-// 🌟 ฟังก์ชันสำหรับออกรายงานการปฏิบัติหน้าที่
-export const exportDutyReportToWord = async (venDetail) => {
+// 🌟 อัปเดตฟังก์ชันให้รับพารามิเตอร์ dayShifts เพิ่มเข้ามา
+export const exportDutyReportToWord = async (venDetail, dayShifts, venInfo) => {
     try {
-        // 1. ดึงไฟล์ Template สำหรับรายงาน (ต้องสร้างไฟล์นี้ไว้ในโฟลเดอร์ public/templates/)
         const response = await fetch('/templates/duty_report_form.docx');
         if (!response.ok) throw new Error('ไม่พบไฟล์ Template');
         
@@ -165,8 +164,8 @@ export const exportDutyReportToWord = async (venDetail) => {
         const zip = new PizZip(content);
         const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
-        // 2. จัดรูปแบบชื่อหน่วยงาน
-        const court = venDetail.agency_name || "";
+        // จัดรูปแบบชื่อหน่วยงาน
+        const court = venInfo.agency_name || "";
         let fullAgencyName = court; 
 
         if (court.includes("ศาลจังหวัด")) {
@@ -180,14 +179,24 @@ export const exportDutyReportToWord = async (venDetail) => {
         }
 
         let agency_name_short = fullAgencyName.replace(/สำนักงานประจำศาล|สำนักอำนวยการประจำศาล|ศาล/g, '').trim();
+        const fullName = venDetail.full_name || (venDetail.prefix_name + venDetail.first_name + ' ' + venDetail.last_name);
 
-        // 3. เตรียมชื่อ-นามสกุลผู้รายงาน
-        const fullName = venDetail.user_name || (venDetail.prefix_name + venDetail.first_name + ' ' + venDetail.last_name);
+        // 🌟 3. จัดรูปแบบรายชื่อผู้ร่วมปฏิบัติหน้าที่ในวันนั้นเพื่อส่งไปทำ Loop ใน Word
+        const formattedShifts = (dayShifts || []).map((s, index) => {
+            const uName = s.title || (s.prefix_name ? (s.prefix_name + s.first_name + ' ' + s.last_name) : s.full_name) || "-";
+            return {
+                no: index + 1,                                // ลำดับที่ 1, 2, 3
+                name: uName,                                  // ชื่อ-นามสกุล
+                position: s.position || s.user_position || "-", // ตำแหน่ง
+                duty_name: s.duty_name || s.ven_name || s.duty_role || "-" // หน้าที่เวร
+            };
+        });
 
-        // 4. เตรียมข้อมูลส่งออกไปยัง Word
+        // เตรียมข้อมูลส่งออกไปยัง Word
         doc.render({
             agency_name: agency_name_short || "-",
             full_agency_name: fullAgencyName || "-",
+            agency_name: venInfo.agency_name || "-",
             order_no: venDetail.command_num || "-", 
             order_date: formatThaiDate(venDetail.command_date),
             ven_date: formatThaiDate(venDetail.ven_date),
@@ -195,19 +204,22 @@ export const exportDutyReportToWord = async (venDetail) => {
             ven_name_full: venDetail.ven_name || venDetail.duty_role,
             user_name: fullName,
             user_position: venDetail.position || "-",
-            director_name: venDetail.director_name || "",
-            director_position: venDetail.director_position || "",
-            print_date: new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+            director_name: venInfo.director_name || "",
+            director_position: venInfo.director_position || "",
+            admins_name: venInfo.admins_name || "",
+            admins_position: venInfo.admins_position || "",
+            print_date: new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }),
+            
+            // 🌟 4. ส่งอาเรย์รายชื่อเข้า Word
+            shifts: formattedShifts 
         });
 
-        // 5. สร้างไฟล์และดาวน์โหลด
         const out = doc.getZip().generate({
             type: 'blob',
             mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         });
         
-        // ตั้งชื่อไฟล์ที่จะโหลด เช่น "รายงานเวร_2024-05-16_สมชาย.docx"
-        saveAs(out, `รายงานเวร_${venDetail.ven_date}_${venDetail.first_name}.docx`);
+        saveAs(out, `รายงานเวร_${venDetail.ven_date}_${venDetail.command_num}.docx`);
         return true;
     } catch (error) {
         console.error('Error in exportDutyReportToWord:', error);

@@ -19,6 +19,7 @@ class Ven {
                     v.user_id,
                     v.ven_date AS date, 
                     CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS title,
+                    p.position AS position,
                     vns.color AS backgroundColor,
 
                     /* 🌟 1. ใช้ CASE WHEN ในการกำหนดเวลาเริ่มต้น (สำหรับนำไปใช้เรียงลำดับและตัด .substring(0,5)) */
@@ -38,6 +39,7 @@ class Ven {
 
                     vc.id AS ven_com_id,
                     vns.id AS sub_id,
+                    vns.name AS duty_role,
                     vns.price
                   FROM " . $this->table_name . " v
                   LEFT JOIN profile p ON v.user_id = p.user_id

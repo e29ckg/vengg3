@@ -25,6 +25,8 @@ class VenController {
                 'id' => $row['id'],
                 'user_id' => $row['user_id'], // 🌟 เพิ่ม user_id เข้าไปในข้อมูลที่ส่งกลับ
                 'title' => $row['title'],
+                'position' => $row['position'],
+                'duty_role' => $row['duty_role'], 
                 'date' => $row['date'],
                 'backgroundColor' => $row['backgroundColor'],
                 'ven_time' => $row['ven_time'],
