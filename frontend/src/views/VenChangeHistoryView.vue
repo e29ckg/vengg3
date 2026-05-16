@@ -241,11 +241,14 @@ const downloadWord = async (historyData) => {
     });
 
     const director = getActiveSigner('directors');
+    const admins = getActiveSigner('admins');
 
     const venDetail = {
       agency_name: agencyConfig.value.agency_name, 
       director_name: director.name,              
       director_position: director.position,      
+      admins_name: admins.name,
+      admins_position: admins.position,
       command_num: historyData.com_num || "..........", 
       command_date: historyData.com_date || "-",
       ven_name: historyData.duty_main,

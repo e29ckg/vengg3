@@ -667,60 +667,6 @@ const hasDuplicateShift = (sch) => {
   return count > 1;
 };
 
-// 🌟  ฟังก์ชันสำหรับกดยกเลิกใบเปลี่ยนเวร
-// const cancelRequest = async (changeId) => {
-//   // 1. ถามยืนยันก่อนยกเลิก
-//   const result = await Swal.fire({
-//     title: 'ยืนยันการยกเลิก?',
-//     text: 'คุณต้องการยกเลิกคำขอเปลี่ยนเวรนี้ และดึงชื่อของคุณกลับเข้าตารางเวรตามเดิมใช่หรือไม่?',
-//     icon: 'warning',
-//     showCancelButton: true,
-//     confirmButtonColor: '#d33', // สีแดงให้ดูเป็นการยกเลิก
-//     cancelButtonColor: '#6c757d',
-//     confirmButtonText: '<i class="bi bi-x-circle"></i> ใช่, ยกเลิกคำขอ',
-//     cancelButtonText: 'ปิด'
-//   });
-
-//   if (result.isConfirmed) {
-//     try {
-//       // 🌟 2. แสดงหน้าต่าง Loading หมุนๆ ทันทีที่กดยืนยัน
-//       Swal.fire({
-//         title: 'กำลังยกเลิกคำขอ...',
-//         html: 'โปรดรอสักครู่ ระบบกำลังคืนเวรและอัปเดต Google Calendar',
-//         allowOutsideClick: false,
-//         didOpen: () => {
-//           Swal.showLoading();
-//         }
-//       });
-
-//       // 3. ยิง API ไปที่ Backend ที่เราเขียนไว้
-//       const response = await api.post('?route=ven/cancel_change', {
-//         change_id: changeId
-//       });
-
-//       // 4. เมื่อ Backend ทำงานเสร็จ ปิด Loading แล้วแสดงข้อความสำเร็จ
-//       if (response.data.success) {
-//         Swal.fire(
-//           'ยกเลิกสำเร็จ!',
-//           response.data.message || 'ระบบได้ดึงชื่อคุณกลับเข้าเวรเรียบร้อยแล้ว',
-//           'success'
-//         );
-        
-//         // 🌟 รีเฟรชข้อมูลในตารางใหม่ (เปลี่ยนชื่อฟังก์ชันให้ตรงกับหน้าของคุณ)
-//         // fetchHistoryData(); หรือ fetchVenData();
-//       }
-
-//     } catch (error) {
-//       // ปิด Loading และแสดงข้อความ Error
-//       Swal.fire(
-//         'เกิดข้อผิดพลาด!',
-//         error.response?.data?.error || 'ไม่สามารถยกเลิกคำขอได้',
-//         'error'
-//       );
-//     }
-//   }
-// };
-
 const cancelChange = async (changeId) => {
   const result = await Swal.fire({
     title: 'ยืนยันการยกเลิก?',
@@ -1008,11 +954,14 @@ const downloadWordForm = async (historyItem) => {
     });
 
     const director = getActiveSigner('directors');
+    const admins = getActiveSigner('admins');
     const venInfo = {
         ...selectedVen.value,
         agency_name: agencyConfig.value.agency_name, // 🌟 ส่งชื่อหน่วยงาน
         director_name: director.name,               // 🌟 ส่งชื่อผู้ลงนามอนุมัติ
-        director_position: director.position,   
+        director_position: director.position,  
+        admins_name: admins.name,             // 🌟 ส่งรายชื่อผู้ดูแลระบบ (ถ้ามี
+        admins_position: admins.position, // 🌟 ส่งตำแหน่งผู้ดูแลระบบรวมกัน
         order_no: selectedVen.value.order_no,
         order_date: selectedVen.value.order_date,
         ven_name: selectedVen.value.ven_name,
@@ -1047,7 +996,10 @@ const formatDate = (dateString) => {
 
 const getProfileImage = (ven) => {
   if (ven.profile_image && ven.profile_image !== 'default_avatar.jpg') {
-    return `http://localhost/vengg3/backend/public/uploads/profiles/${ven.profile_image}`;
+    let baseUrl = api.defaults.baseURL || 'http://localhost/vengg3/backend/public/';
+    baseUrl = baseUrl.split('?')[0].replace('index.php', '');
+    if (!baseUrl.endsWith('/')) baseUrl += '/';    
+    return `${baseUrl}uploads/avatars/${ven.profile_image}`;
   }
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(ven.full_name)}&background=random&color=fff&size=128`;
 }
