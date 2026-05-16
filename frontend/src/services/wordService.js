@@ -153,3 +153,64 @@ export const exportShiftChangeToWord = async (changeData, venDetail) => {
         throw error;
     }
 };
+
+// 🌟 ฟังก์ชันสำหรับออกรายงานการปฏิบัติหน้าที่
+export const exportDutyReportToWord = async (venDetail) => {
+    try {
+        // 1. ดึงไฟล์ Template สำหรับรายงาน (ต้องสร้างไฟล์นี้ไว้ในโฟลเดอร์ public/templates/)
+        const response = await fetch('/templates/duty_report_form.docx');
+        if (!response.ok) throw new Error('ไม่พบไฟล์ Template');
+        
+        const content = await response.arrayBuffer();
+        const zip = new PizZip(content);
+        const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+        // 2. จัดรูปแบบชื่อหน่วยงาน
+        const court = venDetail.agency_name || "";
+        let fullAgencyName = court; 
+
+        if (court.includes("ศาลจังหวัด")) {
+            fullAgencyName = court.replace("ศาลจังหวัด", "สำนักอำนวยการประจำศาลจังหวัด");
+        } else if (court.includes("ศาลแขวง")) {
+            fullAgencyName = court.replace("ศาลแขวง", "สำนักงานประจำศาลแขวง");
+        } else if (court.includes("ศาลเยาวชนและครอบครัวกลาง")) {
+            fullAgencyName = court.replace("ศาลเยาวชนและครอบครัวกลาง", "สำนักอำนวยการประจำศาลเยาวชนและครอบครัวกลาง");
+        } else if (court.includes("ศาลเยาวชน")) {
+            fullAgencyName = court.replace("ศาลเยาวชน", "สำนักงานประจำศาลเยาวชน");
+        }
+
+        let agency_name_short = fullAgencyName.replace(/สำนักงานประจำศาล|สำนักอำนวยการประจำศาล|ศาล/g, '').trim();
+
+        // 3. เตรียมชื่อ-นามสกุลผู้รายงาน
+        const fullName = venDetail.user_name || (venDetail.prefix_name + venDetail.first_name + ' ' + venDetail.last_name);
+
+        // 4. เตรียมข้อมูลส่งออกไปยัง Word
+        doc.render({
+            agency_name: agency_name_short || "-",
+            full_agency_name: fullAgencyName || "-",
+            order_no: venDetail.command_num || "-", 
+            order_date: formatThaiDate(venDetail.command_date),
+            ven_date: formatThaiDate(venDetail.ven_date),
+            ven_time: formatVenTime(venDetail),
+            ven_name_full: venDetail.ven_name || venDetail.duty_role,
+            user_name: fullName,
+            user_position: venDetail.position || "-",
+            director_name: venDetail.director_name || "",
+            director_position: venDetail.director_position || "",
+            print_date: new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+        });
+
+        // 5. สร้างไฟล์และดาวน์โหลด
+        const out = doc.getZip().generate({
+            type: 'blob',
+            mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        });
+        
+        // ตั้งชื่อไฟล์ที่จะโหลด เช่น "รายงานเวร_2024-05-16_สมชาย.docx"
+        saveAs(out, `รายงานเวร_${venDetail.ven_date}_${venDetail.first_name}.docx`);
+        return true;
+    } catch (error) {
+        console.error('Error in exportDutyReportToWord:', error);
+        throw error;
+    }
+};
