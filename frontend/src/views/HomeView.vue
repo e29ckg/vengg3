@@ -314,7 +314,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { exportShiftChangeToWord } from '../services/wordService';
+import { exportShiftChangeToWord, exportDutyReportToWord } from '../services/wordService';
 import Swal from 'sweetalert2'
 import { Modal } from 'bootstrap'
 import api from '../services/api'
@@ -995,8 +995,26 @@ const downloadDutyReport = async (venDetail) => {
       didOpen: () => Swal.showLoading()
     });
 
+    const director = getActiveSigner('directors');
+    const admins = getActiveSigner('admins');
+    const venInfo = {
+        ...selectedVen.value,
+        agency_name: agencyConfig.value.agency_name, // 🌟 ส่งชื่อหน่วยงาน
+        director_name: director.name,               // 🌟 ส่งชื่อผู้ลงนามอนุมัติ
+        director_position: director.position,  
+        admins_name: admins.name,             // 🌟 ส่งรายชื่อผู้ดูแลระบบ (ถ้ามี
+        admins_position: admins.position, 
+    };
+
+    const dayShifts = allSchedules.value.filter(s => {
+      const sDate = s.ven_date || s.date;
+      const targetDate = venDetail.ven_date || venDetail.date;
+      return sDate === targetDate && s.ven_com_id === venDetail.ven_com_id;
+    });
+
+
     // เรียกใช้ฟังก์ชันออก Word
-    await exportDutyReportToWord(venDetail);
+    await exportDutyReportToWord(venDetail, dayShifts, venInfo);
 
     Swal.fire({
       icon: 'success',
