@@ -159,7 +159,7 @@
                     </div>
     
                     <template v-else>
-                      <button class="btn btn-primary rounded-pill fw-bold shadow-sm py-2 w-100 mb-2">
+                      <button class="btn btn-primary rounded-pill fw-bold shadow-sm py-2 w-100 mb-2" @click="downloadDutyReport(selectedVen)">
                         <i class="bi bi-file-earmark-check me-1"></i> รายงานการปฏิบัติหน้าที่
                       </button>
                       
@@ -943,8 +943,7 @@ const confirmSwap = async () => {
   }
 };
 
-
-
+// 🌟 ฟังก์ชันดาวน์โหลดเอกสาร Word
 const downloadWordForm = async (historyItem) => {
   try {
     Swal.fire({
@@ -984,6 +983,31 @@ const downloadWordForm = async (historyItem) => {
     });
   } catch (error) {
     Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้างเอกสาร Word ได้ กรุณาตรวจสอบไฟล์ Template', 'error');
+  }
+};
+
+// 🌟 ฟังก์ชันดาวน์โหลดรายงานการปฏิบัติหน้าที่
+const downloadDutyReport = async (venDetail) => {
+  try {
+    Swal.fire({
+      title: 'กำลังสร้างเอกสาร...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    // เรียกใช้ฟังก์ชันออก Word
+    await exportDutyReportToWord(venDetail);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'สำเร็จ',
+      text: 'ดาวน์โหลดไฟล์รายงานการปฏิบัติหน้าที่เรียบร้อยแล้ว',
+      timer: 1500,
+      showConfirmButton: false
+    });
+  } catch (error) {
+    console.error('Export Error:', error);
+    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้างไฟล์ Word ได้ (กรุณาตรวจสอบ Template)', 'error');
   }
 };
 
