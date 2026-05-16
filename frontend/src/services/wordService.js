@@ -7,12 +7,13 @@ import { saveAs } from 'file-saver';
 const Docxtemplater = docxtemplater;
 
 // ฟังก์ชันช่วยจัดรูปแบบเวลา
-// ฟังก์ชันช่วยจัดรูปแบบเวลา
 const formatVenTime = (venDetail) => {
-    // 1. ถ้า Backend มีการส่ง ven_time_text (เช่น 16.30 - 20.00 น.) มาให้แล้ว ให้ใช้เลย (แม่นยำที่สุด)
+    // 1. ถ้า Backend มีการส่ง ven_time_text มาให้แล้ว
     if (venDetail.ven_time_text) {
-        if(venDetail.ven_time_text === '16.30 - 08.30'){return `${venDetail.ven_time_text} นาฬิกา ของวันรุ่งขึ้น`}
-        return `${venDetail.ven_time_text} นาฬิกา` ;
+        if(venDetail.ven_time_text === '16.30 - 08.30'){
+            return `${venDetail.ven_time_text} นาฬิกา ของวันรุ่งขึ้น`;
+        }
+        return `${venDetail.ven_time_text} นาฬิกา`;
     }
 
     const timeStr = venDetail.ven_time_text || "";
@@ -55,8 +56,42 @@ export const exportShiftChangeToWord = async (changeData, venDetail) => {
         const zip = new PizZip(content);
         const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
-        let swal_comment = '';
+        const court = venDetail.agency_name || "";
+        let fullAgencyName = court; 
 
+        if (court.includes("ศาลจังหวัด")) {
+            fullAgencyName = court.replace("ศาลจังหวัด", "สำนักอำนวยการประจำศาลจังหวัด");
+        } else if (court.includes("ศาลแขวง")) {
+            fullAgencyName = court.replace("ศาลแขวง", "สำนักงานประจำศาลแขวง");
+        } else if (court.includes("ศาลเยาวชนและครอบครัวกลาง")) {
+            // เช็คชื่อเต็มก่อนศาลเยาวชนทั่วไป
+            fullAgencyName = court.replace("ศาลเยาวชนและครอบครัวกลาง", "สำนักอำนวยการประจำศาลเยาวชนและครอบครัวกลาง");
+        } else if (court.includes("ศาลเยาวชน")) {
+            fullAgencyName = court.replace("ศาลเยาวชน", "สำนักงานประจำศาลเยาวชน");
+        }
+
+        let agency_name_short = fullAgencyName.replace(/สำนักงานประจำศาล|สำนักอำนวยการประจำศาล/g, '').trim();
+        let sendTo = venDetail.duty_role == 'ผู้พิพากษา' ? `ผู้พิพากษาหัวหน้าศาล${agency_name_short}` : `ผู้อำนวยการ${fullAgencyName}`;
+
+        // 🌟 แก้ไขจุดที่ 2: ประกาศตัวแปรค่าเริ่มต้น (Default) ไว้เลย จะได้ไม่ต้องเขียน if-else ซ้ำซ้อน
+        let director_name = `(${venDetail.director_name || ""})`;
+        let director_position = `${venDetail.director_position || ""}`;
+        let admins_name = `(${venDetail.admins_name || ""})`;
+        let admins_position = `${venDetail.admins_position || ""}`;
+        let finance_name = `${venDetail.finance_name || ""}`;
+        let finance_position = `${venDetail.finance_position || ""}`;
+        
+        let director_sign = `[ ] อนุญาต    [ ] ไม่อนุญาต `;
+        let admins_sign = `ขอประทานเสนอ ผู้พิพากษาหัวหน้าศาล\n - เพื่อโปรดพิจารณา`;
+
+        // ปรับแก้เฉพาะกรณีที่เป็นผู้พิพากษา (ซ่อนช่อง ผอ.)
+        if (venDetail.duty_role == 'ผู้พิพากษา') {
+            admins_name = "";
+            admins_position = "";
+            admins_sign = "";
+        }
+
+        let swal_comment = '';
         if (changeData.is_swap == 1) {
             swal_comment = `และข้าพเจ้าจะมาปฏิบัติหน้าที่แทนในวันที่ ${formatThaiDate(changeData.s2_date)}`;
         }
@@ -64,12 +99,21 @@ export const exportShiftChangeToWord = async (changeData, venDetail) => {
         // เตรียมข้อมูลส่งออก
         doc.render({
             change_no: changeData.change_no || changeData.change_id,
-            ref_change_no: changeData.ref_change_no  ? `และบันทึกใบเปลี่ยนเวรเลขที่ ${changeData.ref_change_no})` : "",
+            ref_change_no: changeData.ref_change_no ? `และบันทึกใบเปลี่ยนเวรเลขที่ ${changeData.ref_change_no}` : "",
 
-            // ข้อมูลหน่วยงานและผู้บริหาร
-            agency_name: venDetail.agency_name || "-",
-            director_name: venDetail.director_name || ".......................................",
-            director_position: venDetail.director_position || ".......................................",
+            // ข้อมูลหน่วยงาน
+            agency_name: court || "-",
+            sendTo: sendTo,
+
+            // ข้อมูลผู้บริหาร
+            director_name: director_name,
+            director_position: director_position,
+            admins_name: admins_name,
+            admins_position: admins_position,
+            finance_name: finance_name,
+            finance_position: finance_position,
+            director_sign: director_sign,
+            admins_sign: admins_sign,
             
             // ข้อมูลคำสั่ง
             order_no: venDetail.command_num || "-", 
