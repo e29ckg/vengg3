@@ -103,7 +103,7 @@
         </tbody>
         <tfoot>
           <tr class="fw-bold bg-light">
-            <td :colspan="6 + monthInfo.total_days" class="text-end pe-3">รวมเงินทั้งสิ้น ({{ numberToThaiBaht(totalAmount) }})</td>
+            <td :colspan="6 + monthInfo.total_days" class="text-end pe-3" contenteditable="true">รวมเงินทั้งสิ้น ({{ numberToThaiBaht(totalAmount) }})</td>
             <td contenteditable="true">{{ totalAmount.toLocaleString() }}</td>
             <td colspan="3"></td>
           </tr>
