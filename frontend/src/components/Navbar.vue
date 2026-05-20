@@ -1,16 +1,18 @@
 <template>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm d-print-none"  v-if="isLoggedIn">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm d-print-none" v-if="isLoggedIn">
     <div class="container-fluid">
       
-      <!-- <router-link class="navbar-brand d-flex align-items-center" to="/home">
+      <router-link class="navbar-brand d-flex align-items-center" to="/home">
         <span class="fw-bold"><i class="bi bi-calendar2-check"></i> {{ systemName || 'ระบบเวรนอกเวลาทำการ' }}</span>
-      </router-link> -->
+      </router-link>
+      
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" @click="toggleMobileMenu">
         <span class="navbar-toggler-icon"></span>
       </button>
 
       <div class="collapse navbar-collapse" :class="{ 'show': isMobileMenuOpen }" id="navbarNav">
-        <ul class="navbar-nav me-auto">
+        
+        <ul class="navbar-nav ms-auto">
           <li class="nav-item">
             <router-link class="nav-link" active-class="active fw-bold" to="/home">
               <i class="bi bi-house"></i> หน้าแรก
@@ -87,11 +89,11 @@
           </li>
         </ul>
 
-        <div class="d-flex align-items-center text-white mt-2 mt-lg-0">
+        <div class="d-flex align-items-center text-white mt-3 mt-lg-0 ms-lg-3 pb-2 pb-lg-0">
           <router-link to="/profile" class="text-white text-decoration-none me-3 profile-link d-flex align-items-center" title="จัดการโปรไฟล์">
             
             <div class="rounded-circle border border-white me-2 d-flex align-items-center justify-content-center fw-bold text-uppercase" 
-                style="width: 30px; height: 30px; background-color: rgba(255, 255, 255, 0.2);">
+                 style="width: 30px; height: 30px; background-color: rgba(255, 255, 255, 0.2);">
                 {{ userName ? userName.charAt(0).toUpperCase() : '' }}
             </div>
             
@@ -102,6 +104,7 @@
             <i class="bi bi-box-arrow-right"></i> ออกจากระบบ
           </button>
         </div>
+
       </div>
     </div>
   </nav>
