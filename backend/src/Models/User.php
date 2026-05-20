@@ -43,6 +43,7 @@ class User {
                 return [
                     "success" => true,
                     "user" => [
+                        "id" => $row['id'],
                         "username" => $row['username'],
                         "role" => $row['role'],
                         "fullname" => $fullName,               

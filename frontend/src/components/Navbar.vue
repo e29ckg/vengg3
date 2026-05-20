@@ -5,103 +5,77 @@
       <router-link class="navbar-brand d-flex align-items-center" to="/home">
         <span class="fw-bold"><i class="bi bi-calendar2-check"></i> {{ systemName || 'ระบบเวรนอกเวลาทำการ' }}</span>
       </router-link>
-      
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" @click="toggleMobileMenu">
+
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" @click="toggleMobileMenu">
         <span class="navbar-toggler-icon"></span>
       </button>
 
       <div class="collapse navbar-collapse" :class="{ 'show': isMobileMenuOpen }" id="navbarNav">
         
-        <ul class="navbar-nav ms-auto">
+        <ul class="navbar-nav ms-auto align-items-lg-center">
+          
           <li class="nav-item">
-            <router-link class="nav-link" active-class="active fw-bold" to="/home">
-              <i class="bi bi-house"></i> หน้าแรก
+            <router-link class="nav-link py-2" active-class="active fw-bold" to="/home">
+              <i class="bi bi-house me-1"></i> หน้าแรก
             </router-link>
           </li>
-          <li>
-            <router-link class="nav-link" active-class="active fw-bold" to="/user/history">
-              <i class="bi bi-calendar3"></i> ประวัติการเปลี่ยนเวร
+          <li class="nav-item">
+            <router-link class="nav-link py-2" active-class="active fw-bold" to="/user/history">
+              <i class="bi bi-calendar3 me-1"></i> ประวัติการเปลี่ยนเวร
             </router-link>
           </li>
 
-          <li class="nav-item dropdown" v-if="userRole === 9 || userRole === 2">
-            <a class="nav-link dropdown-toggle" 
-               :class="{ 'active fw-bold': route.path.startsWith('/director') }" 
-               href="#" role="button" data-bs-toggle="dropdown" @click.prevent="toggleDirectorMenu">
-              <i class="bi bi-briefcase"></i> งานอำนวยการ
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle py-2" :class="{ 'active fw-bold': route.path.startsWith('/director') }" href="#" @click.prevent="toggleDirectorMenu">
+              <i class="bi bi-briefcase me-1"></i> งานอำนวยการ
             </a>
-            <ul class="dropdown-menu shadow-sm" :class="{ 'show': isDirectorMenuOpen }">
-              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/ven-settings"><i class="bi bi-gear"></i> เตรียม ชื่อเวร/ผู้มีสิทธ์อยู่เวร</router-link></li>
-              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/commands"><i class="bi bi-file-earmark-text"></i> จัดการคำสั่งเวร</router-link></li>
-              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/schedule"><i class="bi bi-calendar-check"></i> จัดเวร</router-link></li>
-              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/schedule-list"><i class="bi bi-card-list"></i> รายงานการจัดเวร</router-link></li>
+            <ul class="dropdown-menu shadow" :class="{ 'show': isDirectorMenuOpen }">
+              <li><router-link class="dropdown-item py-2" to="/director/ven-settings"><i class="bi bi-gear me-2"></i> เตรียมข้อมูลเวร</router-link></li>
+              <li><router-link class="dropdown-item py-2" to="/director/commands"><i class="bi bi-file-earmark-text me-2"></i> จัดการคำสั่งเวร</router-link></li>
+              <li><router-link class="dropdown-item py-2" to="/director/schedule"><i class="bi bi-calendar-check me-2"></i> จัดเวร</router-link></li>
+              <li><router-link class="dropdown-item py-2" to="/director/schedule-list"><i class="bi bi-card-list me-2"></i> รายงานการจัดเวร</router-link></li>
               <li><hr class="dropdown-divider"></li>
-              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/director/approvals"><i class="bi bi-check-circle"></i> อนุมัติใบเปลี่ยนเวร</router-link></li>
+              <li><router-link class="dropdown-item py-2" to="/director/approvals"><i class="bi bi-check-circle me-2"></i> อนุมัติใบเปลี่ยนเวร</router-link></li>
             </ul>
           </li>
 
-          <li class="nav-item dropdown" v-if="userRole === 9 || userRole === 3">
-            <a class="nav-link dropdown-toggle" 
-               :class="{ 'active fw-bold': route.path.startsWith('/finance') }" 
-               href="#" role="button" data-bs-toggle="dropdown" @click.prevent="toggleFinanceMenu">
-              <i class="bi bi-cash-coin"></i> การเงิน
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle py-2" :class="{ 'active fw-bold': route.path.startsWith('/finance') }" href="#" @click.prevent="toggleFinanceMenu">
+              <i class="bi bi-cash-coin me-1"></i> การเงิน
             </a>
-            <ul class="dropdown-menu shadow-sm" :class="{ 'show': isFinanceMenuOpen }">
-              <li><router-link class="dropdown-item" active-class="active fw-bold" to="/finance/report"><i class="bi bi-file-earmark-spreadsheet"></i> ออกรายงาน</router-link></li>
+            <ul class="dropdown-menu shadow" :class="{ 'show': isFinanceMenuOpen }">
+              <li><router-link class="dropdown-item py-2" to="/finance/report"><i class="bi bi-file-earmark-spreadsheet me-2"></i> ออกรายงาน</router-link></li>
             </ul>
           </li>
 
           <li class="nav-item dropdown" v-if="userRole === 9">
-            <a class="nav-link dropdown-toggle" 
-               :class="{ 'active fw-bold': route.path.startsWith('/admin') }" 
-               href="#" role="button" data-bs-toggle="dropdown" @click.prevent="toggleAdminMenu">
-              <i class="bi bi-shield-lock"></i> ผู้ดูแลระบบ
+            <a class="nav-link dropdown-toggle py-2" :class="{ 'active fw-bold': route.path.startsWith('/admin') }" href="#" @click.prevent="toggleAdminMenu">
+              <i class="bi bi-shield-lock me-1"></i> ผู้ดูแลระบบ
             </a>
-            <ul class="dropdown-menu shadow-sm" :class="{ 'show': isAdminMenuOpen }">
-              <li>
-                <router-link class="dropdown-item" active-class="active fw-bold" to="/admin/users">
-                  <i class="bi bi-people"></i> จัดการผู้ใช้งาน
-                </router-link>
-              </li>
-              <li>
-                <router-link class="dropdown-item" to="/admin/options" active-class="active fw-bold">
-                  <i class="bi bi-card-list"></i> จัดการคำนำหน้า ตำแหน่ง กลุ่มงาน
-                </router-link>
-              </li>
-              <li>
-                <router-link to="/admin/settings/agency" class="dropdown-item" active-class="active fw-bold">
-                  <i class="bi bi-building me-2 text-primary"></i> ตั้งค่าข้อมูลหน่วยงาน
-                </router-link>
-              </li>
-              <li>
-                <router-link to="/admin/settings/system" class="dropdown-item" active-class="active fw-bold">
-                  <i class="bi bi-gear-wide-connected me-2 text-dark"></i> ตั้งค่าระบบ
-                </router-link>
-              </li>  
-              <li><hr class="dropdown-divider"></li>            
-              <li>
-                <router-link to="/admin/settings/google-calendar" class="dropdown-item py-2" active-class="active fw-bold bg-primary text-white">
-                  <i class="bi bi-google me-2 text-danger"></i>ตั้งค่า Google Calendar
-                </router-link>
-              </li>       
-              <li>  <router-link to="/admin/settings/telegram" class="dropdown-item"><i class="bi bi-telegram me-2"></i> ตั้งค่า Telegram</router-link></li>
+            <ul class="dropdown-menu shadow" :class="{ 'show': isAdminMenuOpen }">
+              <li><router-link class="dropdown-item py-2" to="/admin/users"><i class="bi bi-people me-2"></i> จัดการผู้ใช้งาน</router-link></li>
+              <li><router-link class="dropdown-item py-2" to="/admin/options"><i class="bi bi-card-list me-2"></i> จัดการค่าเริ่มต้น</router-link></li>
+              <li><router-link class="dropdown-item py-2" to="/admin/settings/agency"><i class="bi bi-building me-2"></i> ข้อมูลหน่วยงาน</router-link></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><router-link class="dropdown-item py-2" to="/admin/settings/google-calendar"><i class="bi bi-google me-2"></i> Google Calendar</router-link></li>
+              <li><router-link class="dropdown-item py-2" to="/admin/settings/telegram"><i class="bi bi-telegram me-2"></i> Telegram Bot</router-link></li>
             </ul>
           </li>
         </ul>
 
-        <div class="d-flex align-items-center text-white mt-3 mt-lg-0 ms-lg-3 pb-2 pb-lg-0">
-          <router-link to="/profile" class="text-white text-decoration-none me-3 profile-link d-flex align-items-center" title="จัดการโปรไฟล์">
-            
-            <div class="rounded-circle border border-white me-2 d-flex align-items-center justify-content-center fw-bold text-uppercase" 
-                 style="width: 30px; height: 30px; background-color: rgba(255, 255, 255, 0.2);">
-                {{ userName ? userName.charAt(0).toUpperCase() : '' }}
+        <hr class="d-lg-none bg-white opacity-25">
+
+        <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-3 ms-lg-4 mt-lg-0 mt-3 pb-3 pb-lg-0">
+          <router-link to="/profile" class="text-white text-decoration-none d-flex align-items-center">
+            <div class="rounded-circle border border-white d-flex align-items-center justify-content-center fw-bold" 
+                 style="width: 35px; height: 35px; background-color: rgba(255, 255, 255, 0.2);">
+                 {{ userName ? userName.charAt(0).toUpperCase() : 'U' }}
             </div>
-            
-            <span>{{ userName }}</span>
+            <span class="ms-2">{{ userName }}</span>
           </router-link>
           
-          <button class="btn btn-light btn-sm rounded-pill fw-bold text-danger px-3 shadow-sm" @click="logout">
-            <i class="bi bi-box-arrow-right"></i> ออกจากระบบ
+          <button class="btn btn-outline-light rounded-pill fw-bold" @click="logout">
+            <i class="bi bi-box-arrow-right"></i> ออก
           </button>
         </div>
 

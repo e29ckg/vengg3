@@ -38,6 +38,8 @@ require_once __DIR__ . '/../src/Controllers/BackupController.php';
 require_once __DIR__ . '/../src/Controllers/TelegramController.php';
 require_once __DIR__ . '/../src/Services/TelegramService.php';
 require_once __DIR__ . '/../src/Services/GoogleCalendarService.php';
+require_once __DIR__ . '/../src/Models/LogModel.php';
+require_once __DIR__ . '/../src/Controllers/LogController.php';
 require_once __DIR__ . '/../src/Middleware/AuthMiddleware.php';
 
 
@@ -625,6 +627,8 @@ switch ($route) {
             $telegramController->manualNotify($telegramService);
         }
         break;
+
+    
 
     default:
         http_response_code(404);

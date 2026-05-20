@@ -37,6 +37,14 @@ class AuthController {
                     ]);
                     exit;
                 }
+                require_once __DIR__ . '/../Models/LogModel.php';
+                $logModel = new LogModel($this->db); // หรือ $this->conn ขึ้นอยู่กับตัวแปรของคุณ
+                $logModel->addLog(
+                    $user['id'],              // ID ของคนที่ล็อกอิน
+                    'LOGIN',                  // Action
+                    'AUTH',                   // Module
+                    "เข้าสู่ระบบสำเร็จ"           // Description
+                );
  
                 http_response_code(200);
                 echo json_encode([

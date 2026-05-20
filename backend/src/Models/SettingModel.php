@@ -647,7 +647,8 @@ class SettingModel {
             'check_24h_consecutive', 
             'maintenance_mode',
             'compact_schedule_view',
-            'system_name'
+            'system_name',
+            'advance_swap_days'
         ];
 
         // ตรวจสอบว่า key ที่ส่งมาอยู่ในรายชื่อที่อนุญาตหรือไม่
