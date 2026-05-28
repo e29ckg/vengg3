@@ -344,6 +344,13 @@ switch ($route) {
     // ==========================================
     // 🌟 การจัดการผู้อยู่เวร (ผูกคนเข้ากับหน้าที่ย่อย)
     // ==========================================    
+    
+    case 'admin/ven_user/allUsers':
+        AuthMiddleware::checkDirector($connection);        
+        $controller = new UserController(new User($connection));
+        $controller->listUsersForVenUser();
+        break;
+
     case 'admin/ven_user/get_by_sub':
         AuthMiddleware::checkDirector($connection);
         $userController = new VenUserController(new SettingModel($connection));
