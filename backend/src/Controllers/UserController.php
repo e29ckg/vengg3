@@ -45,6 +45,40 @@ class UserController {
         echo json_encode($users_arr);
     }
 
+    public function listUsersForVenUser() {
+        $stmt = $this->userModel->getAllUsersForVenUser();
+        
+        $users_arr = array();
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            // ประกอบร่างชื่อเต็มให้สวยงาม สำหรับแสดงในตารางหลัก
+            $fullName = $row['prefix_name'] . $row['first_name'] . ' ' . $row['last_name'];
+            if (trim($fullName) === '') {
+                $fullName = '-';
+            }
+
+            array_push($users_arr, [
+                "id" => $row['id'],
+                "username" => $row['username'],
+                "full_name" => $fullName,
+                "role" => $row['role'],
+                "status" => $row['status'],
+                "prefix_name" => $row['prefix_name'],
+                "first_name" => $row['first_name'],
+                "last_name" => $row['last_name'],
+                "position" => $row['position'],
+                "srt" => $row['srt'],
+                "department" => $row['department'],
+                "phone" => $row['phone'],
+                "bank_account" => $row['bank_account'],
+                "bank_comment" => $row['bank_comment'],
+                "st" => $row['st']
+            ]);
+        }
+
+        http_response_code(200);
+        echo json_encode($users_arr);
+    }
+
     // รับข้อมูลสร้างผู้ใช้ใหม่
     public function createUser() {
         $data = json_decode(file_get_contents("php://input"), true);

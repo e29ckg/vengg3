@@ -112,6 +112,33 @@ class User {
         return $stmt;
     }
 
+    public function getAllUsersForVenUser() {
+        $query = "SELECT 
+                    u.id, 
+                    u.username, 
+                    u.role, 
+                    u.status,
+                    p.avatar,
+                    p.prefix_name AS prefix_name,
+                    p.first_name AS first_name, 
+                    p.last_name AS last_name,
+                    p.position AS position,
+                    p.srt AS srt,
+                    p.department AS department,
+                    p.phone,
+                    p.bank_account,
+                    p.bank_comment,
+                    p.st
+                  FROM user u
+                  LEFT JOIN profile p ON u.id = p.user_id
+                  WHERE u.is_deleted = 0 AND u.status = 10
+                  ORDER BY p.srt ASC";
+                  
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt;
+    }
+
     // ฟังก์ชันสร้าง UUID แบบ native
     private function generateUuid() {
         $data = random_bytes(16);

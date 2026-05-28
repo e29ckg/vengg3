@@ -238,7 +238,7 @@ class SettingModel {
                         p.first_name, 
                         p.last_name, 
                         CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS full_name
-
+                        
                   FROM ven_user vu
                   JOIN user u ON vu.user_id = u.id
                   JOIN profile p ON u.id = p.user_id

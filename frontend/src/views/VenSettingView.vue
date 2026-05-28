@@ -463,7 +463,7 @@ const userSearchQuery = ref('')
 let manageUsersModalInstance = null
 
 const fetchAllUsers = async () => {
-  const res = await api.get('?route=admin/user/list') 
+  const res = await api.get('?route=admin/ven_user/allUsers') 
   allUsers.value = res.data
 }
 
