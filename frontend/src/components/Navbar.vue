@@ -25,7 +25,7 @@
             </router-link>
           </li>
 
-          <li class="nav-item dropdown">
+          <li class="nav-item dropdown" v-if="userRole === 2 || userRole === 9">
             <a class="nav-link dropdown-toggle py-2" :class="{ 'active fw-bold': route.path.startsWith('/director') }" href="#" @click.prevent="toggleDirectorMenu">
               <i class="bi bi-briefcase me-1"></i> งานอำนวยการ
             </a>
@@ -39,7 +39,7 @@
             </ul>
           </li>
 
-          <li class="nav-item dropdown">
+          <li class="nav-item dropdown" v-if="userRole === 3 || userRole === 9">
             <a class="nav-link dropdown-toggle py-2" :class="{ 'active fw-bold': route.path.startsWith('/finance') }" href="#" @click.prevent="toggleFinanceMenu">
               <i class="bi bi-cash-coin me-1"></i> การเงิน
             </a>
