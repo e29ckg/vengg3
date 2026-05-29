@@ -173,7 +173,7 @@ switch ($route) {
         break;
 
     case 'admin/options/get':
-        AuthMiddleware::checkDirector($connection);
+        AuthMiddleware::checkToken($connection);
         // 🌟 เปลี่ยนกลับมาส่ง SettingModel เข้าไป
         $optionController = new OptionController(new SettingModel($connection));
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
