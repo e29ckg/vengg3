@@ -56,9 +56,14 @@
               <li><router-link class="dropdown-item py-2" to="/admin/users"><i class="bi bi-people me-2"></i> จัดการผู้ใช้งาน</router-link></li>
               <li><router-link class="dropdown-item py-2" to="/admin/options"><i class="bi bi-card-list me-2"></i> จัดการค่าเริ่มต้น</router-link></li>
               <li><router-link class="dropdown-item py-2" to="/admin/settings/agency"><i class="bi bi-building me-2"></i> ข้อมูลหน่วยงาน</router-link></li>
+              <li>
+                <router-link class="dropdown-item py-2" to="/admin/settings/system"><i class="bi bi-gear-fill me-2 text-secondary"></i> การตั้งค่าระบบ
+                </router-link>
+              </li>
               <li><hr class="dropdown-divider"></li>
               <li><router-link class="dropdown-item py-2" to="/admin/settings/google-calendar"><i class="bi bi-google me-2"></i> Google Calendar</router-link></li>
               <li><router-link class="dropdown-item py-2" to="/admin/settings/telegram"><i class="bi bi-telegram me-2"></i> Telegram Bot</router-link></li>
+              <li><router-link class="dropdown-item py-2" to="/admin/logs"><i class="bi bi-journal-text me-2"></i> ประวัติการใช้งาน (Logs)</router-link></li>
             </ul>
           </li>
         </ul>
