@@ -49,6 +49,12 @@ const router = createRouter({
       component: () => import('../views/admin/TelegramSettingsView.vue'),
       meta: { requiresAuth: true, roles: [9] } // 🌟 แก้เป็น roles (มี s)
     },
+    {
+      path: '/admin/logs',
+      name: 'system-logs',
+      component: () => import('../views/admin/SystemLogsView.vue'),
+      meta: { requiresAuth: true, roles: [9] } // ให้เฉพาะแอดมินเข้าได้
+    },
     { 
       path: '/director/ven-settings', 
       name: 'ven-settings', 
