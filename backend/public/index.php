@@ -333,7 +333,7 @@ switch ($route) {
         break;
 
     case 'admin/ven/setting':
-        AuthMiddleware::checkAdmin($connection);            
+        AuthMiddleware::checkDirector($connection);            
         $settingModel = new SettingModel($connection); 
         $venSettingController = new VenSettingController($settingModel);            
         $action = $_GET['action'] ?? '';
@@ -415,7 +415,7 @@ switch ($route) {
         break;
 
     case 'admin/ven_schedule/ven_name_list':
-        AuthMiddleware::checkAdmin($connection);            
+        AuthMiddleware::checkDirector($connection);            
         $settingModel = new SettingModel($connection); 
         $venSettingController = new VenSettingController($settingModel);   
         $data = json_decode(file_get_contents("php://input"), true);
@@ -454,20 +454,42 @@ switch ($route) {
         }
         break;
 
+    case 'users/list':
+        AuthMiddleware::checkDirector($connection);        
+        $controller = new UserController(new User($connection));
+        $controller->listUsers();
+        break;
+
+    case 'report/personal-schedule':
+        AuthMiddleware::checkDirector($connection);  
+        $reportController = new ReportController(new ReportModel($connection));
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            $reportController->getPersonalSchedule();
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method not allowed"]);
+        }
+        break;
+
     // ==========================================
     // 🌟 จัดการคำขออนุมัติเวร (Ven Approve)
     // ==========================================
     case 'admin/ven_approve/list':
-        AuthMiddleware::checkAdmin($connection);
-        $approveController = new VenApproveController(new VenApproveModel($connection));
+        AuthMiddleware::checkDirector($connection);
+        // เติม $connection เป็นพารามิเตอร์ตัวที่ 2 
+        $approveController = new VenApproveController(new VenApproveModel($connection), $connection);
+        
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $approveController->getList();
         }
         break;
 
     case 'admin/ven_approve/force_update':
-        AuthMiddleware::checkAdmin($connection);
-        $approveController = new VenApproveController(new VenApproveModel($connection));
+        AuthMiddleware::checkDirector($connection);
+        // เติม $connection เป็นพารามิเตอร์ตัวที่ 2 
+        $approveController = new VenApproveController(new VenApproveModel($connection), $connection);
+        
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = json_decode(file_get_contents("php://input"), true);
             $approveController->forceUpdate($data);
@@ -635,7 +657,23 @@ switch ($route) {
         }
         break;
 
-    
+    case 'admin/logs/get':
+        AuthMiddleware::checkAdmin($connection);        
+        $logController = new LogController($connection);        
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            $logController->getLogs();
+        }
+        break;
+
+    // ==========================================
+    // 🌟 ดึงเวลาอัปเดตปฏิทินล่าสุด (Public)
+    // ==========================================
+    case 'public/latest_update':
+        $settingController = new SettingController(new SettingModel($connection), $connection);
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            $settingController->getLatestUpdate();
+        }
+        break;    
 
     default:
         http_response_code(404);

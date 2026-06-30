@@ -17,6 +17,13 @@
           </span>
         </div>
 
+        <div class="d-flex justify-content-center my-3">
+          <div class="badge bg-light text-dark border px-3 py-2 shadow-sm d-flex align-items-center" style="font-size: 0.9rem; border-radius: 20px;">
+            <i class="bi bi-clock-history text-primary me-2" style="font-size: 1.1rem;"></i>
+            <span class="fw-normal text-secondary">{{ latestUpdateText }}</span>
+          </div>
+        </div>
+
         <div class="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center">
           
           <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border flex-nowrap" style="width: auto;">
@@ -312,6 +319,7 @@
 </template>
 
 <script setup>
+// home view
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { exportShiftChangeToWord, exportDutyReportToWord } from '../services/wordService';
@@ -325,6 +333,42 @@ const isLoading = ref(true)
 const currentUserId = ref(0)
 const currentUsername = ref('')
 const userRole = ref(0)
+
+const latestUpdateText = ref('กำลังโหลดข้อมูลการอัปเดต...');
+
+// ฟังก์ชันแปลงรูปแบบวันที่-เวลาให้เป็น พ.ศ. ภาษาไทย
+const formatThaiDateTime = (dateStr) => {
+  if (!dateStr) return 'ยังไม่มีประวัติการอนุมัติ/เปลี่ยนเวร';
+  
+  const date = new Date(dateStr);
+  const thMonths = [
+    'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+  ];
+  
+  const day = date.getDate();
+  const month = thMonths[date.getMonth()];
+  const year = date.getFullYear() + 543; // แปลง ค.ศ. เป็น พ.ศ.
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  
+  return `ข้อมูลอัปเดตล่าสุดเมื่อ: ${day} ${month} ${year} เวลา ${hours}:${minutes} น.`;
+};
+
+// ฟังก์ชันเรียกดึงข้อมูลจากหลังบ้าน
+const fetchLatestUpdate = async () => {
+  try {
+    const response = await api.get('?route=public/latest_update'); // เรียก Route ที่เราทำไว้
+    if (response.data && response.data.latest_update) {
+      latestUpdateText.value = formatThaiDateTime(response.data.latest_update);
+    } else {
+      latestUpdateText.value = 'ยังไม่มีประวัติการอนุมัติ/เปลี่ยนเวร';
+    }
+  } catch (error) {
+    console.error('Failed to fetch latest update time:', error);
+    latestUpdateText.value = 'ไม่สามารถดึงข้อมูลการอัปเดตได้';
+  }
+};
 
 // 🌟 ตัวแปรเก็บกฎการตั้งค่าระบบ (ดึงมาจาก Backend)
 const systemSettings = ref({
@@ -699,6 +743,7 @@ const cancelChange = async (changeId) => {
         Swal.fire('ยกเลิกสำเร็จ', 'ใบเปลี่ยนเวรถูกยกเลิกและคืนเวรเรียบร้อยแล้ว', 'success');
         detailModalInstance.hide();
         fetchVenData();
+        fetchLatestUpdate();
       }
     } catch (error) {
       // 4. กรณี Error ก็จะปิด Loading แล้วแสดงข้อความแจ้งเตือน
@@ -815,7 +860,8 @@ const confirmTransfer = async (targetUser) => {
     showRecipientList.value = false;
     if (detailModalInstance) detailModalInstance.hide();
     fetchVenData(); 
-    
+    fetchLatestUpdate();
+
     // ถามว่าจะไปหน้าประวัติไหม เหมือนกับตอนสลับเวร
     const successResult = await Swal.fire({
       title: 'ส่งคำขอสำเร็จ!',
@@ -922,7 +968,8 @@ const confirmSwap = async () => {
     });
     
     detailModalInstance.hide();
-    fetchVenData(); 
+    fetchVenData();
+    fetchLatestUpdate(); 
     
     const successResult = await Swal.fire({
       title: 'ส่งคำขอสำเร็จ!',
@@ -1083,6 +1130,7 @@ const fetchAgencyConfig = async () => {
 }
 
 onMounted(async() => {
+  fetchLatestUpdate();
   fetchVenData()
   await fetchAgencyConfig()
   await fetchUserInfo()

@@ -1,7 +1,12 @@
 <?php
+// backend/src/Controllers/VenTransferController.php
+
+require_once __DIR__ . '/../Models/LogModel.php';
+require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
+
 class VenTransferController {
     private $transferModel;
-    private $connection; // รับ Connection มาเผื่อไว้ส่งให้ฟังก์ชัน updateGoogleCalendarDay
+    private $connection; 
 
     public function __construct($transferModel, $connection) {
         $this->transferModel = $transferModel;
@@ -26,18 +31,38 @@ class VenTransferController {
         // ตรวจสอบผลลัพธ์
         if ($result['success']) {
             
-            // 🌟 1. นำเข้าและเรียกใช้งาน Google Calendar Service
-            require_once __DIR__ . '/../Services/GoogleCalendarService.php';
-            $googleCalendar = new GoogleCalendarService($this->connection);
+            // 🌟 1. นำเข้าและอัปเดต Google Calendar
+            try {
+                require_once __DIR__ . '/../Services/GoogleCalendarService.php';
+                $googleCalendar = new GoogleCalendarService($this->connection);
 
-            // 🌟 2. สั่งอัปเดตปฏิทินของวันที่ 1
-            if (!empty($result['date1'])) {
-                $googleCalendar->updateDay($result['date1']);
+                if (!empty($result['date1'])) {
+                    $googleCalendar->updateDay($result['date1']);
+                }
+                
+                if (!empty($result['date2']) && $result['date1'] != $result['date2']) {
+                    $googleCalendar->updateDay($result['date2']);
+                }
+            } catch (Exception $e) {
+                error_log("Google Calendar Update Failed (Perform): " . $e->getMessage());
             }
-            
-            // 🌟 3. ถ้าเป็นการสลับเวร และวันที่ไม่ซ้ำกัน อัปเดตวันที่ 2 ด้วย
-            if (!empty($result['date2']) && $result['date1'] != $result['date2']) {
-                $googleCalendar->updateDay($result['date2']);
+
+            // 🌟 2. บันทึก Log การสร้างคำขอเปลี่ยนเวร
+            try {
+                $logModel = new LogModel($this->connection);
+                $changeNo = $result['change_no'] ?? 'ไม่ระบุ';
+                $actionType = $is_swap ? "สลับเวร" : "ยกเวร"; // เช็คว่าเป็นยกให้หรือสลับ
+
+                $logModel->addLog(
+                    $currentUserId,               
+                    'CREATE',               // แอคชัน: สร้างใหม่
+                    'TRANSFER',             // โมดูล: การเปลี่ยนเวร
+                    "สร้างคำขอ{$actionType} (ใบเปลี่ยนเลขที่: {$changeNo})", // รายละเอียด
+                    null,                   // ข้อมูลเก่า (ไม่มีเพราะสร้างใหม่)
+                    $data                   // ข้อมูลที่ส่งมาขอเปลี่ยน
+                );
+            } catch (Exception $e) {
+                error_log("Log Insert Failed (Perform Transfer): " . $e->getMessage());
             }
 
             // ส่งผลลัพธ์กลับไปให้หน้าเว็บ
@@ -48,7 +73,7 @@ class VenTransferController {
             ]);
 
         } else {
-            http_response_code($result['code']);
+            http_response_code($result['code'] ?? 500);
             echo json_encode(['error' => $result['error']]);
         }
     }
@@ -65,27 +90,48 @@ class VenTransferController {
         $result = $this->transferModel->cancelTransfer($change_id);
 
         if ($result['success']) {
-            $changeReq = $result['data'];
+            $changeReq = $result['data']; // ข้อมูลของใบเปลี่ยนเวรก่อนถูกยกเลิก
             
-            // 🌟 1. นำเข้าและเรียกใช้งาน Google Calendar Service
-            require_once __DIR__ . '/../Services/GoogleCalendarService.php';
-            $googleCalendar = new GoogleCalendarService($this->connection);
+            // 🌟 1. อัปเดต Google Calendar ของวันที่มีการยกเลิก
+            try {
+                require_once __DIR__ . '/../Services/GoogleCalendarService.php';
+                $googleCalendar = new GoogleCalendarService($this->connection);
 
-            // 🌟 2. อัปเดตปฏิทินของวันที่ 1
-            if (!empty($changeReq['date1'])) {
-                $googleCalendar->updateDay($changeReq['date1']);
+                if (!empty($changeReq['date1'])) {
+                    $googleCalendar->updateDay($changeReq['date1']);
+                }
+                
+                if (isset($changeReq['is_swap']) && $changeReq['is_swap'] == 1 && !empty($changeReq['date2']) && $changeReq['date1'] != $changeReq['date2']) {
+                    $googleCalendar->updateDay($changeReq['date2']);
+                }
+            } catch (Exception $e) {
+                error_log("Google Calendar Update Failed (Cancel): " . $e->getMessage());
             }
-            
-            // 🌟 3. อัปเดตปฏิทินของวันที่ 2 (ถ้าเป็นการสลับเวร และวันที่ไม่ซ้ำกัน)
-            if ($changeReq['is_swap'] == 1 && !empty($changeReq['date2']) && $changeReq['date1'] != $changeReq['date2']) {
-                $googleCalendar->updateDay($changeReq['date2']);
+
+            // 🌟 2. บันทึก Log การยกเลิกใบเปลี่ยนเวร
+            try {
+                // ดึง ID ของคนที่กดยกเลิก
+                $currentUserId = AuthMiddleware::getUserIdFromToken($this->connection);
+                $logModel = new LogModel($this->connection);
+                $changeNo = $changeReq['change_no'] ?? $change_id; // ดึงเลขที่ใบเปลี่ยนมาแสดง
+
+                $logModel->addLog(
+                    $currentUserId,               
+                    'CANCEL',               // แอคชัน: ยกเลิก
+                    'TRANSFER',             // โมดูล: การเปลี่ยนเวร
+                    "ยกเลิกคำขอเปลี่ยนเวร (ใบเปลี่ยนเลขที่: {$changeNo})", // รายละเอียด
+                    $changeReq,             // ข้อมูลใบเปลี่ยนเวร (ก่อนถูกยกเลิก)
+                    null                   
+                );
+            } catch (Exception $e) {
+                error_log("Log Insert Failed (Cancel Transfer): " . $e->getMessage());
             }
 
             echo json_encode(['success' => true, 'message' => 'ยกเลิกการเปลี่ยนเวรและอัปเดตปฏิทินเรียบร้อยแล้ว']);
         } else {
-            http_response_code($result['code']);
+            http_response_code($result['code'] ?? 500);
             echo json_encode(['error' => $result['error']]);
         }
     }
-    
 }
+?>

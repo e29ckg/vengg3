@@ -25,7 +25,7 @@ class AuthMiddleware {
         if (empty($headers)) {
             http_response_code(401); // 401 Unauthorized
             echo json_encode(["error" => "Access denied. No token provided."]);
-            exit(); // หยุดการทำงานทันที (เตะออก)
+            exit(); // หยุดการทำงานทันที
         }
 
         // 3. ตรวจสอบรูปแบบว่าต้องขึ้นต้นด้วยคำว่า 'Bearer '
@@ -50,7 +50,7 @@ class AuthMiddleware {
             exit();
         }
 
-        // 🌟 5. [ส่วนที่เพิ่มใหม่] ตรวจสอบสถานะระบบ (Maintenance Mode)
+        // 🌟 5. ตรวจสอบสถานะระบบ (Maintenance Mode)
         // ดึง Role ของผู้ใช้ออกมา (รองรับทั้งแบบ Array และ Object)
         $role = is_array($userData) ? ($userData['role'] ?? null) : ($userData->role ?? null);
 
@@ -59,7 +59,7 @@ class AuthMiddleware {
         $stmt->execute();
         $setting = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // ถ้าสถานะ = 0 (ปิดระบบ) และไม่ใช่ Admin (role != 9) ให้เตะออกด้วยรหัส 403
+        // ถ้าสถานะ = 1 (เปิดโหมดซ่อมบำรุง) และไม่ใช่ Admin (role != 9) ให้เตะออกด้วยรหัส 403
         if ($setting && isset($setting['maintenance_mode']) && $setting['maintenance_mode'] == 1 && $role != 9) {
             http_response_code(403); 
             echo json_encode([
@@ -69,7 +69,7 @@ class AuthMiddleware {
             exit();
         }
 
-        // ถ้าผ่านทุกด่าน คืนค่าข้อมูลผู้ใช้กลับไป (เผื่อเอาไปเช็คสิทธิ์ Role ต่อ)
+        // ถ้าผ่านทุกด่าน คืนค่าข้อมูลผู้ใช้กลับไป
         return $userData;
     }
 
@@ -78,8 +78,11 @@ class AuthMiddleware {
         // 1. ให้ยามปกติเช็ค Token ก่อน
         $userData = self::checkToken($db);
 
+        // ดึงค่าสิทธิ์แบบปลอดภัย (รองรับทั้ง Array และ Object)
+        $role = is_array($userData) ? ($userData['role'] ?? null) : ($userData->role ?? null);
+
         // 2. เช็คว่ามีสิทธิ์เป็น Admin (role = 9) หรือไม่
-        if ($userData['role'] != 9) {
+        if ($role != 9) {
             http_response_code(403); // 403 Forbidden
             echo json_encode(["error" => "Access denied. Admin role required."]);
             exit();
@@ -87,18 +90,50 @@ class AuthMiddleware {
 
         return $userData;
     }
+
+    // 🔒 ยามระดับผู้บริหาร (Director)
     public static function checkDirector($db) {
         // 1. ให้ยามปกติเช็ค Token ก่อน
         $userData = self::checkToken($db);
 
-        // 2. เช็คว่ามีสิทธิ์เป็น Director (role = 2) หรือไม่
-        if ($userData['role'] != 2 && $userData['role'] != 9) { // อนุญาตให้ Admin เข้าถึงได้ด้วย
+        // ดึงค่าสิทธิ์แบบปลอดภัย (รองรับทั้ง Array และ Object)
+        $role = is_array($userData) ? ($userData['role'] ?? null) : ($userData->role ?? null);
+
+        // 2. เช็คว่ามีสิทธิ์เป็น Director (role = 2) หรือ Admin (role = 9) หรือไม่
+        if ($role != 2 && $role != 9) { 
             http_response_code(403); // 403 Forbidden
-            echo json_encode(["error" => "Access denied. Director  role required."]);
+            echo json_encode(["error" => "Access denied. Director role required."]);
             exit();
         }
 
         return $userData;
+    }
+
+    // 🔒 ยามระดับผู้บริหาร (Finance)
+    public static function checkFinance($db) {
+        // 1. ให้ยามปกติเช็ค Token ก่อน
+        $userData = self::checkToken($db);
+
+        // ดึงค่าสิทธิ์แบบปลอดภัย (รองรับทั้ง Array และ Object)
+        $role = is_array($userData) ? ($userData['role'] ?? null) : ($userData->role ?? null);
+
+        // 2. เช็คว่ามีสิทธิ์เป็น Finance (role = 3) หรือ Admin (role = 9) หรือไม่
+        if ($role != 3 && $role != 9) { 
+            http_response_code(403); // 403 Forbidden
+            echo json_encode(["error" => "Access denied. Finance role required."]);
+            exit();
+        }
+
+        return $userData;
+    }
+
+    // 🌟 [เพิ่มใหม่] ฟังก์ชันสำหรับดึง User ID ของคนที่ล็อกอินอยู่โดยเฉพาะ
+    public static function getUserIdFromToken($db) {
+        // ให้เช็ค Token ให้ผ่านก่อน
+        $userData = self::checkToken($db);
+        
+        // ดึง ID ออกมาส่งกลับไป (รองรับทั้งแบบ Array และ Object)
+        return is_array($userData) ? ($userData['id'] ?? null) : ($userData->id ?? null);
     }
 }
 ?>

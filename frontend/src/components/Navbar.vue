@@ -6,7 +6,13 @@
         <span class="fw-bold"><i class="bi bi-calendar2-check"></i> {{ systemName || 'ระบบเวรนอกเวลาทำการ' }}</span>
       </router-link>
 
-      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" @click="toggleMobileMenu">
+      <button 
+        class="navbar-toggler" 
+        type="button" 
+        @click="isMobileMenuOpen = !isMobileMenuOpen"
+        :aria-expanded="isMobileMenuOpen"
+        aria-label="Toggle navigation"
+      >
         <span class="navbar-toggler-icon"></span>
       </button>
 
@@ -34,6 +40,7 @@
               <li><router-link class="dropdown-item py-2" to="/director/commands"><i class="bi bi-file-earmark-text me-2"></i> จัดการคำสั่งเวร</router-link></li>
               <li><router-link class="dropdown-item py-2" to="/director/schedule"><i class="bi bi-calendar-check me-2"></i> จัดเวร</router-link></li>
               <li><router-link class="dropdown-item py-2" to="/director/schedule-list"><i class="bi bi-card-list me-2"></i> รายงานการจัดเวร</router-link></li>
+              <li><router-link class="dropdown-item py-2" to="/report/personal"><i class="bi bi-file-earmark-text me-2"></i> รายงานส่วนตัว</router-link></li>
               <li><hr class="dropdown-divider"></li>
               <li><router-link class="dropdown-item py-2" to="/director/approvals"><i class="bi bi-check-circle me-2"></i> อนุมัติใบเปลี่ยนเวร</router-link></li>
             </ul>
@@ -56,10 +63,7 @@
               <li><router-link class="dropdown-item py-2" to="/admin/users"><i class="bi bi-people me-2"></i> จัดการผู้ใช้งาน</router-link></li>
               <li><router-link class="dropdown-item py-2" to="/admin/options"><i class="bi bi-card-list me-2"></i> จัดการค่าเริ่มต้น</router-link></li>
               <li><router-link class="dropdown-item py-2" to="/admin/settings/agency"><i class="bi bi-building me-2"></i> ข้อมูลหน่วยงาน</router-link></li>
-              <li>
-                <router-link class="dropdown-item py-2" to="/admin/settings/system"><i class="bi bi-gear-fill me-2 text-secondary"></i> การตั้งค่าระบบ
-                </router-link>
-              </li>
+              <li><router-link class="dropdown-item py-2" to="/admin/settings/system"><i class="bi bi-gear-fill me-2 text-secondary"></i> การตั้งค่าระบบ</router-link></li>
               <li><hr class="dropdown-divider"></li>
               <li><router-link class="dropdown-item py-2" to="/admin/settings/google-calendar"><i class="bi bi-google me-2"></i> Google Calendar</router-link></li>
               <li><router-link class="dropdown-item py-2" to="/admin/settings/telegram"><i class="bi bi-telegram me-2"></i> Telegram Bot</router-link></li>
@@ -124,6 +128,8 @@ const checkAuth = () => {
   }
 }
 
+
+
 // ฟังก์ชันสลับสถานะเมนูต่างๆ
 const toggleAdminMenu = () => { 
   isAdminMenuOpen.value = !isAdminMenuOpen.value 
@@ -147,10 +153,6 @@ const toggleFinanceMenu = () => {
     isAdminMenuOpen.value = false 
     isDirectorMenuOpen.value = false
   }
-}
-
-const toggleMobileMenu = () => {
-  isMobileMenuOpen.value = !isMobileMenuOpen.value
 }
 
 // ตรวจสอบการเปลี่ยนหน้า (พอกดเปลี่ยนหน้าปุ๊บ สั่งปิดเมนูทั้งหมดทันที)
