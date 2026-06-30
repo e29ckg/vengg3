@@ -3,6 +3,7 @@
 
 require_once '../src/Models/User.php';
 require_once '../src/Middleware/AuthMiddleware.php';
+require_once __DIR__ . '/../Models/LogModel.php'; // นำเข้า LogModel ไว้ด้านบน
 
 class AuthController {
     private $db;
@@ -23,12 +24,12 @@ class AuthController {
 
             if ($result['success']) {
                 $user = $result['user'];
-                // 🌟 [เพิ่มใหม่] เช็คสถานะระบบก่อนให้เข้าใช้งาน
+                // 🌟 เช็คสถานะระบบก่อนให้เข้าใช้งาน
                 $stmt = $this->db->prepare("SELECT maintenance_mode FROM system_settings WHERE id = 1");
                 $stmt->execute();
                 $setting = $stmt->fetch(PDO::FETCH_ASSOC);
 
-                // ถ้า maintenance_mode = 0 (ปิดปรับปรุง) และไม่ใช่ Admin (role != 9)
+                // ถ้า maintenance_mode = 1 (เปิดโหมดปรับปรุง) และไม่ใช่ Admin (role != 9)
                 if ($setting && $setting['maintenance_mode'] == 1 && $user['role'] != 9) {
                     http_response_code(403); // ส่ง HTTP 403 Forbidden
                     echo json_encode([
@@ -37,14 +38,25 @@ class AuthController {
                     ]);
                     exit;
                 }
-                // require_once __DIR__ . '/../Models/LogModel.php';
-                // $logModel = new LogModel($this->db); // หรือ $this->conn ขึ้นอยู่กับตัวแปรของคุณ
-                // $logModel->addLog(
-                //     $user['id'],              // ID ของคนที่ล็อกอิน
-                //     'LOGIN',                  // Action
-                //     'AUTH',                   // Module
-                //     "เข้าสู่ระบบสำเร็จ"           // Description
-                // );
+
+                // 🌟 [เปิดใช้งานและปรับปรุง] บันทึก Log การเข้าสู่ระบบสำเร็จ
+                try {
+                    $logModel = new LogModel($this->db);
+                    $userId = $user['id'] ?? null;
+                    $username = $user['username'] ?? 'Unknown';
+
+                    $logModel->addLog(
+                        $userId,                  // ID ของคนที่ล็อกอิน
+                        'LOGIN',                  // Action
+                        'AUTH',                   // Module
+                        "ผู้ใช้งาน {$username} เข้าสู่ระบบสำเร็จ", // Description
+                        null,                     // ข้อมูลเก่า (ไม่มี)
+                        ["username" => $username] // ข้อมูลใหม่/ข้อมูลล็อกอินหลัก
+                    );
+                } catch (Exception $e) {
+                    // หากบันทึก Log ไม่สำเร็จ ให้ลงระบบ Error Log ของเซิร์ฟเวอร์แทน ไม่ให้หน้าเว็บล็อกอินล่ม
+                    error_log("Auth LOGIN Log Failed: " . $e->getMessage());
+                }
  
                 http_response_code(200);
                 echo json_encode([

@@ -1,9 +1,32 @@
 <?php
+// backend/src/Controllers/SettingController.php
+
 class SettingController {
     private $settingModel;
+    private $db; // 🌟 เพิ่มตัวแปร $db เพื่อใช้งานกับการบันทึก Log และ Model ภายใน
 
-    public function __construct($settingModel) {
+    // 🌟 เพิ่มรับพารามิเตอร์ $db เข้ามาใน Constructor ด้วย
+    public function __construct($settingModel, $db = null) {
         $this->settingModel = $settingModel;
+        $this->db = $db; 
+    }
+
+    // 🌟 [เพิ่มใหม่] ฟังก์ชันตัวช่วยสำหรับบันทึก Log เพื่อลดความซ้ำซ้อนของโค้ด
+    private function addSystemLog($action, $module, $description, $oldData = null, $newData = null) {
+        try {
+            if (!$this->db) return; // ป้องกัน Error หากไม่มีการส่ง $db เข้ามา
+
+            require_once __DIR__ . '/../Models/LogModel.php';
+            require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
+            
+            $logModel = new LogModel($this->db);
+            // ดึง ID ของคนที่กำลังทำรายการ
+            $userId = AuthMiddleware::getUserIdFromToken($this->db);
+            
+            $logModel->addLog($userId, $action, $module, $description, $oldData, $newData);
+        } catch (Exception $e) {
+            error_log("Setting Log Failed: " . $e->getMessage());
+        }
     }
 
     // ฟังก์ชันสำหรับดึงข้อมูลการตั้งค่า (GET)
@@ -21,8 +44,7 @@ class SettingController {
                 'compact_schedule_view' => 1,
                 'maintenance_mode' => 0
             ];
-        }
-        
+        }        
         echo json_encode($settings);
     }
 
@@ -34,6 +56,8 @@ class SettingController {
         $result = $this->settingModel->updateSystemSettings($data);
         
         if ($result) {
+            // 🌟 บันทึก Log
+            $this->addSystemLog('UPDATE', 'SETTING', 'อัปเดตการตั้งค่าระบบส่วนกลาง', null, $data);
             echo json_encode(["success" => true, "message" => "อัปเดตการตั้งค่าระบบสำเร็จ"]);
         } else {
             http_response_code(500);
@@ -49,6 +73,8 @@ class SettingController {
             
             // เรียกใช้ Model เพื่ออัปเดตข้อมูล
             if ($this->settingModel->updateSystemSetting($data['setting_key'], $data['setting_value'])) {
+                // 🌟 บันทึก Log
+                $this->addSystemLog('UPDATE', 'SETTING', "อัปเดตสถานะ Toggle (Key: {$data['setting_key']}, Value: {$data['setting_value']})");
                 echo json_encode(["success" => true]);
             } else {
                 http_response_code(500);
@@ -61,7 +87,7 @@ class SettingController {
         }
     }
 
-    // 🌟 ดึงข้อมูลตั้งค่าหน่วยงาน
+    // ดึงข้อมูลตั้งค่าหน่วยงาน
     public function getAgencySettings() {
         $settings = $this->settingModel->getAgencySettings();
         
@@ -69,19 +95,19 @@ class SettingController {
         echo json_encode($settings ? $settings : []);
     }
 
-    // 🌟 อัปเดตข้อมูลตั้งค่าหน่วยงาน
+    // อัปเดตข้อมูลตั้งค่าหน่วยงาน
     public function updateAgencySettings() {
         $data = json_decode(file_get_contents("php://input"), true);
         
         if ($this->settingModel->updateAgencySettings($data)) {
+            // 🌟 บันทึก Log
+            $this->addSystemLog('UPDATE', 'SETTING', 'อัปเดตข้อมูลหน่วยงาน/ชื่อศาล', null, $data);
             echo json_encode(["success" => true, "message" => "บันทึกข้อมูลสำเร็จ"]);
         } else {
             http_response_code(500);
             echo json_encode(["error" => "ไม่สามารถบันทึกข้อมูลตั้งค่าหน่วยงานได้"]);
         }
     }
-
-
 
     public function handleRequest($action, $table) {
         $settingModel = new SettingModel($this->db);
@@ -96,22 +122,26 @@ class SettingController {
                 break;
             case 'create':
                 if ($settingModel->create($table, $data['name'])) {
+                    $this->addSystemLog('CREATE', 'SETTING', "เพิ่มข้อมูลตาราง {$table} (ชื่อ: {$data['name']})", null, $data);
                     echo json_encode(["message" => "เพิ่มข้อมูลสำเร็จ"]);
                 }
                 break;
             case 'update':
                 if ($settingModel->update($table, $data['id'], $data['name'])) {
+                    $this->addSystemLog('UPDATE', 'SETTING', "แก้ไขข้อมูลตาราง {$table} (ID: {$data['id']})", null, $data);
                     echo json_encode(["message" => "แก้ไขข้อมูลสำเร็จ"]);
                 }
                 break;
             case 'delete':
                 if ($settingModel->delete($table, $data['id'])) {
+                    $this->addSystemLog('DELETE', 'SETTING', "ลบข้อมูลตาราง {$table} (ID: {$data['id']})", $data, null);
                     echo json_encode(["message" => "ลบข้อมูลสำเร็จ"]);
                 }
                 break;  
 
             case 'create_venname':
                 if ($settingModel->createVenName($data)) {
+                    $this->addSystemLog('CREATE', 'SETTING', "เพิ่มข้อมูลกลุ่มเวรหลักใหม่", null, $data);
                     echo json_encode(["message" => "เพิ่มข้อมูลเวรสำเร็จ"]);
                 } else {
                     http_response_code(500); echo json_encode(["error" => "ไม่สามารถเพิ่มข้อมูลได้"]);
@@ -120,6 +150,7 @@ class SettingController {
 
             case 'update_venname':
                 if ($settingModel->updateVenName($data)) {
+                    $this->addSystemLog('UPDATE', 'SETTING', "แก้ไขข้อมูลกลุ่มเวรหลัก", null, $data);
                     echo json_encode(["message" => "แก้ไขข้อมูลเวรสำเร็จ"]);
                 } else {
                     http_response_code(500); echo json_encode(["error" => "ไม่สามารถแก้ไขข้อมูลได้"]);
@@ -128,6 +159,7 @@ class SettingController {
 
             case 'create_sub':
                 if ($settingModel->createVenSub($data)) {
+                    $this->addSystemLog('CREATE', 'SETTING', "เพิ่มหน้าที่ย่อยการเข้าเวรใหม่", null, $data);
                     echo json_encode(["message" => "เพิ่มหน้าที่ย่อยสำเร็จ"]);
                 } else {
                     http_response_code(500); echo json_encode(["error" => "ไม่สามารถเพิ่มข้อมูลได้"]);
@@ -135,6 +167,7 @@ class SettingController {
                 break;
             case 'update_sub':
                 if ($settingModel->updateVenSub($data)) {
+                    $this->addSystemLog('UPDATE', 'SETTING', "แก้ไขหน้าที่ย่อยการเข้าเวร", null, $data);
                     echo json_encode(["message" => "แก้ไขหน้าที่ย่อยสำเร็จ"]);
                 } else {
                     http_response_code(500); echo json_encode(["error" => "ไม่สามารถแก้ไขข้อมูลได้"]);
@@ -142,6 +175,7 @@ class SettingController {
                 break;
             case 'update_order':
                 if ($settingModel->updateSubDutyOrder($data)){
+                    $this->addSystemLog('UPDATE', 'SETTING', "แก้ไขการจัดเรียงลำดับหน้าที่ (Sort Order)", null, $data);
                     echo json_encode(["message" => "แก้ไขลำดับหน้าที่สำเร็จ"]);
                 } else {
                     http_response_code(500); echo json_encode(["error" => "ไม่สามารถแก้ไขข้อมูลได้"]);
@@ -158,8 +192,6 @@ class SettingController {
                 $result = $settingModel->getAgencyConfig();
                 echo json_encode($result);
                 break;
-
-            
         }
     }
 
@@ -175,7 +207,6 @@ class SettingController {
             return;
         }
 
-        // 🌟 แก้ไขตรงนี้: เรียกใช้งาน Model ให้ถูกต้องเหมือนฟังก์ชันอื่นๆ ในคลาส
         require_once '../src/Models/SettingModel.php';
         $settingModel = new SettingModel($this->db);
         
@@ -183,6 +214,10 @@ class SettingController {
         $result = $settingModel->updateChangeStatus($change_id, $status);
         
         if ($result) {
+            // 🌟 บันทึก Log การจัดการเปลี่ยนเวร
+            $statusText = ($status == 1) ? 'อนุมัติ' : (($status == 2) ? 'ไม่อนุมัติ' : 'รออนุมัติ');
+            $this->addSystemLog('UPDATE', 'TRANSFER', "อัปเดตสถานะใบเปลี่ยนเวร (ID อ้างอิง: {$change_id}, ตั้งค่าเป็น: {$statusText})", null, ["change_id" => $change_id, "status" => $statusText]);
+
             echo json_encode([
                 'success' => true, 
                 'message' => 'อัปเดตสถานะและจัดการตารางเวรเรียบร้อยแล้ว'
@@ -206,7 +241,29 @@ class SettingController {
         exit;
     }
 
-
-
-    
+    // 🌟 [เพิ่มใหม่] ดึงเวลาอัปเดตล่าสุดจาก Log ของการเปลี่ยนเวรและการอนุมัติ
+    public function getLatestUpdate() {
+        try {
+            // ดึงเวลาล่าสุด (MAX) จากโมดูล APPROVE และ TRANSFER
+            $stmt = $this->db->prepare("
+                SELECT created_at 
+                FROM system_logs 
+                WHERE module IN ('APPROVE', 'TRANSFER') 
+                ORDER BY created_at DESC 
+                LIMIT 1
+            ");
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            http_response_code(200);
+            echo json_encode([
+                "success" => true,
+                "latest_update" => $result ? $result['created_at'] : null
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(["error" => "Server Error: " . $e->getMessage()]);
+        }
+    }
 }
+?>

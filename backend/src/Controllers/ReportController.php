@@ -60,6 +60,28 @@ class ReportController {
         http_response_code(200);
         echo json_encode($finalResponse);
     }
+
+    public function getPersonalSchedule() {
+        // รับค่าพารามิเตอร์จาก GET
+        // ✨ แก้ไข: รับค่า user_id เป็นข้อความ (String) ไม่ใส่ (int) เพื่อรองรับ varchar(36)
+        $userId = isset($_GET['user_id']) ? trim($_GET['user_id']) : '';
+        $month = isset($_GET['month']) ? (int)$_GET['month'] : date('m');
+        $year = isset($_GET['year']) ? (int)$_GET['year'] : date('Y');
+
+        // ตรวจสอบความถูกต้องของข้อมูลเบื้องต้น
+        if (empty($userId) || $month === 0 || $year === 0) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'ข้อมูลไม่ครบถ้วน']);
+            return;
+        }
+
+        // เรียกใช้ Model
+        $schedules = $this->reportModel->getPersonalSchedule($userId, $month, $year);
+
+        // ส่งข้อมูลกลับเป็น JSON
+        http_response_code(200);
+        echo json_encode($schedules);
+    }
 }
 
     

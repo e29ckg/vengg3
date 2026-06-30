@@ -1,4 +1,10 @@
 <?php
+// backend/src/Controllers/VenScheduleController.php
+
+require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
+// นำ LogModel มารวมไว้ด้านบนทีเดียวเพื่อความเป็นระเบียบและลดการเรียกซ้ำซ้อน
+require_once __DIR__ . '/../Models/LogModel.php'; 
+
 class VenScheduleController {
     private $settingModel;
     private $connection;
@@ -14,6 +20,20 @@ class VenScheduleController {
 
     public function add($data) {
         if ($this->settingModel->addSchedule($data)) {
+            // 🌟 ดึง ID แอดมิน (แก้ไข: ใช้ $this->connection แทน $db)
+            $adminId = AuthMiddleware::getUserIdFromToken($this->connection); 
+            $venDate = $data['ven_date'] ?? 'ไม่ระบุวันที่';
+            
+            $logModel = new LogModel($this->connection);
+            
+            $logModel->addLog(
+                $adminId,               
+                'CREATE',               // แอคชัน: สร้างใหม่
+                'SCHEDULE',             // โมดูล: จัดเวร
+                "เพิ่มข้อมูลจัดเวร (วันที่: {$venDate})", // รายละเอียด
+                null,                   // ข้อมูลเก่า (ไม่มีเพราะสร้างใหม่)
+                $data                   // ข้อมูลใหม่ (สิ่งที่ส่งมาบันทึก)
+            );
             echo json_encode(["success" => true, "message" => "บันทึกเวรสำเร็จ"]);
         } else {
             http_response_code(500); 
@@ -21,8 +41,60 @@ class VenScheduleController {
         }
     }
 
+    public function update($id, $newData) {
+        
+        // 🌟 1. ดึงข้อมูล "เก่า" ออกมาก่อน (เพื่อเอาไปทำ Log)
+        $stmt = $this->connection->prepare("SELECT * FROM ven_schedule WHERE id = ?");
+        $stmt->execute([$id]);
+        $oldData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // 🌟 2. สั่งอัปเดตข้อมูลทับลงไป (เรียกใช้ Model ของคุณ)
+        if ($this->settingModel->updateSchedule($id, $newData)) {
+            
+            // 🌟 3. บันทึก Log การแก้ไข (แก้ไข: เติม $this->connection)
+            $adminId = AuthMiddleware::getUserIdFromToken($this->connection);
+            $venDate = $oldData['ven_date'] ?? 'ไม่ระบุวันที่';
+
+            $logModel = new LogModel($this->connection);
+            
+            $logModel->addLog(
+                $adminId,               
+                'UPDATE',               // แอคชัน: แก้ไข
+                'SCHEDULE',             // โมดูล: จัดเวร
+                "แก้ไขข้อมูลผู้เข้าเวร (ID อ้างอิง: {$id}, วันที่: {$venDate})",
+                $oldData,               // ข้อมูลก่อนถูกแก้
+                $newData                // ข้อมูลชุดใหม่
+            );
+
+            echo json_encode(["success" => true, "message" => "แก้ไขข้อมูลเวรสำเร็จ"]);
+        } else {
+            http_response_code(500); 
+            echo json_encode(["error" => "ไม่สามารถแก้ไขข้อมูลได้"]);
+        }
+    }
+
     public function remove($id) {
+        // 🌟 1. ดึงข้อมูล "เก่า" ออกมาก่อนที่จะถูกลบทิ้ง (เพื่อให้มีข้อมูลไปบันทึก Log)
+        $stmt = $this->connection->prepare("SELECT * FROM ven_schedule WHERE id = ?");
+        $stmt->execute([$id]);
+        $oldData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // 🌟 2. สั่งลบ
         if ($this->settingModel->removeSchedule($id)) {
+            // 🌟 ดึง ID แอดมิน (แก้ไข: เติม $this->connection)
+            $adminId = AuthMiddleware::getUserIdFromToken($this->connection); 
+            $venDate = $oldData['ven_date'] ?? 'ไม่ระบุวันที่'; // ดึงจาก oldData
+            
+            $logModel = new LogModel($this->connection);
+            
+            $logModel->addLog(
+                $adminId,               
+                'DELETE',               // แอคชัน: ลบ
+                'SCHEDULE',             // โมดูล: จัดเวร
+                "ลบข้อมูลจัดเวร (วันที่: {$venDate})", // รายละเอียด
+                $oldData,               // ข้อมูลเก่า (ข้อมูลที่ถูกลบไป)
+                null                    // ข้อมูลใหม่ (ไม่มีเพราะลบ)
+            );
             echo json_encode(["success" => true, "message" => "ลบเวรสำเร็จ"]);
         } else {
             http_response_code(500); 

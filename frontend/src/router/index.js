@@ -80,6 +80,12 @@ const router = createRouter({
       meta: { requiresAuth: true, roles: [2, 9] } // 🌟 เติมสิทธิ์
     },
     {
+      path: '/report/personal',
+      name: 'personal-report',
+      component: () => import('../views/PersonalReportView.vue'),
+      meta: { requiresAuth: true, roles: [2, 9] }
+    },
+    {
       path: '/director/approvals',
       name: 'ven-approvals',
       component: () => import('../views/VenApproveView.vue'),
