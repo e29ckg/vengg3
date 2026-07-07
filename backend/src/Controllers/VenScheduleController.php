@@ -22,7 +22,7 @@ class VenScheduleController {
         if ($this->settingModel->addSchedule($data)) {
             // 🌟 ดึง ID แอดมิน (แก้ไข: ใช้ $this->connection แทน $db)
             $adminId = AuthMiddleware::getUserIdFromToken($this->connection); 
-            $venDate = $data['ven_date'] ?? 'ไม่ระบุวันที่';
+            $venDate = $data['date'] ?? 'ไม่ระบุวันที่';
             
             $logModel = new LogModel($this->connection);
             
