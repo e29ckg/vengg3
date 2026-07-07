@@ -248,7 +248,7 @@ class SettingController {
             $stmt = $this->db->prepare("
                 SELECT created_at 
                 FROM system_logs 
-                WHERE module IN ('APPROVE', 'TRANSFER') 
+                WHERE module IN ('APPROVE','SCHEDULE', 'TRANSFER') 
                 ORDER BY created_at DESC 
                 LIMIT 1
             ");
