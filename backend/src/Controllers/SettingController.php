@@ -246,10 +246,11 @@ class SettingController {
         try {
             // ดึงเวลาล่าสุด (MAX) จากโมดูล APPROVE และ TRANSFER
             $stmt = $this->db->prepare("
-                SELECT created_at 
-                FROM system_logs 
-                WHERE module IN ('APPROVE','SCHEDULE', 'TRANSFER') 
-                ORDER BY created_at DESC 
+                SELECT sl.created_at, p.prefix_name, p.first_name, p.last_name
+                FROM system_logs sl
+                LEFT JOIN profile p ON sl.user_id = p.user_id
+                WHERE sl.module IN ('APPROVE','SCHEDULE', 'TRANSFER') 
+                ORDER BY sl.created_at DESC 
                 LIMIT 1
             ");
             $stmt->execute();
@@ -258,7 +259,10 @@ class SettingController {
             http_response_code(200);
             echo json_encode([
                 "success" => true,
-                "latest_update" => $result ? $result['created_at'] : null
+                "latest_update" => $result ? $result['created_at'] : null,
+                "prefix_name" => $result ? $result['prefix_name'] : null,
+                "first_name" => $result ? $result['first_name'] : null,
+                "last_name" => $result ? $result['last_name'] : null
             ]);
         } catch (Exception $e) {
             http_response_code(500);
