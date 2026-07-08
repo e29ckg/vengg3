@@ -18,9 +18,16 @@
         </div>
 
         <div class="d-flex justify-content-center my-3">
-          <div class="badge bg-light text-dark border px-3 py-2 shadow-sm d-flex align-items-center" style="font-size: 0.9rem; border-radius: 20px;">
-            <i class="bi bi-clock-history text-primary me-2" style="font-size: 1.1rem;"></i>
-            <span class="fw-normal text-secondary">{{ latestUpdateText }}</span>
+          <div v-if="latestUpdateData" class="alert alert-info text-center shadow-sm rounded-4 mx-auto mb-4" style="max-width: 600px;">
+            <div class="d-flex align-items-center justify-content-center">
+              <i class="bi bi-clock-history fs-4 me-2 text-primary"></i>
+              <div>
+                <span class="fw-bold">ข้อมูลอัปเดตล่าสุดเมื่อ:</span> {{ latestUpdateData.time }} <br>
+                <small class="text-muted">
+                  <i class="bi bi-person-fill"></i> ทำรายการล่าสุดโดย: <span class="fw-bold text-primary">{{ latestUpdateData.userName }}</span>
+                </small>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -334,7 +341,7 @@ const currentUserId = ref(0)
 const currentUsername = ref('')
 const userRole = ref(0)
 
-const latestUpdateText = ref('กำลังโหลดข้อมูลการอัปเดต...');
+const latestUpdateData = ref(null);
 
 // ฟังก์ชันแปลงรูปแบบวันที่-เวลาให้เป็น พ.ศ. ภาษาไทย
 const formatThaiDateTime = (dateStr) => {
@@ -352,21 +359,27 @@ const formatThaiDateTime = (dateStr) => {
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
   
-  return `ข้อมูลอัปเดตล่าสุดเมื่อ: ${day} ${month} ${year} เวลา ${hours}:${minutes} น.`;
+  return `${day} ${month} ${year} เวลา ${hours}:${minutes} น.`;
 };
 
 // ฟังก์ชันเรียกดึงข้อมูลจากหลังบ้าน
 const fetchLatestUpdate = async () => {
   try {
-    const response = await api.get('?route=public/latest_update'); // เรียก Route ที่เราทำไว้
+    const response = await api.get('?route=public/latest_update'); 
+    
     if (response.data && response.data.latest_update) {
-      latestUpdateText.value = formatThaiDateTime(response.data.latest_update);
+      const formattedTime = formatThaiDateTime(response.data.latest_update);
+      const fullName = `${response.data.prefix_name || ''}${response.data.first_name || ''} ${response.data.last_name || ''}`.trim() || 'ระบบ';
+      latestUpdateData.value = {
+        time: formattedTime,
+        userName: fullName
+      };      
     } else {
-      latestUpdateText.value = 'ยังไม่มีประวัติการอนุมัติ/เปลี่ยนเวร';
+      latestUpdateData.value = null; 
     }
   } catch (error) {
     console.error('Failed to fetch latest update time:', error);
-    latestUpdateText.value = 'ไม่สามารถดึงข้อมูลการอัปเดตได้';
+    latestUpdateData.value = null;
   }
 };
 
