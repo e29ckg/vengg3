@@ -124,8 +124,7 @@ const router = createRouter({
     {
       path: '/manual',
       name: 'manual',
-      component: () => import('../views/UserManualView.vue'),
-      meta: { requiresAuth: true } // พนักงานทั่วไปเข้าได้
+      component: () => import('../views/UserManualView.vue')
     },
     {
       path: '/:pathMatch(.*)*',
