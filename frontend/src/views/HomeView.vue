@@ -3,128 +3,102 @@
     <div class="container-fluid py-4 px-4 flex-grow-1 d-flex flex-column">
       <div class="card shadow-sm border-0 rounded-4 flex-grow-1 d-flex flex-column overflow-hidden">        
         <div class="card-header bg-white border-bottom-0 pt-4 pb-3 px-3 px-md-4 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
-  
-        <div class="text-center text-lg-start">
-          <h4 class="fw-bold mb-2 text-primary">
-            <i class="bi bi-calendar3 me-2"></i>ตารางเวรเดือน {{ formatMonthThai(currentMonth) }}
-          </h4>
-          <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill small fw-normal">
-            <i class="bi bi-info-circle me-1"></i>
-            <span v-if="systemSettings.advance_swap_days > 0">
-              ต้องทำรายการล่วงหน้าอย่างน้อย {{ systemSettings.advance_swap_days }} วัน
+          <div class="text-center text-lg-start">
+            <h4 class="fw-bold mb-2 text-primary">
+              <i class="bi bi-calendar3 me-2"></i>ตารางเวรเดือน {{ formatMonthThai(currentMonth) }}
+            </h4>
+            <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill small fw-normal">
+              <i class="bi bi-info-circle me-1"></i>
+              <span v-if="systemSettings.advance_swap_days > 0">
+                ต้องทำรายการล่วงหน้าอย่างน้อย {{ systemSettings.advance_swap_days }} วัน
+              </span>
+              <span v-else>สามารถทำรายการแลกเปลี่ยนเวรได้ภายในวันเดียวกัน</span>
             </span>
-            <span v-else>สามารถทำรายการแลกเปลี่ยนเวรได้ภายในวันเดียวกัน</span>
-          </span>
-        </div>
-
-        <div class="d-flex justify-content-center my-3">
-          <div v-if="latestUpdateData" class="alert alert-info text-center shadow-sm rounded-4 mx-auto mb-4" style="max-width: 600px;">
-            <div class="d-flex align-items-center justify-content-center">
-              <i class="bi bi-clock-history fs-4 me-2 text-primary"></i>
-              <div>
-                <span class="fw-bold">ข้อมูลอัปเดตล่าสุดเมื่อ:</span> {{ latestUpdateData.time }} <br>
-                <small class="text-muted">
-                  <i class="bi bi-person-fill"></i> ทำรายการล่าสุดโดย: <span class="fw-bold text-primary">{{ latestUpdateData.userName }}</span>
-                </small>
+          </div>
+          <div class="d-flex justify-content-center my-3">
+            <div v-if="latestUpdateData" class="alert alert-info text-center shadow-sm rounded-4 mx-auto mb-4" style="max-width: 600px;">
+              <div class="d-flex align-items-center justify-content-center">
+                <i class="bi bi-clock-history fs-4 me-2 text-primary"></i>
+                <div>
+                  <span class="fw-bold">ข้อมูลอัปเดตล่าสุดเมื่อ:</span> {{ latestUpdateData.time }} <br>
+                  <small class="text-muted">
+                    <i class="bi bi-person-fill"></i> ทำรายการล่าสุดโดย: <span class="fw-bold text-primary">{{ latestUpdateData.userName }}</span>
+                  </small>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
-        <div class="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center">
-          
-          <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border flex-nowrap" style="width: auto;">
-            <button class="btn btn-light border-end px-3" @click="changeMonth(-1)" title="เดือนก่อนหน้า">
-              <i class="bi bi-chevron-left"></i>
-            </button>
-            
-            <select class="form-select border-0 text-center fw-bold bg-white cursor-pointer" v-model="selMonth" @change="updateCurrentMonth" style="min-width: 120px;">
-              <option v-for="(m, idx) in thaiMonths" :key="idx" :value="String(idx + 1).padStart(2, '0')">{{ m }}</option>
-            </select>
-            
-            <select class="form-select border-0 border-start text-center fw-bold bg-white cursor-pointer" v-model="selYear" @change="updateCurrentMonth" style="min-width: 90px;">
-              <option v-for="y in yearList" :key="y" :value="y">{{ y }}</option>
-            </select>
-            
-            <button class="btn btn-light border-start px-3" @click="changeMonth(1)" title="เดือนถัดไป">
-              <i class="bi bi-chevron-right"></i>
-            </button>
+          <div class="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center">
+            <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border flex-nowrap" style="width: auto;">
+              <button class="btn btn-light border-end px-3" @click="changeMonth(-1)" title="เดือนก่อนหน้า">
+                <i class="bi bi-chevron-left"></i>
+              </button>            
+              <select class="form-select border-0 text-center fw-bold bg-white cursor-pointer" v-model="selMonth" @change="updateCurrentMonth" style="min-width: 120px;">
+                <option v-for="(m, idx) in thaiMonths" :key="idx" :value="String(idx + 1).padStart(2, '0')">{{ m }}</option>
+              </select>            
+              <select class="form-select border-0 border-start text-center fw-bold bg-white cursor-pointer" v-model="selYear" @change="updateCurrentMonth" style="min-width: 90px;">
+                <option v-for="y in yearList" :key="y" :value="y">{{ y }}</option>
+              </select>            
+              <button class="btn btn-light border-start px-3" @click="changeMonth(1)" title="เดือนถัดไป">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
+            <button class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" @click="goToToday">
+              วันนี้
+            </button>          
           </div>
-
-          <button class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" @click="goToToday">
-            วันนี้
-          </button>
-          
         </div>
-
-      </div>
-
         <div v-if="isLoading" class="text-center py-5 flex-grow-1 d-flex flex-column justify-content-center">
           <div class="spinner-border text-primary mx-auto mb-2" role="status"></div>
           <p class="text-muted fw-semibold">กำลังดึงข้อมูลปฏิทิน...</p>
         </div>
-
-        <div v-else class="d-flex flex-column flex-grow-1 px-4 pb-4 overflow-hidden">
-          
+        <div v-else class="d-flex flex-column flex-grow-1 px-4 pb-4 overflow-hidden">          
           <div class="row g-0 bg-dark text-white fw-bold text-center py-2 shadow-sm rounded-top-3">
             <div class="col" v-for="day in weekDays" :key="day">{{ day }}</div>
           </div>
-
           <div class="calendar-grid bg-light flex-grow-1 overflow-auto p-2 border border-top-0 rounded-bottom-3 custom-scrollbar">
             <div class="day-cell blank" v-for="b in blankDays" :key="'b'+b"></div>
-
-            <div class="day-cell border rounded-3 d-flex flex-column bg-white shadow-sm transition-hover" 
-                 v-for="day in daysInMonth" :key="day">
-              
-              <div class="day-header fw-bold border-bottom px-2 py-1 text-end bg-light">
-                <span v-if="day" 
-                      class="d-inline-block text-center" 
-                      :class="{ 'bg-primary text-white rounded-circle shadow-sm': isToday(day), 'text-secondary': !isToday(day) }"
-                      :style="isToday(day) ? 'width: 28px; height: 28px; line-height: 28px;' : ''">
-                  {{ day }}
-                </span>
-              </div>
-              
-              <div class="day-body p-1 flex-grow-1 overflow-auto custom-scrollbar">                
-                
-                <div v-for="sch in getSchedulesForDay(day)" :key="sch.id" 
-     class="schedule-item mb-1 p-1 rounded-1 shadow-sm"
-     :class="{ 
-       'flashing-24h': Number(sch.price) !== 0 && is24HourShift(sch),
-       'border border-warning border-2': Number(sch.price) !== 0 && hasDuplicateShift(sch) 
-     }"
-     :style="{ 
-       backgroundColor: Number(sch.price) === 0 ? sch.backgroundColor : (is24HourShift(sch) ? '' : (sch.user_id == currentUserId ? '#FFD700' : sch.backgroundColor)), 
-       color: Number(sch.price) === 0 ? '#fff' : (is24HourShift(sch) ? 'white' : (sch.user_id == currentUserId ? '#000' : '#fff'))
-     }"
-     @click="openShiftDetail(sch.id)"
-     :title="`เวลา: ${sch.ven_time.substring(0,5)} น.`"> 
-     
-  <template v-if="!systemSettings.compact_schedule_view">
-    <div class="fw-bold d-flex align-items-center" style="font-size: 0.7rem;">
-      <i class="bi bi-clock me-1"></i>{{ sch.ven_time.substring(0,5) }}
-      
-      <i v-if="Number(sch.price) !== 0 && is24HourShift(sch)" class="bi bi-exclamation-triangle-fill ms-1 text-danger" title="เวรติดกัน 24 ชม."></i>
-      
-      <i v-else-if="Number(sch.price) !== 0 && hasDuplicateShift(sch)" class="bi bi-exclamation-circle-fill ms-1 text-warning fs-6" title="มีเวรซ้ำในวันเดียวกัน"></i>
-      
-      <i v-else-if="Number(sch.price) !== 0 && sch.user_id == currentUserId" class="bi bi-star-fill ms-1 text-warning" title="เวรของคุณ"></i>
-    </div>
-    <div class="text-truncate fw-semibold" style="font-size: 0.85rem;">{{ sch.title }}</div>
-  </template>
-
-  <template v-else>
-    <div class="d-flex align-items-center fw-semibold text-truncate" style="font-size: 0.85rem;">
-      <i class="bi me-1" :class="getTimeIcon(sch)"></i>
-      <span class="text-truncate flex-grow-1">{{ sch.title }}</span>
-      
-      <i v-if="Number(sch.price) !== 0 && is24HourShift(sch)" class="bi bi-exclamation-triangle-fill ms-1 text-danger" title="เวรติดกัน 24 ชม."></i>
-      <i v-else-if="Number(sch.price) !== 0 && hasDuplicateShift(sch)" class="bi bi-exclamation-circle-fill ms-1 text-warning fs-6" title="มีเวรซ้ำในวันเดียวกัน"></i>
-      <i v-else-if="Number(sch.price) !== 0 && sch.user_id == currentUserId" class="bi bi-star-fill ms-1 text-warning" title="เวรของคุณ"></i>
-    </div>
-  </template>
-</div>
-
+              <div class="day-cell border rounded-3 d-flex flex-column bg-white shadow-sm transition-hover" 
+                  v-for="day in daysInMonth" :key="day">              
+                <div class="day-header fw-bold border-bottom px-2 py-1 text-end bg-light">
+                  <span v-if="day" 
+                        class="d-inline-block text-center" 
+                        :class="{ 'bg-primary text-white rounded-circle shadow-sm': isToday(day), 'text-secondary': !isToday(day) }"
+                        :style="isToday(day) ? 'width: 28px; height: 28px; line-height: 28px;' : ''">
+                    {{ day }}
+                  </span>
+                </div>              
+                <div class="day-body p-1 flex-grow-1 overflow-auto custom-scrollbar"> 
+                  <div v-for="sch in getSchedulesForDay(day)" :key="sch.id" class="schedule-item mb-1 p-1 rounded-1 shadow-sm"
+                    :class="{ 
+                      'flashing-24h': Number(sch.price) !== 0 && is24HourShift(sch),
+                      'border border-warning border-2': Number(sch.price) !== 0 && hasDuplicateShift(sch) 
+                    }"
+                    :style="{ 
+                      backgroundColor: Number(sch.price) === 0 ? sch.backgroundColor : (is24HourShift(sch) ? '' : (sch.user_id == currentUserId ? '#FFD700' : sch.backgroundColor)), 
+                      color: Number(sch.price) === 0 ? '#fff' : (is24HourShift(sch) ? 'white' : (sch.user_id == currentUserId ? '#000' : '#fff'))
+                    }"
+                    @click="openShiftDetail(sch.id)"
+                    :title="`เวลา: ${sch.ven_time.substring(0,5)} น.`">       
+                  <template v-if="!systemSettings.compact_schedule_view">
+                    <div class="fw-bold d-flex align-items-center" style="font-size: 0.7rem;">
+                      <i class="bi bi-clock me-1"></i>{{ sch.ven_time.substring(0,5) }}                      
+                      <i v-if="Number(sch.price) !== 0 && is24HourShift(sch)" class="bi bi-exclamation-triangle-fill ms-1 text-danger" title="เวรติดกัน 24 ชม."></i>
+                      <i v-else-if="Number(sch.price) !== 0 && hasDuplicateShift(sch)" class="bi bi-exclamation-circle-fill ms-1 text-warning fs-6" title="มีเวรซ้ำในวันเดียวกัน"></i>
+                      <i v-else-if="Number(sch.price) !== 0 && sch.user_id == currentUserId" class="bi bi-star-fill ms-1 text-warning" title="เวรของคุณ"></i>
+                    </div>
+                    <div class="text-truncate fw-semibold" style="font-size: 0.85rem;">{{ sch.title }}</div>
+                  </template>
+                  <template v-else>
+                    <div class="d-flex align-items-center fw-semibold text-truncate" style="font-size: 0.85rem;">
+                      <i class="bi me-1" :class="getTimeIcon(sch)"></i>
+                      <span class="text-truncate flex-grow-1">{{ sch.title }}</span>                      
+                      <i v-if="Number(sch.price) !== 0 && is24HourShift(sch)" class="bi bi-exclamation-triangle-fill ms-1 text-danger" title="เวรติดกัน 24 ชม."></i>
+                      <i v-else-if="Number(sch.price) !== 0 && hasDuplicateShift(sch)" class="bi bi-exclamation-circle-fill ms-1 text-warning fs-6" title="มีเวรซ้ำในวันเดียวกัน"></i>
+                      <i v-else-if="Number(sch.price) !== 0 && sch.user_id == currentUserId" class="bi bi-star-fill ms-1 text-warning" title="เวรของคุณ"></i>
+                    </div>
+                  </template>
+                </div>
               </div>
             </div>
           </div>
@@ -132,13 +106,11 @@
         <Teleport to="body">
           <div class="modal fade" id="venDetailModal" tabindex="-1" >
             <div class="modal-dialog modal-dialog-centered">
-              <div class="modal-content border-0 shadow-lg rounded-4" v-if="selectedVen">
-                
+              <div class="modal-content border-0 shadow-lg rounded-4" v-if="selectedVen">                
                 <div class="modal-header border-0 pb-0">
                   <h5 class="modal-title text-muted fs-6" style="font-family: monospace;">ID: {{ selectedVen.ven_id || selectedVen.id }}</h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-    
+                </div>    
                 <div class="modal-body text-center pt-2 px-4 pb-4">
                   <!-- <img :src="getProfileImage(selectedVen)" class="rounded-circle shadow-sm mb-3 object-fit-cover border border-3 border-white" style="width: 100px; height: 100px;"> -->
                   <div class="rounded-circle border border-3 border-primary shadow-sm d-flex align-items-center justify-content-center fw-bold text-uppercase text-primary bg-primary bg-opacity-10 mx-auto" 
@@ -148,35 +120,28 @@
                   <h4 class="fw-bold mb-1" :style="{ color: selectedVen.color }">{{ selectedVen.full_name }}</h4>
                   <span class="badge mb-3 px-3 py-2 rounded-pill shadow-sm" :style="{ backgroundColor: selectedVen.color }">
                     {{ selectedVen.duty_role }}
-                  </span>
-    
+                  </span>    
                   <div class="bg-light border rounded-3 p-3 text-start mb-4 shadow-sm">
                     <p class="mb-2"><i class="bi bi-calendar-event me-2 text-primary"></i> 
                       <strong>{{ formatDate(selectedVen.ven_date || selectedVen.date) }}</strong> 
                       <span v-if="selectedVen.ven_time">(เวลา {{ selectedVen.ven_time_text }} น.)</span>
                     </p>
                     <p class="mb-2"><i class="bi me-2 text-warning" :class="getTimeIcon(selectedVen)"></i> {{ selectedVen.duty_main }}</p>
-                    
                     <p v-if="selectedVen.command_num" class="mb-2 text-muted small">
                       <i class="bi bi-file-earmark-text me-2"></i> คำสั่งเลขที่ {{ selectedVen.command_num }} 
                       <span v-if="selectedVen.command_date">ลงวันที่ {{ formatDate(selectedVen.command_date) }}</span>
-                    </p>
-    
+                    </p>    
                     <p class="mb-0 text-success fw-bold fs-5"><i class="bi bi-cash-coin me-2"></i> {{ Number(selectedVen.price).toLocaleString() }} บาท</p>
-                  </div>
-    
-                  <div v-if="selectedVen.user_id == currentUserId">
-                    
+                  </div>    
+                  <div v-if="selectedVen.user_id == currentUserId">                    
                     <div v-if="selectedVen.com_status != 1" class="alert alert-warning border-0 small text-start mt-2 shadow-sm">
                       <i class="bi bi-exclamation-circle-fill me-1"></i> 
                       <strong>หมายเหตุ:</strong> คำสั่งนี้อยู่ระหว่างรออนุมัติ ท่านจะสามารถโอนเวรได้หลังจากคำสั่งได้รับการอนุมัติแล้วเท่านั้น
-                    </div>
-    
+                    </div>    
                     <template v-else>
                       <button class="btn btn-primary rounded-pill fw-bold shadow-sm py-2 w-100 mb-2" @click="downloadDutyReport(selectedVen)">
                         <i class="bi bi-file-earmark-check me-1"></i> รายงานการปฏิบัติหน้าที่
-                      </button>
-                      
+                      </button>                      
                       <div class="mb-3 text-start px-1" v-if="selectedVen.user_id == currentUserId">
                         <div class="d-flex align-items-center text-muted small">
                           <i class="bi bi-shield-check me-2 text-success"></i>
@@ -186,17 +151,15 @@
                           </span>
                         </div>
                       </div>
-
                       <template v-if="!isPastShift(selectedVen.ven_date || selectedVen.date, selectedVen.ven_time) || systemSettings.allow_retroactive_swap">                        
-                       <button v-if="!showRecipientList" class="btn btn-warning rounded-pill fw-bold text-dark shadow-sm py-2 w-100" 
+                        <button v-if="!showRecipientList" class="btn btn-warning rounded-pill fw-bold text-dark shadow-sm py-2 w-100" 
                                   @click="loadRecipients" 
                                   :disabled="selectedVen?.status != 1">
                             <i class="bi bi-arrow-right-circle me-1"></i> ยกเวรนี้ให้ผู้อื่น (โอนขาด)
-                          </button>
-                          <div v-if="selectedVen?.status != 1" class="text-danger small mt-2 text-center">
+                        </button>
+                        <div v-if="selectedVen?.status != 1" class="text-danger small mt-2 text-center">
                           <i class="bi bi-exclamation-circle"></i> สถานะไม่พร้อมที่จะดำเนินการ
-                        </div>
-      
+                        </div>      
                         <div v-if="showRecipientList" class="mt-3 text-start border border-warning rounded-3 p-2 bg-white shadow-sm">
                           <label class="form-label fw-bold small text-primary mb-2 px-1">เลือกผู้ที่ต้องการยกเวรให้:</label>
                           <div class="list-group list-group-flush border rounded-3 overflow-auto custom-scrollbar" style="max-height: 180px;">
@@ -212,25 +175,20 @@
                             <button class="btn btn-link btn-sm text-decoration-none text-muted" @click="showRecipientList = false">ยกเลิก</button>
                           </div>
                         </div>
-                      </template>
-                      
+                      </template>                      
                       <div v-else class="alert alert-danger border-0 small text-center mt-2 shadow-sm rounded-3">
                         <i class="bi bi-exclamation-triangle-fill me-1"></i> ระบบไม่อนุญาตให้เปลี่ยนเวรย้อนหลัง
                       </div>
                     </template>
                   </div>
-
                   <div v-else-if="systemSettings.allow_swap" class="mt-3 text-start border border-warning rounded-3 p-3 bg-white shadow-sm">
                     <h6 class="fw-bold text-warning mb-2"><i class="bi bi-arrow-left-right"></i> ขอสลับเปลี่ยนเวร</h6>
-                    
                     <div v-if="selectedVen.com_status != 1" class="alert alert-warning border-0 small text-start mt-2 shadow-sm">
                       <i class="bi bi-exclamation-circle-fill me-1"></i> 
                       รอคำสั่งอนุมัติก่อน จึงจะสามารถสลับเวรได้
                     </div>
-                    
                     <template v-else>
                       <template v-if="!isPastShift(selectedVen.ven_date || selectedVen.date, selectedVen.ven_time) || systemSettings.allow_retroactive_swap">
-
                         <div class="mb-3 text-start px-1" v-if="selectedVen.user_id == currentUserId">
                           <div class="d-flex align-items-center text-muted small">
                             <i class="bi bi-shield-check me-2 text-success"></i>
@@ -240,59 +198,49 @@
                             </span>
                           </div>
                         </div>
-
                         <label class="form-label text-secondary small fw-bold mt-1">เลือกเวรของคุณเพื่อเสนอแลกเปลี่ยน:</label>
                         <select class="form-select mb-3 border-warning" v-model="selectedMyShiftId">
                           <option value="" disabled>-- เลือกเวรของคุณ (คำสั่ง/หน้าที่เดียวกัน) --</option>
                           <option v-for="shift in mySwappableShifts" :key="shift.id || shift.ven_id" :value="shift.id || shift.ven_id">
                             วันที่ {{ formatDate(shift.date || shift.ven_date) }} <span v-if="shift.ven_time">({{ shift.ven_time.substring(0,5) }} น.)</span>
                           </option>
-                        </select>
-                        
+                        </select>                        
                         <button class="btn btn-warning rounded-pill fw-bold text-dark shadow-sm py-2 w-100" 
                                 @click="confirmSwap"
                                 :disabled="!selectedMyShiftId || selectedVen?.status != 1">
                           <i class="bi bi-check-circle me-1"></i> ยืนยันขอสลับเวร
                         </button>
-
                         <div v-if="mySwappableShifts.length === 0" class="text-danger small mt-2 text-center">
                           <i class="bi bi-exclamation-circle"></i> คุณไม่มีเวรในคำสั่งและหน้าที่เดียวกันที่นำมาแลกได้
                         </div>
                         <div v-if="selectedVen?.status != 1" class="text-danger small mt-2 text-center">
                           <i class="bi bi-exclamation-circle"></i> สถานะไม่พร้อมที่จะดำเนินการ
                         </div>
-                      </template>
-                      
+                      </template>                      
                       <div v-else class="alert alert-danger border-0 small text-center mt-2 shadow-sm rounded-3">
                         <i class="bi bi-exclamation-triangle-fill me-1"></i> ระบบไม่อนุญาตให้สลับเวรย้อนหลัง
                       </div>
                     </template>
-                  </div>
-                  
+                  </div>                  
                   <div v-else class="alert alert-secondary border-0 small text-center mt-3 mb-4 shadow-sm rounded-3">
                     <i class="bi bi-info-circle me-1"></i> การเปลี่ยนเวรหรือยกเวร สามารถทำได้เฉพาะเวรของตนเองเท่านั้น
-                  </div>
-    
+                  </div>    
                   <div class="timeline-container mt-4 pt-4 border-top text-start">
                     <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>ประวัติการเปลี่ยนเวร</h6>
-                    
                     <div v-if="selectedVen.history && selectedVen.history.length > 0">
                       <div v-for="(history, index) in selectedVen.history" :key="index" class="card mb-2 border-0 shadow-sm bg-light">
                         <div class="card-body p-3">
                           <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="badge bg-primary">ใบเปลี่ยนเลขที่: {{ history.change_no || history.change_id }}</span>
-                            
                             <span v-if="history.status == 1" class="badge bg-success">อนุมัติแล้ว</span>
                             <span v-else class="badge bg-warning text-dark">รออนุมัติ</span>
-                          </div>
-                          
+                          </div>                          
                           <p class="mb-1 text-muted" style="font-size: 0.9rem;">
                             {{ history.user1_name }} 
                             <i v-if="history.is_swap == 1" class="bi bi-arrow-left-right mx-1 text-warning fw-bold"></i>
                             <i v-else class="bi bi-arrow-right mx-1 text-primary fw-bold"></i> 
                             {{ history.user2_name }}
-                          </p>
-                          
+                          </p>                          
                           <div class="d-flex justify-content-end gap-2 mt-2">
                             <button v-if="history.status == 0 || history.status == 1" 
                                     @click="downloadWordForm(history)" 
@@ -307,13 +255,11 @@
                           </div>
                         </div>
                       </div>
-                    </div>
-                    
+                    </div>                    
                     <div v-else class="text-center text-muted py-3 bg-light rounded-3 border">
                       <small>ไม่มีประวัติการเปลี่ยนเวร</small>
                     </div>
                   </div>
-
                 </div>
               </div>
             </div>    
@@ -321,7 +267,6 @@
         </Teleport>
       </div>
     </div>
-
   </div>
 </template>
 
