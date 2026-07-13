@@ -1,3 +1,5 @@
+version: '3.8' # แนะนำให้ใส่ version ของ Compose file ครับ
+
 services:
   db:
     image: mysql:8.0
@@ -19,7 +21,7 @@ services:
       PMA_HOST: db
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "8080:80"
+      - "8081:80" 
     depends_on:
       - db
 
@@ -41,15 +43,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: vengg_frontend
-    environment:
-      TZ: Asia/Bangkok
+    container_name: ven_frontend # ปรับชื่อ container ให้ใช้ _ (underscore) เหมือนตัวอื่นๆ เพื่อความสวยงาม
     ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules  # 🌟 อันนี้ทำถูกแล้วครับ ป้องกัน node_modules หาย
-    depends_on:
+      - "8080:80" # เข้าเว็บ Frontend ผ่านพอร์ต 8080
+    restart: always
+    depends_on: # 🛠️ เพิ่ม: ให้ Frontend รอ Backend รันเสร็จก่อนค่อยทำงาน
       - backend
 
   cron-notifier:
