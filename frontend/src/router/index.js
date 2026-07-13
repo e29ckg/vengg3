@@ -23,31 +23,31 @@ const router = createRouter({
       path: '/admin/users', 
       name: 'admin-users', 
       component: () => import('../views/UserManagementView.vue'),
-      meta: { requiresAuth: true, roles: [9] } // 🌟 แก้เป็น roles (มี s)
+      meta: { requiresAuth: true, roles: [9] } 
     },
     {
       path: '/admin/settings/system',
       name: 'SystemSettings',
       component: () => import('../views/admin/SystemSettingsView.vue'),
-      meta: { requiresAuth: true, roles: [9] } // 🌟 แก้เป็น roles (มี s)
+      meta: { requiresAuth: true, roles: [9] } 
     },
     {
       path: '/admin/settings/agency',
       name: 'AgencySettings',
       component: () => import('../views/admin/AgencySettingsView.vue'),
-      meta: { requiresAuth: true, roles: [9] } // 🌟 แก้เป็น roles (มี s)
+      meta: { requiresAuth: true, roles: [9] } 
     },
     {
       path: '/admin/settings/google-calendar',
       name: 'GoogleCalendarSettings',
       component: () => import('../views/admin/GoogleCalendarSettingsView.vue'),
-      meta: { requiresAuth: true, roles: [9] } // 🌟 แก้เป็น roles (มี s)
+      meta: { requiresAuth: true, roles: [9] } 
     },
     {
       path: '/admin/settings/telegram',
       name: 'TelegramSettings',
       component: () => import('../views/admin/TelegramSettingsView.vue'),
-      meta: { requiresAuth: true, roles: [9] } // 🌟 แก้เป็น roles (มี s)
+      meta: { requiresAuth: true, roles: [9] } 
     },
     {
       path: '/admin/logs',

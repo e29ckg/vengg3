@@ -1,20 +1,36 @@
-# ใช้ Node.js เวอร์ชันล่าสุด
-FROM node:lts-alpine
+# ==========================================
+# Stage 1: Build Stage (ใช้ Node.js)
+# ==========================================
+FROM node:20-alpine as build-stage
 
-# ตั้งค่าโฟลเดอร์ทำงานภายใน Container
+# กำหนดโฟลเดอร์ทำงานใน Container
 WORKDIR /app
 
-# คัดลอก package.json เพื่อติดตั้ง dependencies ก่อน (ช่วยให้ build เร็วขึ้นถ้าไม่มีการแก้ไฟล์นี้)
+# คัดลอก package.json และ package-lock.json (ถ้ามี)
 COPY package*.json ./
 
-# ติดตั้ง dependencies
+# ติดตั้ง Dependencies
 RUN npm install
 
-# คัดลอกโค้ดทั้งหมดของ Frontend เข้าไป
+# คัดลอกไฟล์โปรเจกต์ทั้งหมด
 COPY . .
 
-# เปิดพอร์ต 5173 (พอร์ตเริ่มต้นของ Vite/Vue)
-EXPOSE 5173
+# สั่ง Build โปรเจกต์ (Vite จะสร้างโฟลเดอร์ /dist)
+RUN npm run build
 
-# สั่งรันคำสั่ง npm run dev โดยเพิ่ม --host เพื่อให้เข้าถึงจากภายนอก Container ได้
-CMD ["npm", "run", "dev", "--", "--host"]
+# ==========================================
+# Stage 2: Production Stage (ใช้ Nginx)
+# ==========================================
+FROM nginx:alpine as production-stage
+
+# คัดลอกไฟล์ที่ Build เสร็จแล้วจาก Stage 1 ไปไว้ใน Nginx
+COPY --from=build-stage /app/dist /usr/share/nginx/html
+
+# คัดลอกไฟล์ตั้งค่า Nginx (เราจะสร้างในขั้นตอนต่อไป)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# เปิดพอร์ต 80
+EXPOSE 80
+
+# สั่งรัน Nginx
+CMD ["nginx", "-g", "daemon off;"]
