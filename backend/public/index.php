@@ -669,6 +669,7 @@ switch ($route) {
     // 🌟 ดึงเวลาอัปเดตปฏิทินล่าสุด (Public)
     // ==========================================
     case 'public/latest_update':
+        AuthMiddleware::checkToken($connection); 
         $settingController = new SettingController(new SettingModel($connection), $connection);
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $settingController->getLatestUpdate();

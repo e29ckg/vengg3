@@ -1,7 +1,7 @@
 <?php
 // backend/src/Middleware/AuthMiddleware.php
 
-require_once '../src/Models/User.php';
+require_once __DIR__ . '/../Models/User.php';
 
 class AuthMiddleware {
     
