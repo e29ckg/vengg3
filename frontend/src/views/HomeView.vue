@@ -79,7 +79,7 @@
                       color: Number(sch.price) === 0 ? '#fff' : (is24HourShift(sch) ? 'white' : (sch.user_id == currentUserId ? '#000' : '#fff'))
                     }"
                     @click="openShiftDetail(sch.id)"
-                    :title="`เวลา: ${sch.ven_time.substring(0,5)} น.`">       
+                    :title="`${sch.title} เวลา: ${sch.ven_time.substring(0,5)} น.`">       
                   <template v-if="!systemSettings.compact_schedule_view">
                     <div class="fw-bold d-flex align-items-center" style="font-size: 0.7rem;">
                       <i class="bi bi-clock me-1"></i>{{ sch.ven_time.substring(0,5) }}                      
