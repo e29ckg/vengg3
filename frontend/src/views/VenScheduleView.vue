@@ -130,7 +130,7 @@
                      opacity: isScheduleEditable(schedule) ? '1' : '0.85'
                    }">
                 
-                <div style="max-width: 85%; line-height: 1.2; font-size: 0.7rem; cursor: pointer;" @click="showScheduleDetails(schedule)">
+                <div :title="`${schedule.user_name} (${schedule.ven_time.substring(0,5)} น.)`" style="max-width: 85%; line-height: 1.2; font-size: 0.7rem; cursor: pointer;" @click="showScheduleDetails(schedule)">
                   <span class="fw-bold d-block text-truncate">{{ schedule.user_name }}</span>
                   
                   <span class="d-block text-truncate" style="opacity: 0.8; font-size: 0.6rem;">
