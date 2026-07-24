@@ -2,7 +2,7 @@
   <div class="bg-light min-vh-100 d-flex flex-column pb-3">
     <div class="container-fluid flex-grow-1 d-flex p-3 gap-3">
       
-      <div class="card shadow-sm border-0 rounded-4 d-flex flex-column position-sticky align-self-start" 
+      <div class="card shadow-sm border-0 rounded-4 d-flex flex-column sticky-name-list align-self-start" 
      style="width: 350px; min-width: 350px; top: 80px; height: calc(100vh - 100px); z-index: 10;">
         
         <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
@@ -773,6 +773,22 @@ onMounted(async () => {
   cursor: grabbing; /* เปลี่ยนรูปเมาส์เป็นมือกำ (กำลังจับ) */
   transform: translateY(0); /* ดึงกล่องกลับลงมา */
   box-shadow: none !important; /* ลดเงาลงเวลาถูกกด */
+}
+
+.sticky-name-list {
+  /* ทำให้บล็อกนี้เกาะติดหน้าจอเวลาเลื่อนลง */
+  position: -webkit-sticky;
+  position: sticky;
+  top: 20px; /* ระยะห่างจากขอบจอด้านบน ปรับตัวเลขได้ตามความเหมาะสม */
+  
+  /* จำกัดความสูงไม่ให้เกินหน้าจอ เพื่อให้ Scroll ได้ */
+  max-height: calc(100vh - 100px); 
+  
+  /* ถ้าตารางรายชื่อยาวเกินความสูงที่กำหนด ให้เกิด Scrollbar ด้านในบล็อกแทน */
+  overflow-y: auto; 
+  
+  /* เพิ่มเงาเล็กน้อยให้ดูมีมิติแยกลอยออกมา (ใส่หรือไม่ใส่ก็ได้ครับ) */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 /* 🌟 Custom Scrollbar */
