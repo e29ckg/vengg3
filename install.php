@@ -73,6 +73,36 @@ function runDeployment(bool $preflight, callable $onLine): int
 }
 
 $action = $_GET['action'] ?? '';
+if ($action === 'database') {
+    header('Content-Type: application/json; charset=utf-8');
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !hash_equals($csrfToken, (string)($_POST['token'] ?? ''))) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'message' => 'คำขอไม่ถูกต้อง กรุณาโหลดหน้าใหม่']);
+        exit;
+    }
+    session_write_close();
+    $lock = fopen(sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'vengg3-installer.lock', 'c');
+    if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
+        http_response_code(409);
+        echo json_encode(['ok' => false, 'message' => 'มีการติดตั้งหรือสร้างฐานข้อมูลกำลังทำงานอยู่']);
+        exit;
+    }
+    try {
+        require_once __DIR__ . '/deploy/setup-database.php';
+        setupDatabase($_POST, __DIR__);
+        echo json_encode(['ok' => true, 'message' => 'บันทึกค่าฐานข้อมูลสำเร็จ กำลังตรวจสอบความพร้อมอีกครั้ง'], JSON_UNESCAPED_UNICODE);
+    } catch (RuntimeException $error) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'message' => $error->getMessage()], JSON_UNESCAPED_UNICODE);
+    } catch (Throwable $error) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'message' => 'ตั้งค่าฐานข้อมูลไม่สำเร็จ กรุณาตรวจสิทธิ์ไฟล์และ MySQL'], JSON_UNESCAPED_UNICODE);
+    } finally {
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
+    exit;
+}
 if ($action === 'check') {
     header('Content-Type: application/json; charset=utf-8');
     $checks = [];
@@ -180,6 +210,12 @@ $safeToken = htmlspecialchars($csrfToken, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     .check-badge { font-size: .8rem; flex-shrink: 0; padding-top: 3px; }
     details { margin-top: 14px; }
     summary { cursor: pointer; color: #576b7d; }
+    [hidden] { display: none !important; }
+    .db-action { margin-top: 8px; font-size: .85rem; padding: 7px 12px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+    label { display: block; font-weight: 600; font-size: .9rem; }
+    input, select { display: block; width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #b9cad6; border-radius: 7px; font: inherit; background: white; }
+    @media (max-width: 540px) { .form-grid { grid-template-columns: 1fr; } main { padding: 18px; } }
     .bar { height: 12px; border-radius: 99px; background: #e0e9ef; overflow: hidden; margin: 14px 0; }
     .bar > div { width: 0; height: 100%; background: #168867; transition: width .25s ease; }
     button { border: 0; border-radius: 8px; padding: 11px 16px; color: #fff; background: #166c87; font: inherit; font-weight: 700; cursor: pointer; }
@@ -194,7 +230,7 @@ $safeToken = htmlspecialchars($csrfToken, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 <main>
   <h1>ติดตั้ง vengg3 บน XAMPP</h1>
   <p class="subtle">หน้าเว็บ <strong>/vengg3/</strong> · API <strong>/vengg3/api</strong></p>
-  <p>ตัวติดตั้งจะตรวจ XAMPP, PHP, Node.js, Composer, Apache และฐานข้อมูลก่อนเริ่มลงไฟล์ ต้องมี <code>backend/src/config/database.local.php</code> และนำเข้า <code>database.sql</code> แล้ว</p>
+  <p>ตัวติดตั้งจะตรวจ XAMPP, PHP, Node.js, Composer, Apache และฐานข้อมูลก่อนเริ่มลงไฟล์ หากฐานข้อมูลไม่พร้อม ให้ใช้เมนู “สร้าง/ตั้งค่าฐานข้อมูล” ในรายการที่ไม่ผ่าน</p>
 
   <h2>1. ตรวจสอบความพร้อม</h2>
   <div class="panel">
@@ -203,6 +239,32 @@ $safeToken = htmlspecialchars($csrfToken, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     <button id="check-button" class="secondary" type="button">ตรวจสอบอีกครั้ง</button>
     <details><summary>รายละเอียดการตรวจสอบ</summary><pre id="check-log"></pre></details>
   </div>
+
+  <section id="database-panel" class="panel" hidden style="margin-top:16px">
+    <h2 style="margin-top:0">สร้าง/ตั้งค่าฐานข้อมูล</h2>
+    <p class="subtle">เปิด MySQL ใน XAMPP ก่อน เลือกสร้างฐานข้อมูลใหม่หรือเชื่อมฐานข้อมูลที่มีโครงสร้างแล้ว</p>
+    <form id="database-form">
+      <label>วิธีตั้งค่า<select name="mode" id="database-mode"><option value="create">สร้างฐานข้อมูลใหม่และบัญชีแอป</option><option value="connect">เชื่อมฐานข้อมูลเดิมและบันทึกค่าการเชื่อมต่อ</option></select></label>
+      <div class="form-grid">
+        <label>โฮสต์<select name="db_host"><option value="127.0.0.1">127.0.0.1</option><option value="localhost">localhost</option></select></label>
+        <label>พอร์ต MySQL<input name="db_port" type="number" value="3306" min="1" max="65535" required></label>
+        <label>ชื่อฐานข้อมูล<input name="db_name" value="vengg_db" pattern="[a-zA-Z][a-zA-Z0-9_]{0,63}" required></label>
+        <label>บัญชีสำหรับแอป<input name="db_user" value="vengg_app" pattern="[a-zA-Z][a-zA-Z0-9_]{0,31}" required autocomplete="off"></label>
+        <label>รหัสผ่านบัญชีแอป (อย่างน้อย 12 ตัวอักษร)<input name="db_password" type="password" minlength="12" required autocomplete="new-password"></label>
+      </div>
+      <div id="database-admin">
+        <p>บัญชีผู้ดูแลใช้เฉพาะสร้างฐานข้อมูลและบัญชีแอป รหัสผ่านผู้ดูแลจะไม่ถูกบันทึก</p>
+        <div class="form-grid">
+          <label>ผู้ดูแล MySQL<input name="admin_user" value="root" autocomplete="off"></label>
+          <label>รหัสผ่านผู้ดูแล MySQL<input name="admin_password" type="password" autocomplete="off"></label>
+        </div>
+        <p class="subtle">การสร้างใหม่จะนำเข้า database.sql และปฏิเสธชื่อฐานข้อมูลหรือบัญชีแอปที่มีอยู่แล้ว</p>
+      </div>
+      <button id="database-submit" type="submit">สร้างและบันทึก</button>
+      <button id="database-close" class="secondary" type="button">ปิด</button>
+      <p id="database-status" role="status"></p>
+    </form>
+  </section>
 
   <h2>2. ติดตั้งหรืออัปเดต</h2>
   <div class="panel">
@@ -268,6 +330,17 @@ function renderChecklist(checks = [], finished = false) {
     badge.className = `check-badge ${state === 'passed' ? 'ok' : state === 'failed' ? 'error' : 'subtle'}`;
     badge.textContent = state === 'passed' ? 'ผ่าน' : state === 'failed' ? 'ไม่ผ่าน' : state === 'unavailable' ? 'ยังไม่ได้ตรวจ' : 'รอผล';
     content.append(title, detail);
+    if (state === 'failed' && (id === 'db_config' || id === 'database')) {
+      const action = document.createElement('button');
+      action.type = 'button';
+      action.className = 'db-action';
+      action.textContent = 'สร้าง/ตั้งค่าฐานข้อมูล';
+      action.addEventListener('click', () => {
+        document.getElementById('database-panel').hidden = false;
+        document.getElementById('database-panel').scrollIntoView({behavior: 'smooth', block: 'start'});
+      });
+      content.append(action);
+    }
     row.append(icon, content, badge);
     checklist.append(row);
   }
@@ -370,6 +443,44 @@ async function install() {
 }
 checkButton.addEventListener('click', checkRequirements);
 installButton.addEventListener('click', install);
+const databaseForm = document.getElementById('database-form');
+const databaseMode = document.getElementById('database-mode');
+databaseMode.addEventListener('change', () => {
+  document.getElementById('database-admin').hidden = databaseMode.value !== 'create';
+  document.getElementById('database-submit').textContent = databaseMode.value === 'create' ? 'สร้างและบันทึก' : 'ตรวจสอบและบันทึก';
+});
+document.getElementById('database-close').addEventListener('click', () => {
+  document.getElementById('database-panel').hidden = true;
+  databaseForm.querySelectorAll('input[type="password"]').forEach(input => { input.value = ''; });
+});
+databaseForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (busy) return;
+  busy = true;
+  checkButton.disabled = installButton.disabled = true;
+  const submit = document.getElementById('database-submit');
+  const status = document.getElementById('database-status');
+  submit.disabled = true;
+  status.className = 'subtle';
+  status.textContent = 'กำลังตั้งค่าฐานข้อมูล...';
+  try {
+    const body = new FormData(databaseForm);
+    body.set('token', document.querySelector('meta[name="csrf-token"]').content);
+    const response = await fetch('?action=database', {method: 'POST', body, credentials: 'same-origin'});
+    const result = await response.json();
+    status.textContent = result.message;
+    status.className = result.ok ? 'ok' : 'error';
+    if (result.ok) databaseForm.querySelectorAll('input[type="password"]').forEach(input => { input.value = ''; });
+  } catch (error) {
+    status.className = 'error';
+    status.textContent = 'ติดต่อระบบตั้งค่าฐานข้อมูลไม่ได้ กรุณาตรวจสอบอีกครั้ง';
+  } finally {
+    databaseForm.elements.admin_password.value = '';
+    submit.disabled = false;
+    busy = false;
+    await checkRequirements();
+  }
+});
 checkRequirements();
 </script>
 </body>

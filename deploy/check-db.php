@@ -16,7 +16,7 @@ try {
         }
     }
     $pdo = new PDO(
-        'mysql:host=' . $config['DB_HOST'] . ';dbname=' . $config['DB_NAME'] . ';charset=utf8mb4',
+        'mysql:host=' . $config['DB_HOST'] . ';port=' . ($config['DB_PORT'] ?? '3306') . ';dbname=' . $config['DB_NAME'] . ';charset=utf8mb4',
         $config['DB_USER'],
         $config['DB_PASS'],
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
