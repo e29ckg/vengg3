@@ -81,3 +81,5 @@ public/uploads/
 backend/vendor/
 credentials.json
 database_*.sql
+backend/src/config/database.local.php
+backend/.initial-admin-password

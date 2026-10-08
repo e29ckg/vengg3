@@ -61,7 +61,9 @@
 - ใช้ PHP 8.2 ขึ้นไป, MySQL 8 และ Node.js 22 ขึ้นไป
 - นำเข้า `database.sql` ในฐานข้อมูล `vengg_db` แล้วกำหนด `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS` ใน environment ของ PHP
 - ใน `backend/` รัน `composer install` และตั้ง web root ไปที่ `backend/public/`
+- สำหรับ XAMPP ในเครื่องนี้มีไฟล์ `backend/src/config/database.local.php` ที่ถูก ignore จาก Git และ Docker เพื่อเก็บการเชื่อมต่อฐานข้อมูลใหม่ไว้เฉพาะเครื่อง
 - สร้างแอดมินด้วย `ADMIN_PASSWORD=... php backend/bin/create_admin.php` โดยกำหนดรหัสผ่านผ่าน environment ของ shell
+- รหัสแอดมินเริ่มต้นที่สร้างในเครื่องนี้เก็บไว้ชั่วคราวใน `backend/.initial-admin-password` (ไม่ถูก commit) หลังเข้าสู่ระบบและเปลี่ยนรหัสผ่านแล้วให้ลบไฟล์นี้
 - ใน `frontend/` คัดลอก `.env.example` เป็น `.env` แล้วแก้ `VITE_API_BASE_URL` ให้ตรงกับ URL ของไดเรกทอรี `backend/public/` จากนั้นรัน `npm ci` และ `npm run dev`
 
 ## การตรวจสอบ

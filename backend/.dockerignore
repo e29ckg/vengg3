@@ -2,4 +2,6 @@ vendor/
 tests/
 .env
 src/Config/credentials.json
+src/config/database.local.php
+.initial-admin-password
 public/uploads/

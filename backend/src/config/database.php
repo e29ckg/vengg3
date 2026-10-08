@@ -9,10 +9,12 @@ class Database {
 
         try {
             // สร้างการเชื่อมต่อแบบ PDO
-            $host = getenv('DB_HOST') ?: 'localhost';
-            $name = getenv('DB_NAME') ?: 'vengg_db';
-            $user = getenv('DB_USER') ?: '';
-            $password = getenv('DB_PASS') ?: '';
+            $localConfigPath = __DIR__ . '/database.local.php';
+            $localConfig = is_file($localConfigPath) ? require $localConfigPath : [];
+            $host = getenv('DB_HOST') ?: ($localConfig['DB_HOST'] ?? 'localhost');
+            $name = getenv('DB_NAME') ?: ($localConfig['DB_NAME'] ?? 'vengg_db');
+            $user = getenv('DB_USER') ?: ($localConfig['DB_USER'] ?? '');
+            $password = getenv('DB_PASS') ?: ($localConfig['DB_PASS'] ?? '');
             $this->conn = new PDO("mysql:host={$host};dbname={$name};charset=utf8mb4", $user, $password);
             
             // ตั้งค่าให้แสดง Error หากมีข้อผิดพลาดใน SQL
