@@ -235,6 +235,6 @@ CREATE TABLE `ven_user` (
 
 INSERT INTO `agency_settings` (`id`, `agency_name`, `directors`, `admins`, `finances`) VALUES (1, '', '[]', '[]', '[]');
 INSERT INTO `google_service_settings` (`setting_key`, `setting_value`) VALUES ('google_calendar_id', ''), ('google_service_account', '');
-INSERT INTO `system_settings` (`id`, `user_options`) VALUES (1, '{}');
+INSERT INTO `system_settings` (`id`, `user_options`) VALUES (1, '{"prefixes":[],"positions":[],"departments":[]}');
 INSERT INTO `telegram_settings` (`id`, `bot_token`, `chat_id`) VALUES (1, '', '');
 INSERT INTO `ven_time` (`name_th`, `time_period`, `srt`) VALUES ('กลางวัน', '08.30-16.30', 1), ('กลางคืน', '16.30-08.30', 2);

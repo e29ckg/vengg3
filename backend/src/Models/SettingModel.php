@@ -895,17 +895,29 @@ class SettingModel {
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        return $row ? json_decode($row['user_options'], true) : [
+        $options = $row ? json_decode($row['user_options'] ?? '', true) : null;
+        $defaults = [
             'prefixes' => [],
             'positions' => [],
             'departments' => []
         ];
+        foreach ($defaults as $key => $empty) {
+            $values = is_array($options) ? ($options[$key] ?? null) : null;
+            $defaults[$key] = is_array($values)
+                ? array_values(array_filter($values, static function ($value) {
+                    return is_string($value) && trim($value) !== '';
+                })) : [];
+        }
+        return $defaults;
     }
 
     // 🌟 บันทึกตัวเลือกทั้งหมดลงฐานข้อมูล
     public function saveUserOptions($options) {
         $jsonOptions = json_encode($options, JSON_UNESCAPED_UNICODE);
-        $stmt = $this->conn->prepare("UPDATE system_settings SET user_options = ? WHERE id = 1");
+        $exists = $this->conn->query('SELECT id FROM system_settings WHERE id = 1')->fetchColumn();
+        $stmt = $this->conn->prepare($exists !== false
+            ? "UPDATE system_settings SET user_options = ? WHERE id = 1"
+            : "INSERT INTO system_settings (id, user_options) VALUES (1, ?)");
         return $stmt->execute([$jsonOptions]);
     }
        

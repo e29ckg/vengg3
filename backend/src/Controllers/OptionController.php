@@ -22,10 +22,10 @@ class OptionController {
     // เพิ่มตัวเลือกใหม่
     public function addOption() {
         $data = json_decode(file_get_contents("php://input"), true);
-        $type = $data['type'] ?? ''; 
-        $value = trim($data['value'] ?? '');
+        $type = is_string($data['type'] ?? null) ? $data['type'] : '';
+        $value = is_string($data['value'] ?? null) ? trim($data['value']) : '';
 
-        if (empty($type) || empty($value)) {
+        if ($type === '' || $value === '') {
             http_response_code(400);
             echo json_encode(["error" => "ข้อมูลไม่ครบถ้วน"]);
             return;
@@ -41,7 +41,7 @@ class OptionController {
         $arrayKey = $keyMap[$type];
         $options = $this->settingModel->getUserOptions();
 
-        if (!in_array($value, $options[$arrayKey])) {
+        if (!in_array($value, $options[$arrayKey], true)) {
             $options[$arrayKey][] = $value; 
             
             if ($this->settingModel->saveUserOptions($options)) {
@@ -59,11 +59,11 @@ class OptionController {
     // ลบตัวเลือก
     public function deleteOption() {
         $data = json_decode(file_get_contents("php://input"), true);
-        $type = $data['type'] ?? '';
-        $value = trim($data['value'] ?? '');
+        $type = is_string($data['type'] ?? null) ? $data['type'] : '';
+        $value = is_string($data['value'] ?? null) ? trim($data['value']) : '';
 
         $keyMap = ['prefix' => 'prefixes', 'position' => 'positions', 'department' => 'departments'];
-        if (!array_key_exists($type, $keyMap)) {
+        if (!array_key_exists($type, $keyMap) || $value === '') {
             http_response_code(400);
             echo json_encode(["error" => "ประเภทไม่ถูกต้อง"]);
             return;
