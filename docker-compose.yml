@@ -39,7 +39,7 @@ services:
       DB_USER: ${DB_USER:-vengg_app}
       DB_PASS: ${DB_PASS:?Set DB_PASS in .env}
     ports:
-      - "127.0.0.1:8000:80"
+      - "127.0.0.1:89:80"
     volumes:
       - avatars:/var/www/html/vengg3/backend/public/uploads/avatars
       - google_credentials:/var/www/html/vengg3/backend/src/Config
