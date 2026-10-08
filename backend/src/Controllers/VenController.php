@@ -33,6 +33,7 @@ class VenController {
                 'ven_time_text' => $row['ven_time_text'],
                 'price' => $row['price'],
                 'ven_com_id' => $row['ven_com_id'],
+                'ven_name_id' => $row['ven_name_id'],
                 'sub_id' => $row['sub_id'],
 
             ];
@@ -66,6 +67,7 @@ class VenController {
             // จัดรูปแบบ Data ให้ส่งกลับไปแบบคลีนๆ
             $ven_detail = array(
                 "ven_id" => $row['ven_id'],
+                "ven_name_id" => $row['ven_name_id'],
                 "user_id" => $row['user_id'],
                 
                 "full_name" => $row['full_name'] ? $row['full_name'] : 'ไม่มีชื่อ',

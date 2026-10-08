@@ -50,6 +50,22 @@ $connection = $db->getConnection();
 
 // --- ระบบ Routing ---
 switch ($route) {
+    case 'admin/templates/list':
+    case 'admin/templates/upload':
+    case 'admin/templates/reset':
+    case 'documents/template':
+        if ($route === 'documents/template') AuthMiddleware::checkToken($connection);
+        else AuthMiddleware::checkAdmin($connection);
+        $action = ['admin/templates/list' => 'list', 'admin/templates/upload' => 'upload', 'admin/templates/reset' => 'reset', 'documents/template' => 'download'][$route];
+        $method = ['list' => 'GET', 'upload' => 'POST', 'reset' => 'DELETE', 'download' => 'GET'][$action];
+        if ($_SERVER['REQUEST_METHOD'] !== $method) {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            break;
+        }
+        require_once __DIR__ . '/../src/Controllers/DocumentTemplateController.php';
+        (new DocumentTemplateController($connection))->handle($action);
+        break;
     case 'admin/program/status':
     case 'admin/program/update':
         AuthMiddleware::checkAdmin($connection);

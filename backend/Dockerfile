@@ -13,4 +13,5 @@ COPY . .
 
 RUN sed -ri 's!/var/www/html!/var/www/html/vengg3/backend/public!g' /etc/apache2/sites-available/000-default.conf \
     && mkdir -p public/uploads/avatars public/uploads/backups src/Config \
-    && chown -R www-data:www-data public/uploads src/Config
+    && mkdir -p storage/document-templates \
+    && chown -R www-data:www-data public/uploads src/Config storage

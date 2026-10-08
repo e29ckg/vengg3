@@ -43,6 +43,7 @@ services:
     volumes:
       - avatars:/var/www/html/vengg3/backend/public/uploads/avatars
       - google_credentials:/var/www/html/vengg3/backend/src/Config
+      - document_templates:/var/www/html/vengg3/backend/storage/document-templates
     depends_on:
       db:
         condition: service_healthy
@@ -78,3 +79,4 @@ volumes:
   db_data:
   avatars:
   google_credentials:
+  document_templates:

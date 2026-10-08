@@ -138,7 +138,7 @@ try {
 
     Update-Step 'Installing backend and Composer dependencies'
     if (!$sameDirectory) {
-        foreach ($folder in @('src', 'public', 'bin', 'cron')) {
+        foreach ($folder in @('src', 'public', 'bin', 'cron', 'resources')) {
             $excluded = if ($folder -eq 'public') { @('uploads') } else { @() }
             Copy-Tree (Join-Path $projectRoot "backend\$folder") (Join-Path $target "backend\$folder") $excluded
         }

@@ -83,3 +83,4 @@ credentials.json
 database_*.sql
 backend/src/config/database.local.php
 backend/.initial-admin-password
+backend/storage/document-templates/

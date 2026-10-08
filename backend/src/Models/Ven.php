@@ -38,6 +38,7 @@ class Ven {
                     END AS ven_time_text,
 
                     vc.id AS ven_com_id,
+                    vc.ven_name_id,
                     vns.id AS sub_id,
                     vns.name AS duty_role,
                     vns.price
@@ -101,6 +102,7 @@ class Ven {
                     END AS ven_time_text,
 
                     vc.id AS ven_com_id,
+                    vc.ven_name_id,
                     vc.com_num AS command_num,
                     vc.com_date AS command_date,
                     vc.ven_month AS command_month,

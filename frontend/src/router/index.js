@@ -4,6 +4,7 @@ import LoginView from '../views/LoginView.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    { path: '/admin/document-templates', name: 'document-templates', component: () => import('../views/admin/DocumentTemplatesView.vue'), meta: { requiresAuth: true, roles: [9] } },
     { path: '/admin/program-update', name: 'program-update', component: () => import('../views/admin/ProgramUpdateView.vue'), meta: { requiresAuth: true, roles: [9] } },
     { 
       path: '/', 

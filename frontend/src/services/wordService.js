@@ -3,6 +3,7 @@
 import PizZip from 'pizzip';
 import docxtemplater from 'docxtemplater';
 import { saveAs } from 'file-saver';
+import api from './api';
 
 const Docxtemplater = docxtemplater;
 
@@ -49,10 +50,8 @@ const formatThaiDate = (dateString) => {
 
 export const exportShiftChangeToWord = async (changeData, venDetail) => {
     try {
-        const response = await fetch(`${import.meta.env.BASE_URL}templates/shift_change_form.docx`);
-        if (!response.ok) throw new Error('ไม่พบไฟล์ Template');
-        
-        const content = await response.arrayBuffer();
+        const response = await api.get('?route=documents/template&kind=shift', {responseType: 'arraybuffer'});
+        const content = response.data;
         const zip = new PizZip(content);
         const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
@@ -157,10 +156,9 @@ export const exportShiftChangeToWord = async (changeData, venDetail) => {
 // 🌟 อัปเดตฟังก์ชันให้รับพารามิเตอร์ dayShifts เพิ่มเข้ามา
 export const exportDutyReportToWord = async (venDetail, dayShifts, venInfo) => {
     try {
-        const response = await fetch(`${import.meta.env.BASE_URL}templates/duty_report_form.docx`);
-        if (!response.ok) throw new Error('ไม่พบไฟล์ Template');
-        
-        const content = await response.arrayBuffer();
+        const venId = venDetail.ven_name_id || venInfo.ven_name_id || 0;
+        const response = await api.get(`?route=documents/template&kind=duty&ven_name_id=${encodeURIComponent(venId)}`, {responseType: 'arraybuffer'});
+        const content = response.data;
         const zip = new PizZip(content);
         const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
