@@ -3,7 +3,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $root = [IO.Path]::GetFullPath($ProjectRoot).TrimEnd('\')
 $repository = 'https://github.com/e29ckg/vengg3.git'
-$stage = Join-Path $env:TEMP ('vengg3-update-' + [guid]::NewGuid().ToString('N'))
+$stage = [IO.Path]::GetFullPath((Join-Path $env:TEMP ('vengg3-update-' + [guid]::NewGuid().ToString('N'))))
 $applied = $false
 $previous = ''
 $vendorMoved = $false
