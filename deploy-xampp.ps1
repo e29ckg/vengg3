@@ -1,5 +1,7 @@
 param(
-    [string]$XamppRoot = 'C:\xampp'
+    [string]$XamppRoot = 'C:\xampp',
+    [switch]$PreflightOnly,
+    [switch]$WebMode
 )
 
 Set-StrictMode -Version Latest
@@ -46,7 +48,7 @@ try {
     foreach ($file in @($php, $apache, $mysql, $httpdConf,
         (Join-Path $projectRoot 'frontend\package-lock.json'),
         (Join-Path $projectRoot 'backend\composer.lock'),
-        (Join-Path $projectRoot 'deploy\xampp.htaccess'))) {
+        (Join-Path $projectRoot '.htaccess'))) {
         if (!(Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing required file: $file" }
     }
     if (!(Test-Path -LiteralPath (Join-Path $xamppRoot 'htdocs') -PathType Container)) {
@@ -72,18 +74,27 @@ try {
     if ([version]$nodeVersion -lt [version]'22.0.0') { throw "Node.js 22 or newer is required; found $nodeVersion." }
 
     Update-Step 'Checking Apache and its listening port'
-    $previousErrorAction = $ErrorActionPreference
-    try {
-        # Apache writes successful diagnostics (including "Syntax OK") to stderr.
-        $ErrorActionPreference = 'Continue'
-        $apacheCheck = & $apache -t 2>&1
-        $apacheExit = $LASTEXITCODE
-        $apacheModules = & $apache -M 2>&1
-        $modulesExit = $LASTEXITCODE
-    } finally { $ErrorActionPreference = $previousErrorAction }
-    if ($apacheExit -ne 0 -or $modulesExit -ne 0) { throw 'Apache configuration check failed.' }
-    if (-not ($apacheModules | Select-String 'rewrite_module')) { throw 'Apache mod_rewrite is required.' }
     $conf = Get-Content -LiteralPath $httpdConf
+    if ($WebMode) {
+        # A child process spawned by Apache inherits its MPM pipe environment;
+        # launching httpd.exe -t there attempts to join the parent and fails.
+        if (-not ($conf | Select-String '^\s*LoadModule\s+rewrite_module\s+')) {
+            throw 'Apache mod_rewrite is not enabled in httpd.conf.'
+        }
+    } else {
+        $previousErrorAction = $ErrorActionPreference
+        try {
+            # Apache writes successful diagnostics (including "Syntax OK") to stderr.
+            $ErrorActionPreference = 'Continue'
+            $apacheCheck = & $apache -t 2>&1
+            $apacheExit = $LASTEXITCODE
+            $apacheModules = & $apache -M 2>&1
+            $modulesExit = $LASTEXITCODE
+        } finally { $ErrorActionPreference = $previousErrorAction }
+        if ($apacheExit -ne 0) { throw "Apache configuration check failed (exit $apacheExit): $($apacheCheck -join ' ')" }
+        if ($modulesExit -ne 0) { throw "Apache module check failed (exit $modulesExit): $($apacheModules -join ' ')" }
+        if (-not ($apacheModules | Select-String 'rewrite_module')) { throw 'Apache mod_rewrite is required.' }
+    }
     $listen = $conf | Where-Object { $_ -match '^\s*Listen\s+(?:\S+:)?(\d+)\s*$' } | Select-Object -First 1
     if (!$listen) { throw 'Could not find the Apache Listen port in httpd.conf.' }
     $port = [int]([regex]::Match($listen, '(\d+)\s*$').Groups[1].Value)
@@ -106,6 +117,11 @@ try {
     }
     & $php (Join-Path $projectRoot 'deploy\check-db.php') $config
     Assert-Exit 'Database check'
+    if ($PreflightOnly) {
+        Write-Progress -Activity 'Deploy vengg3 to XAMPP' -Completed
+        Write-Host 'Preflight passed. No application files were changed.' -ForegroundColor Green
+        exit 0
+    }
 
     Update-Step 'Building frontend for /vengg3/ and /vengg3/api/'
     Push-Location (Join-Path $projectRoot 'frontend')
@@ -145,11 +161,12 @@ try {
         Copy-Item -LiteralPath $_.FullName -Destination $target -Recurse -Force
     }
     $rewriteFile = Join-Path $target '.htaccess'
+    $rewriteSource = Join-Path $projectRoot '.htaccess'
     if ((Test-Path -LiteralPath $rewriteFile) -and
-        (Get-Content -LiteralPath $rewriteFile -Raw) -cne (Get-Content -LiteralPath (Join-Path $projectRoot 'deploy\xampp.htaccess') -Raw)) {
+        (Get-Content -LiteralPath $rewriteFile -Raw) -cne (Get-Content -LiteralPath $rewriteSource -Raw)) {
         Copy-Item -LiteralPath $rewriteFile -Destination (Join-Path $target '.htaccess.xampp-backup') -Force
     }
-    Copy-Item -LiteralPath (Join-Path $projectRoot 'deploy\xampp.htaccess') -Destination $rewriteFile -Force
+    if (!$sameDirectory) { Copy-Item -LiteralPath $rewriteSource -Destination $rewriteFile -Force }
 
     Update-Step 'Verifying frontend, API and private-file access'
     $baseUrl = "http://localhost:$port/vengg3/"

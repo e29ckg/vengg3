@@ -2,6 +2,9 @@ Options -Indexes
 DirectoryIndex index.html
 RewriteEngine On
 
+# The web installer is limited to requests from the local machine in PHP.
+RewriteRule ^install\.php$ - [END]
+
 # Only generated avatars are public. Never execute uploaded scripts.
 RewriteRule ^api/uploads/avatars/([A-Za-z0-9_-]+\.(?:jpg|jpeg|png|gif|webp))$ backend/public/uploads/avatars/$1 [END,NC]
 RewriteRule ^api/uploads/ - [F,END]

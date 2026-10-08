@@ -68,11 +68,11 @@
 
 ## Deploy บน XAMPP (Windows)
 
-ใช้ `deploy-xampp.ps1` จากโฟลเดอร์โปรเจกต์ สคริปต์จะแสดงความคืบหน้า 8 ขั้นตอนใน PowerShell และหยุดก่อนแก้ไฟล์เว็บถ้าการตรวจระบบหรือฐานข้อมูลไม่ผ่าน
+ใช้หน้าเว็บ `http://localhost:<Apache-port>/vengg3/install.php` เมื่อนำโปรเจกต์ไว้ที่ `htdocs\vengg3` หรือใช้ `deploy-xampp.ps1` จาก PowerShell ทั้งสองวิธีตรวจความพร้อมก่อนติดตั้งและแสดงความคืบหน้า 8 ขั้นตอน หน้าเว็บเปิดให้เริ่มติดตั้งจากเครื่อง XAMPP เองเท่านั้น
 
 1. ติดตั้งและเปิด Apache กับ MySQL ใน XAMPP, ติดตั้ง Node.js 22 ขึ้นไปและ Composer; PHP ใน XAMPP ต้องเป็น 8.2 ขึ้นไปและเปิด `pdo_mysql`, `curl`, `mbstring`, `fileinfo`, `zip` รวมถึง Apache `mod_rewrite` และ `AllowOverride All` สำหรับ `htdocs`.
 2. สร้างฐานข้อมูลจาก `database.sql` และสร้าง `backend/src/config/database.local.php` ตาม `database.example.php` ในโปรเจกต์ต้นทางหรือ `C:\xampp\htdocs\vengg3` โดยใช้บัญชีฐานข้อมูลเฉพาะแอป ถ้าปลายทางมีไฟล์นี้อยู่ สคริปต์จะคงไฟล์เดิมไว้ และจะไม่ล้างฐานข้อมูลหรือไฟล์อัปโหลด
-3. เปิด PowerShell ในโฟลเดอร์โปรเจกต์ แล้วรัน `powershell -NoProfile -ExecutionPolicy Bypass -File .\deploy-xampp.ps1` (ถ้า XAMPP ไม่ได้อยู่ที่ `C:\xampp` ให้เพิ่ม `-XamppRoot 'D:\xampp'`)
+3. เปิดหน้า `http://localhost:<Apache-port>/vengg3/install.php` กดตรวจสอบความพร้อม แล้วกด **เริ่มติดตั้ง** เมื่อผ่านทุกข้อ หน้าจอจะแสดงขั้นตอนและผลลัพธ์จนเสร็จ หรือเปิด PowerShell ในโฟลเดอร์โปรเจกต์แล้วรัน `powershell -NoProfile -ExecutionPolicy Bypass -File .\deploy-xampp.ps1` (ถ้า XAMPP ไม่ได้อยู่ที่ `C:\xampp` ให้เพิ่ม `-XamppRoot 'D:\xampp'`)
 4. สคริปต์จะติดตั้ง Composer dependencies, build Vue ด้วย base path `/vengg3/`, คัดลอกไฟล์ไป `htdocs\vengg3`, ตั้ง Apache rewrite แล้วตรวจหน้าเว็บ, JavaScript, API และการปิดกั้นไฟล์ภายใน
 
 หน้าเว็บ: `http://localhost:<Apache-port>/vengg3/` · API: `http://localhost:<Apache-port>/vengg3/api?route=test` ตัวติดตั้งอ่านพอร์ตจาก `httpd.conf` ให้อัตโนมัติ (XAMPP เครื่องนี้ใช้ `8099`)
