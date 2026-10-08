@@ -31,7 +31,7 @@ final class DocumentTemplateController
                 echo json_encode(['templates' => $rows]);
                 return;
             }
-            [$kind, $id] = $this->scope($action === 'upload' ? $_POST : $_GET);
+            [$kind, $id] = $this->scope(in_array($action, ['upload','validate'], true) ? $_POST : $_GET);
             if ($action === 'download') {
                 $path = $this->service->resolve($kind, $id);
                 header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
@@ -41,10 +41,11 @@ final class DocumentTemplateController
                 readfile($path);
                 return;
             }
-            if ($action === 'upload') {
+            if (in_array($action, ['upload','validate'], true)) {
                 $file = $_FILES['template'] ?? null;
                 if (!$file || $file['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name'])) throw new RuntimeException('อัปโหลดไม่สำเร็จ ใช้ไฟล์ .docx ไม่เกิน 2 MB');
-                $this->service->store($kind, $id, $file['tmp_name'], $file['name']);
+                if ($action === 'validate') $this->service->validate($file['tmp_name'], $file['name']);
+                else $this->service->store($kind, $id, $file['tmp_name'], $file['name']);
             } elseif ($action === 'reset') {
                 $this->service->reset($kind, $id);
             }

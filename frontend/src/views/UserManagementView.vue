@@ -169,7 +169,7 @@
                   </div>
                   <div class="col-md-4">
                     <label class="form-label fw-semibold text-muted small mb-1">รหัสผ่าน (Password) *</label>
-                    <input type="password" class="form-control" v-model="newUser.password" required>
+                    <input type="password" class="form-control" v-model="newUser.password" minlength="12" maxlength="72" required>
                   </div>
                   <div class="col-md-4">
                     <label class="form-label fw-semibold text-muted small mb-1">สิทธิ์การใช้งาน (Role) *</label>
@@ -280,7 +280,7 @@
                   </div>
                   <div class="col-12 border-top pt-2">
                     <label class="form-label fw-semibold text-danger small mb-1">เปลี่ยนรหัสผ่าน (เว้นว่างไว้หากไม่ต้องการเปลี่ยน)</label>
-                    <input type="password" class="form-control" v-model="editingUser.password" placeholder="พิมพ์รหัสผ่านใหม่ที่นี่...">
+                    <input type="password" class="form-control" v-model="editingUser.password" minlength="12" maxlength="72" placeholder="พิมพ์รหัสผ่านใหม่ที่นี่...">
                   </div>
                 </div>
               </div>
@@ -301,7 +301,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue' 
-import Swal from 'sweetalert2'
+import Swal from '../services/alerts'
 import { useRouter } from 'vue-router'
 import api from '../services/api' 
 

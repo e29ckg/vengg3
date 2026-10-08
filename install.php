@@ -1,9 +1,12 @@
 <?php
 declare(strict_types=1);
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
 
 // This page intentionally runs local deployment commands. Never expose it to remote clients.
 $remoteAddress = $_SERVER['REMOTE_ADDR'] ?? '';
-if (!in_array($remoteAddress, ['127.0.0.1', '::1', '::ffff:127.0.0.1'], true)) {
+$requestHost = strtolower(trim((string)parse_url('http://' . ($_SERVER['HTTP_HOST'] ?? ''), PHP_URL_HOST), '[]'));
+if (!in_array($remoteAddress, ['127.0.0.1', '::1', '::ffff:127.0.0.1'], true) || !in_array($requestHost, ['localhost', '127.0.0.1', '::1'], true)) {
     http_response_code(403);
     exit('Installer is available only from this computer.');
 }
@@ -17,6 +20,7 @@ session_name('vengg3_installer');
 session_set_cookie_params([
     'path' => '/vengg3/',
     'httponly' => true,
+    'secure' => ($_SERVER['HTTPS'] ?? '') === 'on',
     'samesite' => 'Strict',
 ]);
 session_start();
@@ -297,7 +301,7 @@ const requirements = {
   php_mbstring: ['PHP: mbstring', 'เปิด mbstring ใน php.ini แล้วเริ่ม Apache ใหม่'],
   php_fileinfo: ['PHP: fileinfo', 'เปิด fileinfo ใน php.ini แล้วเริ่ม Apache ใหม่'],
   php_zip: ['PHP: ZIP', 'เปิด zip ใน php.ini แล้วเริ่ม Apache ใหม่'],
-  node: ['Node.js 22 ขึ้นไป', 'ติดตั้ง Node.js 22 ขึ้นไป แล้วเริ่ม Apache ใหม่เพื่ออ่าน PATH'],
+  node: ['Node.js 22.13 ขึ้นไป', 'ติดตั้ง Node.js 22.13 ขึ้นไป แล้วเริ่ม Apache ใหม่เพื่ออ่าน PATH'],
   npm: ['npm', 'ติดตั้ง npm พร้อม Node.js แล้วเริ่ม Apache ใหม่'],
   composer: ['Composer', 'ติดตั้ง Composer และเพิ่มใน PATH แล้วเริ่ม Apache ใหม่'],
   apache: ['Apache พร้อมใช้งาน', 'เปิด Apache ใน XAMPP และตรวจพอร์ต Listen ใน httpd.conf'],
@@ -327,7 +331,7 @@ function renderChecklist(checks = [], finished = false) {
     title.textContent = label;
     const detail = document.createElement('div');
     detail.className = 'check-detail';
-    const details = {'Complete': 'ไฟล์ครบถ้วน', 'Enabled': 'เปิดใช้งาน', 'Available in PATH': 'เรียกใช้ได้จาก PATH', 'Enabled in httpd.conf': 'เปิดใช้งานใน httpd.conf', 'AllowOverride All configured': 'ตั้งค่า AllowOverride All แล้ว', 'database.local.php found': 'พบไฟล์ database.local.php', 'Connection and user table OK': 'เชื่อมต่อได้และพบตาราง user', 'Active administrator found': 'พบผู้ดูแลที่เปิดใช้งานแล้ว'};
+    const details = {'Complete': 'ไฟล์ครบถ้วน', 'Enabled': 'เปิดใช้งาน', 'Available in PATH': 'เรียกใช้ได้จาก PATH', 'Enabled in httpd.conf': 'เปิดใช้งานใน httpd.conf', 'HTTP access to private files denied': 'ทดสอบ HTTP แล้ว ไฟล์ส่วนตัวถูกปิดกั้น', 'database.local.php found': 'พบไฟล์ database.local.php', 'Connection and user table OK': 'เชื่อมต่อได้และพบตาราง user', 'Active administrator found': 'พบผู้ดูแลที่เปิดใช้งานแล้ว'};
     detail.textContent = state === 'failed' ? hint : state === 'passed' ? (details[check.detail] || check.detail || 'พร้อมใช้งาน') : state === 'unavailable' ? 'ตัวตรวจสอบไม่ส่งผลรายการนี้ กรุณาตรวจสอบอีกครั้ง' : 'กำลังตรวจสอบ';
     const badge = document.createElement('span');
     badge.className = `check-badge ${state === 'passed' ? 'ok' : state === 'failed' ? 'error' : 'subtle'}`;

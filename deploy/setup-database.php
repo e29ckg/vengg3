@@ -16,8 +16,8 @@ function setupDatabase(array $input, string $projectRoot): void
     $user = (string)($input['db_user'] ?? '');
     $password = (string)($input['db_password'] ?? '');
     $administratorPassword = (string)($input['app_admin_password'] ?? '');
-    if ($mode === 'create' && strlen($administratorPassword) < 12) {
-        throw new RuntimeException('ตั้งรหัสผ่านบัญชี admin อย่างน้อย 12 ตัวอักษรก่อนสร้างฐานข้อมูล');
+    if ($mode === 'create' && (strlen($administratorPassword) < 12 || strlen($administratorPassword) > 72)) {
+        throw new RuntimeException('ตั้งรหัสผ่านบัญชี admin ระหว่าง 12-72 bytes ก่อนสร้างฐานข้อมูล');
     }
     if (!in_array($mode, ['create', 'connect'], true) ||
         !in_array($host, ['127.0.0.1', 'localhost'], true) || !$port || $port < 1 || $port > 65535 ||
@@ -62,7 +62,7 @@ function setupDatabase(array $input, string $projectRoot): void
             $admin->exec($schema);
             $accountSql = $admin->quote($user) . "@'localhost'";
             $admin->exec('CREATE USER ' . $accountSql . ' IDENTIFIED BY ' . $admin->quote($password));
-            $admin->exec("GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, DROP ON `$name`.* TO $accountSql");
+            $admin->exec("GRANT SELECT, INSERT, UPDATE, DELETE ON `$name`.* TO $accountSql");
         } catch (PDOException $error) {
             throw new RuntimeException('สร้างฐานข้อมูลไม่สำเร็จ ตรวจสิทธิ์ผู้ดูแล MySQL; อาจมีฐานข้อมูลที่สร้างบางส่วนแล้ว กรุณาตรวจสอบก่อนลองอีกครั้ง');
         }

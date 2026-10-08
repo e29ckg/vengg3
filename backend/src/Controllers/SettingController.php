@@ -61,7 +61,7 @@ class SettingController {
             echo json_encode(["success" => true, "message" => "อัปเดตการตั้งค่าระบบสำเร็จ"]);
         } else {
             http_response_code(500);
-            echo json_encode(["error" => "ไม่สามารถบันทึกข้อมูลได้"]);
+            echo json_encode(["error" => "ค่าการตั้งค่าไม่ถูกต้องหรือบันทึกไม่ได้"]);
         }
     }
     
@@ -266,7 +266,8 @@ class SettingController {
             ]);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(["error" => "Server Error: " . $e->getMessage()]);
+            error_log('Settings request failed');
+            echo json_encode(["error" => "ไม่สามารถบันทึกการตั้งค่าได้"]);
         }
     }
 }

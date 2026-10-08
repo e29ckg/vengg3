@@ -11,6 +11,7 @@ node_modules/
 dist/
 dist-ssr/
 build/
+docs/security/
 
 # ==========================================
 # Logs (ไฟล์เก็บประวัติการทำงานและ Error)
@@ -83,4 +84,9 @@ credentials.json
 database_*.sql
 backend/src/config/database.local.php
 backend/.initial-admin-password
+.rnd
+backend/.rnd
 backend/storage/document-templates/
+backend/storage/security/
+backend/src/Config/credential-*
+backend/src/config/db-setup-*

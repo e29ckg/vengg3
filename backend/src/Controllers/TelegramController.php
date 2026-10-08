@@ -40,6 +40,8 @@ class TelegramController {
             }
         }
         
+        $settings['has_bot_token'] = !empty($settings['bot_token']);
+        unset($settings['bot_token']);
         echo json_encode($settings);
     }
 
@@ -61,6 +63,16 @@ class TelegramController {
         $data = json_decode(file_get_contents("php://input"), true);
         $botToken = $data['bot_token'] ?? '';
         $chatId = $data['chat_id'] ?? '';
+        if (!is_string($botToken) || !is_string($chatId) || strlen($botToken) > 255 || strlen($chatId) > 100) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ข้อมูล Token หรือ Chat ID ไม่ถูกต้อง']);
+            return;
+        }
+        if ($botToken === '' || $chatId === '') {
+            $stored = $this->settingModel->getTelegramSettings();
+            if ($botToken === '') $botToken = $stored['bot_token'] ?? '';
+            if ($chatId === '') $chatId = $stored['chat_id'] ?? '';
+        }
         
         if(empty($botToken) || empty($chatId)) {
             http_response_code(400);
@@ -81,7 +93,10 @@ class TelegramController {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
         
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

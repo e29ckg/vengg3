@@ -71,7 +71,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../../services/api'; // ปรับ Path ให้ตรงกับโปรเจกต์ของคุณ
-import Swal from 'sweetalert2';
+import Swal from '../../services/alerts';
 
 const logs = ref([]);
 const searchQuery = ref('');

@@ -26,7 +26,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import Swal from 'sweetalert2'
+import Swal from '../../services/alerts'
 import api from '../../services/api'
 
 const version = ref(null), error = ref(''), message = ref(''), logs = ref([])

@@ -12,7 +12,7 @@ class Ven {
     // ==========================================
     // ฟังก์ชันดึงข้อมูลตารางเวร (แสดงใน FullCalendar)
     // ==========================================
-    public function getVenList($monthYear = null) {
+    public function getVenList(string $monthYear) {
         // 🌟 ปรับ Query ให้คืนค่าตรงกับรูปแบบที่ FullCalendar ต้องการ (id, title, date, backgroundColor)
         $query = "SELECT 
                     v.id, 
@@ -46,22 +46,16 @@ class Ven {
                   LEFT JOIN profile p ON v.user_id = p.user_id
                   LEFT JOIN ven_name_sub vns ON v.ven_name_sub_id = vns.id
                   LEFT JOIN ven_com vc ON v.ven_com_id = vc.id
-                  LEFT JOIN ven_name vn ON vc.ven_name_id = vn.id";
-
-        // กรองตามเดือน-ปี (รูปแบบ YYYY-MM)
-        if ($monthYear != null) {
-            $query .= " WHERE DATE_FORMAT(v.ven_date, '%Y-%m') = :monthYear";
-        }
+                  LEFT JOIN ven_name vn ON vc.ven_name_id = vn.id
+                  WHERE v.ven_date >= :monthStart AND v.ven_date < :nextMonth";
 
         $query .= " ORDER BY v.ven_date ASC, vn.srt ASC, vns.srt ASC, v.id ASC"; // เรียงตามวันที่ และเวลาของเวร (เช้า-กลางคืน)
 
         $stmt = $this->conn->prepare($query);
 
-        if ($monthYear != null) {
-            $stmt->bindParam(":monthYear", $monthYear);
-        }
-
-        $stmt->execute();
+        $monthStart = $monthYear . '-01';
+        $nextMonth = (new DateTimeImmutable($monthStart))->modify('+1 month')->format('Y-m-d');
+        $stmt->execute([':monthStart' => $monthStart, ':nextMonth' => $nextMonth]);
         return $stmt;
     }
 

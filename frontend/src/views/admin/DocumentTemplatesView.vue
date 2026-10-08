@@ -4,6 +4,7 @@
       <div class="card-header bg-dark text-white py-3"><h5 class="mb-0"><i class="bi bi-file-earmark-word me-2"></i>เทมเพลดเอกสารเวร</h5></div>
       <div class="card-body">
         <p>อัปโหลดไฟล์ Word .docx ไม่เกิน 2 MB เพื่อเปลี่ยนใบเปลี่ยนเวร หรือกำหนดรายงานแยกตามประเภทเวรหลัก</p>
+        <p class="text-muted">ใช้เอกสารที่ไม่มี macro, วัตถุฝังจากโปรแกรมอื่น หรือลิงก์ภายนอก รูปต้องอยู่ในไฟล์เอกสาร</p>
         <p class="text-muted">เวรที่ยังไม่กำหนดไฟล์จะใช้ “รายงานเวรเริ่มต้น” หากยังไม่อัปโหลดไฟล์เริ่มต้น ระบบใช้ไฟล์ที่มาพร้อมโปรแกรม</p>
         <div v-if="error" class="alert alert-danger" role="alert">{{ error }} <button class="btn btn-sm btn-outline-danger ms-2" :disabled="busy" @click="load">ลองอีกครั้ง</button></div>
         <p v-if="loading" role="status">กำลังโหลด...</p>
@@ -12,10 +13,10 @@
             <thead><tr><th>เอกสาร / เวร</th><th>ไฟล์ที่ใช้อยู่</th><th>ปรับปรุงล่าสุด</th><th>จัดการ</th></tr></thead>
             <tbody><tr v-for="row in templates" :key="`${row.kind}-${row.ven_name_id}`">
               <td>{{ row.label }}<div v-if="row.ven_name_id" class="text-muted small">รายงานเฉพาะเวร</div></td>
-              <td><span class="badge" :class="row.custom ? 'bg-success' : 'bg-secondary'">{{ row.custom ? 'ไฟล์ที่อัปโหลด' : row.source === 'global' ? 'รายงานเวรเริ่มต้น' : 'ไฟล์จากโปรแกรม' }}</span></td>
+              <td><span class="badge" :class="row.valid === false ? 'bg-danger' : row.custom ? 'bg-success' : 'bg-secondary'">{{ row.valid === false ? 'ไฟล์ไม่ผ่านการตรวจสอบ' : row.custom ? 'ไฟล์ที่อัปโหลด' : row.source === 'global' ? 'รายงานเวรเริ่มต้น' : 'ไฟล์จากโปรแกรม' }}</span><div v-if="row.valid === false" class="text-danger small mt-1">{{ row.validation_error }}</div></td>
               <td class="small">{{ row.updated_at ? new Date(row.updated_at).toLocaleString('th-TH') : '—' }}</td>
               <td><div class="d-flex gap-2 flex-wrap">
-                <button class="btn btn-sm btn-outline-primary" :disabled="busy" @click="download(row)">ดาวน์โหลด</button>
+                <button class="btn btn-sm btn-outline-primary" :disabled="busy || row.valid === false" @click="download(row)">ดาวน์โหลด</button>
                 <button class="btn btn-sm btn-primary" :disabled="busy" @click="choose(row)">อัปโหลดใหม่</button>
                 <button v-if="row.custom" class="btn btn-sm btn-outline-danger" :disabled="busy" @click="reset(row)">คืนค่าเริ่มต้น</button>
               </div></td>
@@ -38,7 +39,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import Swal from 'sweetalert2'
+import Swal from '../../services/alerts'
 import PizZip from 'pizzip'
 import Docxtemplater from 'docxtemplater'
 import { saveAs } from 'file-saver'
@@ -63,12 +64,14 @@ async function upload(event) {
   busy.value = true
   try {
     if (!/\.docx$/i.test(file.name) || file.size > 2097152) throw new Error('ใช้ไฟล์ .docx ไม่เกิน 2 MB')
-    try { new Docxtemplater(new PizZip(await file.arrayBuffer()), {paragraphLoop: true, linebreaks: true}) }
-    catch { throw new Error('ไฟล์ Word หรือรูปแบบแท็กไม่ถูกต้อง กรุณาตรวจวงเล็บและแท็กเปิด/ปิดในเทมเพลด') }
     const confirmation = await Swal.fire({titleText: `ปรับปรุง${row.label}?`, text: `ใช้ไฟล์ ${file.name}`, icon: 'question', showCancelButton: true, confirmButtonText: 'อัปโหลด', cancelButtonText: 'ยกเลิก'})
     if (!confirmation.isConfirmed) return
     const body = new FormData()
     body.append('kind', row.kind); body.append('ven_name_id', row.ven_name_id); body.append('template', file)
+    // Validate ZIP size on the server before inflating XML in the browser.
+    await api.post('?route=admin/templates/validate', body, {headers: {'Content-Type': undefined}})
+    try { new Docxtemplater(new PizZip(await file.arrayBuffer()), {paragraphLoop: true, linebreaks: true}) }
+    catch { throw new Error('ไฟล์ Word หรือรูปแบบแท็กไม่ถูกต้อง กรุณาตรวจวงเล็บและแท็กเปิด/ปิดในเทมเพลด') }
     await api.post('?route=admin/templates/upload', body, {headers: {'Content-Type': undefined}})
     await load()
     await Swal.fire({icon: 'success', title: 'ปรับปรุงเทมเพลดแล้ว', timer: 1500, showConfirmButton: false})

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../Services/GoogleCredentialValidator.php';
 // backend/src/Controllers/VenScheduleController.php
 
 require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
@@ -148,7 +149,7 @@ class VenScheduleController {
 
         require_once $baseDir . '/../vendor/autoload.php';
         $client = new Google_Client();
-        $client->setAuthConfig($keyFilePath);
+        $client->setAuthConfig(GoogleCredentialValidator::validate(file_get_contents($keyFilePath)));
         $client->addScope(Google_Service_Calendar::CALENDAR_EVENTS);
         $service = new Google_Service_Calendar($client);
 
@@ -201,7 +202,8 @@ class VenScheduleController {
 
             echo json_encode(['success' => true]);
         } catch (Exception $e) {
-            http_response_code(500); echo json_encode(['error' => 'Google API Error: ' . $e->getMessage()]);
+            error_log('Google Calendar sync failed');
+            http_response_code(500); echo json_encode(['error' => 'เชื่อมต่อ Google Calendar ไม่สำเร็จ']);
         }
     }
 

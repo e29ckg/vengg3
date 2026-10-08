@@ -1,9 +1,15 @@
 <?php
 // backend/src/Models/User.php
+require_once __DIR__ . '/../Services/SessionSecurity.php';
 
 class User {
     private $conn;
     private $table_name = "user";
+    private function preservesAdministrator($id, $role, $status, bool $deleted = false): bool {
+        $lock = $this->conn->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql' ? ' FOR UPDATE' : '';
+        $admins = $this->conn->query('SELECT id FROM user WHERE role = 9 AND status = 10 AND is_deleted = 0' . $lock)->fetchAll(PDO::FETCH_COLUMN);
+        return !in_array((string)$id, array_map('strval', $admins), true) || count($admins) > 1 || (!$deleted && ($role === null || (int)$role === 9) && (int)$status === 10);
+    }
 
     public function __construct($db) {
         $this->conn = $db;
@@ -11,28 +17,31 @@ class User {
 
     // ฟังก์ชันตรวจสอบการล็อกอิน
     public function login($username, $password) {
+        if (is_string($username)) $username = trim($username);
+        if (!is_string($username) || !is_string($password) || strlen($username) > 128 || strlen($password) > 72) return ['success' => false, 'message' => 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'];
         // ดึงข้อมูลผู้ใช้จากชื่อผู้ใช้
         $query = "SELECT u.id, u.username, u.password_hash, u.role, u.status, 
                          p.prefix_name, p.first_name, p.last_name, p.avatar 
                   FROM " . $this->table_name . " u 
                   LEFT JOIN profile p ON u.id = p.user_id 
-                  WHERE u.username = :username LIMIT 0,1";
+                  WHERE u.username = :username AND u.is_deleted = 0 LIMIT 0,1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':username', $username);
         $stmt->execute();
 
-        if ($stmt->rowCount() > 0) {
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $verified = password_verify($password, $row['password_hash'] ?? '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi');
+        if ($row) {
             
             // เช็คว่าสถานะผู้ใช้ถูกระงับหรือไม่ (สมมติ 10 = ปกติ)
             if ($row['status'] != 10) {
-                return ["success" => false, "message" => "Account is disabled."];
+                return ["success" => false, "message" => "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"];
             }
 
             // ตรวจสอบรหัสผ่านที่ส่งมา เทียบกับ Hash ในฐานข้อมูล
-            if (password_verify($password, $row['password_hash'])) {
+            if ($verified) {
                 // รหัสผ่านถูกต้อง สร้าง Token 32 ตัวอักษร
-                $token = bin2hex(random_bytes(16));
+                $token = SessionSecurity::issue();
                 
                 // บันทึก Token ลงในช่อง auth_key
                 $this->updateAuthKey($row['id'], $token);
@@ -52,15 +61,22 @@ class User {
                     "token" => $token
                 ];
             } else {
-                return ["success" => false, "message" => "Invalid password."];
+                return ["success" => false, "message" => "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"];
             }
         }
         
-        return ["success" => false, "message" => "User not found."];
+        return ["success" => false, "message" => "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"];
     }
 
     // ฟังก์ชันอัปเดต Token ลงฐานข้อมูล
+    public function loginThrottleKey(string $username): string {
+        $query = $this->conn->prepare('SELECT id FROM user WHERE username = ? LIMIT 1');
+        $query->execute([trim($username)]);
+        $id = $query->fetchColumn();
+        return $id !== false ? 'id:' . $id : 'name:' . strtolower(trim($username));
+    }
     private function updateAuthKey($id, $token) {
+        $token = SessionSecurity::fingerprint($token);
         $query = "UPDATE " . $this->table_name . " SET auth_key = :token WHERE id = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':token', $token);
@@ -70,20 +86,35 @@ class User {
 
     // ฟังก์ชันตรวจสอบ Token ว่าถูกต้องและมีอยู่จริงหรือไม่ (สำหรับ Middleware)
     public function validateToken($token) {
-        $query = "SELECT u.id, u.username, u.role, p.avatar FROM user u LEFT JOIN profile p ON u.id = p.user_id   WHERE u.auth_key = :token AND u.status = 10 LIMIT 0,1";
+        if (!is_string($token) || !SessionSecurity::valid($token)) return false;
+        $token = SessionSecurity::fingerprint($token);
+        $query = "SELECT u.id, u.username, u.role, p.avatar FROM user u LEFT JOIN profile p ON u.id = p.user_id WHERE u.auth_key = :token AND u.status = 10 AND u.is_deleted = 0 LIMIT 0,1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':token', $token);
         $stmt->execute();
 
-        if ($stmt->rowCount() > 0) {
+        if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             // ถ้า Token ถูกต้อง ส่งข้อมูลผู้ใช้ (id, username, role) กลับไปให้ระบบรับรู้
-            return $stmt->fetch(PDO::FETCH_ASSOC); 
+            return $row;
         }
         
         return false; // Token ปลอม หรือถูกระงับ
     }
 
     // ฟังก์ชันดึงรายชื่อผู้ใช้ทั้งหมดสำหรับ Admin
+    public function revokeSession($id): void {
+        $this->conn->prepare('UPDATE user SET auth_key = NULL WHERE id = ?')->execute([$id]);
+    }
+    public function changePassword($id, $oldPassword, $newPassword): bool {
+        if (!is_string($oldPassword) || strlen($oldPassword) > 72 || !SessionSecurity::passwordAllowed($newPassword)) return false;
+        $query = $this->conn->prepare('SELECT password_hash FROM user WHERE id = ? AND is_deleted = 0 AND status = 10');
+        $query->execute([$id]);
+        $hash = $query->fetchColumn();
+        if (!$hash || !password_verify($oldPassword, $hash)) return false;
+        $update = $this->conn->prepare('UPDATE user SET password_hash = ?, auth_key = NULL WHERE id = ? AND password_hash = ?');
+        $update->execute([password_hash($newPassword, PASSWORD_DEFAULT), $id, $hash]);
+        return $update->rowCount() === 1;
+    }
     // ฟังก์ชันดึงรายชื่อผู้ใช้ทั้งหมด (อัปเดตให้ดึงข้อมูลครบทุกฟิลด์)
     public function getAllUsers() {
         $query = "SELECT 
@@ -149,12 +180,14 @@ class User {
 
     // ฟังก์ชันเพิ่มผู้ใช้งานใหม่ (อัปเดตให้รองรับฟิลด์ใหม่)
     public function createUser($data) {
+        if (!is_string($data['username'] ?? null) || strlen($data['username']) > 128 || !preg_match('/\A[^\s\x00-\x1F\x7F]{1,128}\z/u', $data['username'])) return ['success'=>false,'message'=>'ชื่อผู้ใช้ยาวเกินไป หรือมีช่องว่างหรืออักขระควบคุม'];
+        if (!SessionSecurity::passwordAllowed($data['password'] ?? null) || !in_array((string)($data['role'] ?? ''), ['1','2','3','9'], true)) return ['success' => false, 'message' => 'รหัสผ่านต้องยาว 12-72 bytes และบทบาทต้องถูกต้อง'];
         $checkQuery = "SELECT id FROM " . $this->table_name . " WHERE username = :username";
         $checkStmt = $this->conn->prepare($checkQuery);
         $checkStmt->bindParam(':username', $data['username']);
         $checkStmt->execute();
         
-        if ($checkStmt->rowCount() > 0) {
+        if ($checkStmt->fetchColumn() !== false) {
             return ["success" => false, "message" => "ชื่อผู้ใช้งานนี้ (Username) มีอยู่ในระบบแล้ว"];
         }
 
@@ -198,21 +231,27 @@ class User {
 
         } catch (Exception $e) {
             $this->conn->rollBack();
-            return ["success" => false, "message" => "เกิดข้อผิดพลาด: " . $e->getMessage()];
+            error_log('Create user failed');
+            return ["success" => false, "message" => "ไม่สามารถเพิ่มผู้ใช้ได้"];
         }
     }
 
     // ฟังก์ชันอัปเดตข้อมูลผู้ใช้ (อัปเดตให้รองรับฟิลด์ใหม่)
     public function updateUser($data) {
+    if ((!empty($data['password']) && !SessionSecurity::passwordAllowed($data['password'])) || !in_array((string)($data['role'] ?? ''), ['1','2','3','9'], true) || !in_array((string)($data['status'] ?? '10'), ['0','10'], true)) return ['success' => false, 'message' => 'รหัสผ่าน บทบาท หรือสถานะไม่ถูกต้อง'];
     try {
         $this->conn->beginTransaction();
 
         // --- 1. เตรียมค่าพื้นฐาน ---
         $userId = $data['id'];
         // ใช้ isset เพื่อรองรับค่า 0 (ระงับ/ย้าย)
-        $status = isset($data['status']) ? (int)$data['status'] : 1; 
+        $status = isset($data['status']) ? (int)$data['status'] : 10;
         $role = isset($data['role']) ? (int)$data['role'] : 1;
         $srt = isset($data['srt']) ? (int)$data['srt'] : 999;
+        if (!$this->preservesAdministrator($userId, $role, $status)) {
+            $this->conn->rollBack();
+            return ['success'=>false,'message'=>'ต้องคงแอดมินที่เปิดใช้งานอย่างน้อยหนึ่งบัญชี','code'=>409];
+        }
 
         // 🌟 กฎเหล็ก: ถ้า status เป็น 0 (ระงับ/ย้าย) ให้ srt เป็น 999 เสมอ
         if ($status === 0) {
@@ -220,7 +259,7 @@ class User {
         }
 
         // --- 2. อัปเดตตาราง user ---
-        $queryUser = "UPDATE " . $this->table_name . " SET role = :role, status = :status";
+        $queryUser = "UPDATE " . $this->table_name . " SET role = :role, status = :status, auth_key = NULL";
         if (!empty($data['password'])) {
             $queryUser .= ", password_hash = :password_hash";
         }
@@ -281,13 +320,17 @@ class User {
 
     } catch (Exception $e) {
         $this->conn->rollBack();
-        return ["success" => false, "message" => "เกิดข้อผิดพลาด: " . $e->getMessage()];
+        error_log('Update user failed');
+        return ["success" => false, "message" => "ไม่สามารถอัปเดตผู้ใช้ได้"];
     }
 }
     
     // ฟังก์ชันเปลี่ยนสถานะผู้ใช้งาน (เปิด/ปิด)
     public function toggleStatus($userId, $newStatus) {        
-        $query = "UPDATE " . $this->table_name . " SET status = :status WHERE id = :id";
+        if (!in_array((string)$newStatus, ['0','10'], true)) return false;
+        $this->conn->beginTransaction();
+        if (!$this->preservesAdministrator($userId, null, $newStatus)) { $this->conn->rollBack(); return false; }
+        $query = "UPDATE " . $this->table_name . " SET status = :status, auth_key = NULL WHERE id = :id";
         $stmt = $this->conn->prepare($query);
 
         
@@ -295,17 +338,23 @@ class User {
         $stmt->bindParam(':id', $userId);
         
         if ($stmt->execute()) {
+            $this->conn->commit();
             return true;
         }
+        $this->conn->rollBack();
         return false;
     }
 
     
     public function deleteUser($id) {
+        $this->conn->beginTransaction();
+        if (!$this->preservesAdministrator($id, null, 0, true)) { $this->conn->rollBack(); return false; }
         // 🌟 เปลี่ยนเป็นการอัปเดตสถานะ is_deleted = 1 แทนการลบข้อมูลจริง
-        $query = "UPDATE user SET is_deleted = 1 WHERE id = :id";
+        $query = "UPDATE user SET is_deleted = 1, auth_key = NULL WHERE id = :id";
         $stmt = $this->conn->prepare($query);
-        return $stmt->execute([':id' => $id]);
+        $result = $stmt->execute([':id' => $id]);
+        $this->conn->commit();
+        return $result;
     }
 
     // ปรับลำดับอาวุโสไปอยู่ท้ายสุด (ใช้เมื่อถูกระงับ/โอนย้าย)

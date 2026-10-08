@@ -38,10 +38,10 @@ foreach ($extension in @('pdo_mysql', 'curl', 'mbstring', 'fileinfo', 'zip')) {
         'Enabled'
     }
 }
-Check 'node' 'Node.js 22+' 'Install Node.js 22+ and restart Apache so it reads the new PATH.' {
+Check 'node' 'Node.js 22.13+' 'Install Node.js 22.13+ and restart Apache so it reads the new PATH.' {
     $node = Get-Command node.exe -ErrorAction Stop
     $version = (& $node.Source --version).TrimStart('v')
-    if ($LASTEXITCODE -ne 0 -or [version]$version -lt [version]'22.0.0') { throw 'Unsupported Node.js' }
+    if ($LASTEXITCODE -ne 0 -or [version]$version -lt [version]'22.13.0') { throw 'Unsupported Node.js' }
     "v$version"
 }
 Check 'npm' 'npm' 'Install npm with Node.js and restart Apache.' {
@@ -73,7 +73,16 @@ Check 'rewrite' 'Apache mod_rewrite' 'Enable LoadModule rewrite_module in httpd.
 }
 Check 'override' 'Apache .htaccess' 'Set AllowOverride All for htdocs in httpd.conf and restart Apache.' {
     if (!(Get-Content -LiteralPath (Join-Path $XamppRoot 'apache\conf\httpd.conf') | Select-String '^\s*AllowOverride\s+All\s*$')) { throw 'Overrides disabled' }
-    'AllowOverride All configured'
+    $listen = Get-Content -LiteralPath (Join-Path $XamppRoot 'apache\conf\httpd.conf') | Where-Object {$_ -match '^\s*Listen\s+(?:\S+:)?(\d+)\s*$'} | Select-Object -First 1
+    if (!$listen) { throw 'Missing Apache port' }
+    $port = [int]([regex]::Match($listen,'(\d+)\s*$').Groups[1].Value)
+    foreach ($privatePath in @('backend/src/config/database.php','.git','database.sql')) {
+        $code = 0
+        try { $response=Invoke-WebRequest -Uri "http://127.0.0.1:$port/vengg3/$privatePath" -UseBasicParsing -TimeoutSec 5; $code=[int]$response.StatusCode }
+        catch { if ($_.Exception.PSObject.Properties.Name -contains 'Response' -and $_.Exception.Response) { $code=[int]$_.Exception.Response.StatusCode } }
+        if ($code -ne 403) { throw 'Private paths are not denied by Apache' }
+    }
+    'HTTP access to private files denied'
 }
 Check 'db_config' 'Database configuration' 'Create backend/src/config/database.local.php with DB_HOST, DB_NAME, DB_USER and DB_PASS.' {
     if (!(Test-Path -LiteralPath (Join-Path $projectRoot 'backend\src\config\database.local.php'))) { throw 'Database config missing' }

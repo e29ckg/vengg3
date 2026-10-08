@@ -99,7 +99,7 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '../services/api'
-import Swal from 'sweetalert2'
+import Swal from '../services/alerts'
 
 const router = useRouter()
 const route = useRoute()
@@ -246,9 +246,15 @@ const logout = async () => {
   });
 
   if (result.isConfirmed) {
+    let serverUnavailable = false
+    try { await api.post('?route=auth/logout', {}) }
+    catch (error) {
+      serverUnavailable = error.response?.status !== 401
+    }
     // ถ้ากดยืนยัน ค่อยเคลียร์ค่าแล้วเด้งไปหน้า login
     localStorage.clear()
     router.push('/login')
+    if (serverUnavailable) await Swal.fire('ออกจากระบบในเครื่องแล้ว', 'เซิร์ฟเวอร์ไม่ตอบกลับ จึงยังยืนยันการยกเลิก session ฝั่งเซิร์ฟเวอร์ไม่ได้', 'warning')
   }
 }
 </script>

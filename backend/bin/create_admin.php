@@ -1,6 +1,7 @@
 <?php
 // Run once after importing database.sql. Do not pass the password as a shell argument.
 require_once __DIR__ . '/../src/config/database.php';
+require_once __DIR__ . '/../src/Services/SessionSecurity.php';
 
 if (PHP_SAPI !== 'cli') {
     exit(1);
@@ -8,8 +9,8 @@ if (PHP_SAPI !== 'cli') {
 
 $username = getenv('ADMIN_USERNAME') ?: 'admin';
 $password = getenv('ADMIN_PASSWORD');
-if (!$password || strlen($password) < 12) {
-    fwrite(STDERR, "Set ADMIN_PASSWORD to at least 12 characters.\n");
+if (!SessionSecurity::passwordAllowed($password)) {
+    fwrite(STDERR, "Set ADMIN_PASSWORD to 12-72 bytes.\n");
     exit(1);
 }
 

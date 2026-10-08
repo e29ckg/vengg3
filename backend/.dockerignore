@@ -4,5 +4,9 @@ tests/
 src/Config/credentials.json
 src/config/database.local.php
 .initial-admin-password
-public/uploads/
+public/uploads/*
+!public/uploads/.htaccess
 storage/document-templates/
+storage/security/
+src/Config/credential-*
+src/config/db-setup-*

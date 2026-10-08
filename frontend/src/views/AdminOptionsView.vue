@@ -48,7 +48,7 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue'
 import api from '../services/api'
-import Swal from 'sweetalert2'
+import Swal from '../services/alerts'
 
 const categories = [
   {type: 'prefix', key: 'prefixes', label: 'คำนำหน้าชื่อ', placeholder: 'เช่น นาย, นางสาว'},

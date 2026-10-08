@@ -15,14 +15,16 @@ final class ProgramUpdateService
 
     private function git(array $arguments): string
     {
-        $command = array_merge(['git.exe', '-C', $this->root], $arguments);
+        $command = array_merge(['git.exe', '-c', 'http.sslVerify=true', '-c', 'http.followRedirects=false', '-C', $this->root], $arguments);
         if ($this->runner !== null) {
             return ($this->runner)($command);
         }
         if (!function_exists('proc_open')) {
             throw new RuntimeException('PHP ต้องเปิด proc_open เพื่อเรียก Git');
         }
-        $process = @proc_open($command, [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['file', 'NUL', 'w']], $pipes, $this->root, null, ['bypass_shell' => true]);
+        $environment = getenv();
+        $environment['GIT_TERMINAL_PROMPT'] = '0';
+        $process = @proc_open($command, [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['file', 'NUL', 'w']], $pipes, $this->root, $environment, ['bypass_shell' => true]);
         if (!is_resource($process)) {
             throw new RuntimeException('เรียก Git ไม่ได้ กรุณาติดตั้ง Git และเริ่ม Apache ใหม่');
         }

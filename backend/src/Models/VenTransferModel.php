@@ -1,8 +1,9 @@
 <?php
 class VenTransferModel {
     private $conn;
+    private $clock;
 
-    public function __construct($db) { $this->conn = $db; }
+    public function __construct($db, ?callable $clock = null) { $this->conn = $db; $this->clock = $clock ?? static fn() => (new DateTimeImmutable('now', new DateTimeZone('Asia/Bangkok')))->format('Y-m-d'); }
 
     private function reject($message, $code) {
         $this->conn->rollBack();
@@ -39,6 +40,15 @@ class VenTransferModel {
                 return $this->reject('ไม่มีสิทธิ์เปลี่ยนเวรนี้', 403);
             if ((int)$first['status'] !== 1 || ($second && (int)$second['status'] !== 1))
                 return $this->reject('เวรนี้ไม่อยู่ในสถานะที่เปลี่ยนได้', 409);
+            $settings = $this->conn->query('SELECT allow_swap, advance_swap_days, allow_retroactive_swap FROM system_settings WHERE id = 1')->fetch(PDO::FETCH_ASSOC) ?: [];
+            if ((int)($settings['allow_swap'] ?? 1) !== 1) return $this->reject('ระบบปิดการเปลี่ยนเวร', 403);
+            $today = new DateTimeImmutable(($this->clock)(), new DateTimeZone('Asia/Bangkok'));
+            foreach (array_filter([$first, $second]) as $schedule) {
+                $date = new DateTimeImmutable($schedule['ven_date'], new DateTimeZone('Asia/Bangkok'));
+                $days = (int)$today->diff($date)->format('%r%a');
+                if ($days < 0 && (int)($settings['allow_retroactive_swap'] ?? 0) !== 1) return $this->reject('ไม่อนุญาตให้เปลี่ยนเวรย้อนหลัง', 403);
+                if ($days >= 0 && $days < max(0, (int)($settings['advance_swap_days'] ?? 3))) return $this->reject('ขอเปลี่ยนเวรล่วงหน้าไม่ครบจำนวนวันที่กำหนด', 403);
+            }
 
             $active = $this->conn->prepare('SELECT id FROM user WHERE id = ? AND status = 10 AND is_deleted = 0');
             $active->execute([$user2_id]);
@@ -55,9 +65,11 @@ class VenTransferModel {
             $pending->execute([$s1_id, $s1_id, $s2_id, $s2_id]);
             if ($pending->fetchColumn()) return $this->reject('เวรนี้อยู่ระหว่างรออนุมัติ', 409);
 
-            $changeNo = 'CH-' . date('Ym') . '-' . bin2hex(random_bytes(6));
             $insert = $this->conn->prepare('INSERT INTO ven_change (change_no, s1_id, user1_id, user2_id, is_swap, s2_id, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 0, NOW())');
-            $insert->execute([$changeNo, $s1_id, $currentUserId, $user2_id, $is_swap, $second ? $s2_id : null]);
+            $insert->execute([null, $s1_id, $currentUserId, $user2_id, $is_swap, $second ? $s2_id : null]);
+            $requestId = $this->conn->lastInsertId();
+            $changeNo = 'CH-' . $today->format('Ym') . '-' . $requestId;
+            $this->conn->prepare('UPDATE ven_change SET change_no = ? WHERE id = ?')->execute([$changeNo, $requestId]);
             $update = $this->conn->prepare('UPDATE ven_schedule SET user_id = ?, status = 2 WHERE id = ?');
             $update->execute([$user2_id, $s1_id]);
             if ($second) $update->execute([$currentUserId, $s2_id]);

@@ -1,7 +1,8 @@
 <?php
 // backend/src/Controllers/UserController.php
 
-require_once '../src/Models/User.php';
+require_once __DIR__ . '/../Models/User.php';
+require_once __DIR__ . '/../Services/AvatarUploadService.php';
 
 class UserController {
     
@@ -68,15 +69,21 @@ class UserController {
                 "position" => $row['position'],
                 "srt" => $row['srt'],
                 "department" => $row['department'],
-                "phone" => $row['phone'],
-                "bank_account" => $row['bank_account'],
-                "bank_comment" => $row['bank_comment'],
                 "st" => $row['st']
             ]);
         }
 
         http_response_code(200);
         echo json_encode($users_arr);
+    }
+    public function listUserDirectory(): void {
+        $rows=[];
+        $query=$this->userModel->getAllUsers();
+        while ($row=$query->fetch(PDO::FETCH_ASSOC)) {
+            $rows[]=['id'=>$row['id'],'full_name'=>trim(($row['prefix_name'] ?? '').($row['first_name'] ?? '').' '.($row['last_name'] ?? '')),
+                'position'=>$row['position'],'department'=>$row['department'],'status'=>$row['status']];
+        }
+        echo json_encode($rows);
     }
 
     // รับข้อมูลสร้างผู้ใช้ใหม่
@@ -106,7 +113,7 @@ class UserController {
         $data = json_decode(file_get_contents("php://input"), true);
         
         // เช็คว่ามีการส่ง ID และ Status ใหม่มาไหม
-        if (empty($data['id']) || !isset($data['status'])) {
+        if (empty($data['id']) || !in_array((string)($data['status'] ?? ''), ['0','10'], true)) {
             http_response_code(400);
             echo json_encode(["error" => "ข้อมูลไม่ครบถ้วน"]);
             return;
@@ -123,8 +130,8 @@ class UserController {
             http_response_code(200);
             echo json_encode(["message" => "อัปเดตสถานะสำเร็จ"]);
         } else {
-            http_response_code(500);
-            echo json_encode(["error" => "เกิดข้อผิดพลาด ไม่สามารถอัปเดตสถานะได้"]);
+            http_response_code(409);
+            echo json_encode(["error" => "ต้องคงแอดมินที่เปิดใช้งานอย่างน้อยหนึ่งบัญชี"]);
         }
     }
 
@@ -144,7 +151,7 @@ class UserController {
             http_response_code(200);
             echo json_encode(["message" => $result['message']]);
         } else {
-            http_response_code(500);
+            http_response_code($result['code'] ?? 500);
             echo json_encode(["error" => $result['message']]);
         }
     }   
@@ -162,8 +169,8 @@ class UserController {
             http_response_code(200);
             echo json_encode(["message" => "ลบผู้ใช้สำเร็จ"]);
         } else {
-            http_response_code(500);
-            echo json_encode(["error" => "เกิดข้อผิดพลาด ไม่สามารถลบผู้ใช้ได้"]);
+            http_response_code(409);
+            echo json_encode(["error" => "ต้องคงแอดมินที่เปิดใช้งานอย่างน้อยหนึ่งบัญชี"]);
         }
     }  
     
@@ -186,52 +193,29 @@ class UserController {
     }  
 
     public function uploadAvatar($userId, $file, $baseDir) {
-        // เช็คว่ามีการส่งไฟล์มา และไม่มี Error
-        if (isset($file) && $file['error'] === UPLOAD_ERR_OK) {
-            
-            $uploadDir = $baseDir . '/uploads/avatars/';
-            if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
-
-            $fileTmpPath = $file['tmp_name'];
-            $fileName = $file['name'];
-            $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-
-            // ตรวจสอบนามสกุลไฟล์
-            $allowedfileExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-            if (in_array($fileExtension, $allowedfileExtensions)) {
-                
-                // 🌟 1. ดึงชื่อไฟล์รูปเดิมจาก Model
-                $oldAvatar = $this->userModel->getAvatar($userId);
-
-                // ตั้งชื่อไฟล์ใหม่
-                $newFileName = 'user_' . $userId . '_' . time() . '.' . $fileExtension;
-                $dest_path = $uploadDir . $newFileName;
-
-                // ทำการย้ายไฟล์
-                if (move_uploaded_file($fileTmpPath, $dest_path)) {
-                    
-                    // 🌟 2. ถ้าย้ายไฟล์ใหม่สำเร็จ ให้ลบรูปเดิมทิ้ง
-                    if (!empty($oldAvatar) && file_exists($uploadDir . $oldAvatar)) {
-                        unlink($uploadDir . $oldAvatar);
-                    }
-
-                    // 🌟 3. อัปเดตชื่อไฟล์ลงฐานข้อมูล
-                    if ($this->userModel->updateAvatar($userId, $newFileName)) {
-                        echo json_encode(["success" => true, "avatar" => $newFileName]);
-                        return;
-                    }
-                }
-            } else {
-                http_response_code(400); 
-                echo json_encode(["error" => "รองรับเฉพาะไฟล์รูปภาพ (jpg, png, gif, webp) เท่านั้น"]); 
-                return;
+        try {
+            if (!is_array($file) || $file['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name']) ||
+                !is_string($userId) || !preg_match('/\A[A-Za-z0-9-]{1,36}\z/', $userId)) {
+                throw new RuntimeException('อัปโหลดรูปไม่สำเร็จ');
             }
+            $extension = AvatarUploadService::validate($file['tmp_name'], $file['name']);
+            $uploadDir = $baseDir . '/uploads/avatars/';
+            if (!is_dir($uploadDir) && !@mkdir($uploadDir, 0750, true) && !is_dir($uploadDir)) throw new RuntimeException('บันทึกรูปไม่ได้');
+            $oldAvatar = $this->userModel->getAvatar($userId);
+            $newFileName = 'avatar_' . $userId . '_' . bin2hex(random_bytes(16)) . '.' . $extension;
+            $path = $uploadDir . $newFileName;
+            if (!move_uploaded_file($file['tmp_name'], $path)) throw new RuntimeException('บันทึกรูปไม่ได้');
+            if (!$this->userModel->updateAvatar($userId, $newFileName)) {
+                @unlink($path);
+                throw new RuntimeException('บันทึกข้อมูลรูปไม่ได้');
+            }
+            if (AvatarUploadService::safeStoredName($oldAvatar) && is_file($uploadDir . $oldAvatar)) @unlink($uploadDir . $oldAvatar);
+            echo json_encode(['success' => true, 'avatar' => $newFileName]);
+        } catch (RuntimeException $error) {
+            http_response_code(400);
+            echo json_encode(['error' => 'อัปโหลดรูปไม่สำเร็จ ใช้รูปจริงขนาดไม่เกิน 2 MB และด้านละไม่เกิน 4096 pixels']);
         }
-        
-        // กรณีอัปโหลดไม่สำเร็จหรือไม่มีไฟล์มา
-        http_response_code(400); 
-        echo json_encode(["error" => "ไม่สามารถอัปโหลดไฟล์ได้"]);
-    } 
+    }
 
     // 🌟 ส่งข้อมูลโปรไฟล์กลับไปให้ Vue.js
     public function getProfile($userId) {

@@ -96,7 +96,7 @@ const router = createRouter({
     {
         path: '/staff/swap',
         name: 'staff-swap',
-        component: () => import('../views/VenSwapView.vue'),
+        redirect: '/home',
         meta: { requiresAuth: true } // พนักงานทั่วไปเข้าได้
     },
     {

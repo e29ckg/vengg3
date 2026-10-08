@@ -212,7 +212,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import api from '../services/api'
-import Swal from 'sweetalert2'
+import Swal from '../services/alerts'
 import { Modal } from 'bootstrap'
 import { useRouter } from 'vue-router'
 

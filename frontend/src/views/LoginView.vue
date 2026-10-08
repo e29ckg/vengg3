@@ -31,7 +31,7 @@
 import { ref, onMounted } from 'vue' 
 import axios from 'axios'
 import { useRouter } from 'vue-router'
-import Swal from 'sweetalert2'
+import Swal from '../services/alerts'
 import api from '../services/api'
 
 // ตัวแปรเก็บค่าจากฟอร์ม

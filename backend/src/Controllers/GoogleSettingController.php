@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . "/../Services/GoogleCredentialValidator.php";
 class GoogleSettingController {
     private $googleModel;
 
@@ -30,46 +31,23 @@ class GoogleSettingController {
 
     // จัดการอัปโหลดไฟล์ credentials.json
     public function uploadCredentials($file, $baseDir) {
-        if (isset($file) && $file['error'] === UPLOAD_ERR_OK) {
-            $fileTmpPath = $file['tmp_name'];
-            $fileName = $file['name'];
-            $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-
-            if ($fileExtension === 'json') {
-                $destDir = $baseDir . '/../src/Config';
-                $destPath = $destDir . '/credentials.json';
-                
-                // สร้างโฟลเดอร์ Config ถ้ายังไม่มี
-                if (!is_dir($destDir)) {
-                    mkdir($destDir, 0755, true);
-                }
-
-                if (move_uploaded_file($fileTmpPath, $destPath)) {
-                    // อ่านไฟล์ JSON เพื่อดึง Email อัตโนมัติ
-                    $jsonContent = file_get_contents($destPath);
-                    $credentials = json_decode($jsonContent, true);
-                    $clientEmail = $credentials['client_email'] ?? '';
-
-                    // ถ้าดึงอีเมลได้ ให้อัปเดตลงตารางให้เลย
-                    if ($clientEmail) {
-                        $this->googleModel->updateServiceAccount($clientEmail);
-                    }
-
-                    echo json_encode([
-                        'success' => true, 
-                        'client_email' => $clientEmail
-                    ]);
-                } else {
-                    http_response_code(500);
-                    echo json_encode(['error' => 'บันทึกไฟล์ลงเซิร์ฟเวอร์ไม่สำเร็จ']);
-                }
-            } else {
-                http_response_code(400);
-                echo json_encode(['error' => 'อนุญาตให้อัปโหลดเฉพาะไฟล์ .json เท่านั้น']);
-            }
-        } else {
+        $temporary = null;
+        try {
+            if (!is_array($file) || $file['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name']) ||
+                strtolower(pathinfo($file['name'], PATHINFO_EXTENSION)) !== 'json') throw new RuntimeException('ไฟล์อัปโหลดไม่ถูกต้อง');
+            $credentials = GoogleCredentialValidator::validate(file_get_contents($file['tmp_name']));
+            $directory = $baseDir . '/../src/Config';
+            if (!is_dir($directory) && !@mkdir($directory, 0700, true) && !is_dir($directory)) throw new RuntimeException('เขียนไฟล์ไม่ได้');
+            $temporary = tempnam($directory, 'credential-');
+            if (!$temporary || file_put_contents($temporary, json_encode($credentials), LOCK_EX) === false || !rename($temporary, $directory . '/credentials.json')) throw new RuntimeException('บันทึกไฟล์ไม่ได้');
+            @chmod($directory . '/credentials.json', 0600);
+            $this->googleModel->updateServiceAccount($credentials['client_email']);
+            echo json_encode(['success' => true, 'client_email' => $credentials['client_email']]);
+        } catch (RuntimeException $error) {
             http_response_code(400);
-            echo json_encode(['error' => 'ไม่พบไฟล์หรือเกิดข้อผิดพลาดในการอัปโหลด']);
+            echo json_encode(['error' => 'อัปโหลดไม่สำเร็จ ใช้ service-account JSON จาก Google ขนาดไม่เกิน 64 KB ที่มี private key ถูกต้อง']);
+        } finally {
+            if ($temporary && is_file($temporary)) unlink($temporary);
         }
     }
 }

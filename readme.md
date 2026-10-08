@@ -58,19 +58,20 @@
 
 ## การติดตั้งแบบไม่ใช้ Docker
 
-- ใช้ PHP 8.2 ขึ้นไป, MySQL 8 และ Node.js 22 ขึ้นไป
+- ใช้ PHP 8.2 ขึ้นไป, MySQL 8 และ Node.js 22.13 ขึ้นไป
 - นำเข้า `database.sql` ในฐานข้อมูล `vengg_db` แล้วกำหนด `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS` ใน environment ของ PHP
 - ใน `backend/` รัน `composer install` และตั้ง web root ไปที่ `backend/public/`
 - สำหรับ XAMPP ในเครื่องนี้มีไฟล์ `backend/src/config/database.local.php` ที่ถูก ignore จาก Git และ Docker เพื่อเก็บการเชื่อมต่อฐานข้อมูลใหม่ไว้เฉพาะเครื่อง
 - สร้างแอดมินด้วย `ADMIN_PASSWORD=... php backend/bin/create_admin.php` โดยกำหนดรหัสผ่านผ่าน environment ของ shell
-- รหัสแอดมินเริ่มต้นที่สร้างในเครื่องนี้เก็บไว้ชั่วคราวใน checkout งานที่อยู่นอก XAMPP web root ที่ `backend/.initial-admin-password` (ไม่ถูก commit) หลังเข้าสู่ระบบและเปลี่ยนรหัสผ่านแล้วให้ลบไฟล์นี้
 - ใน `frontend/` คัดลอก `.env.example` เป็น `.env` แล้วแก้ `VITE_API_BASE_URL` ให้ตรงกับ URL ของไดเรกทอรี `backend/public/` จากนั้นรัน `npm ci` และ `npm run dev`
 
 ## Deploy บน XAMPP (Windows)
 
+อ่าน [คู่มือติดตั้งและอัปเดต Windows + XAMPP](README_WINDOWS_XAMPP.md) สำหรับการติดตั้งใหม่, การใช้ฐานเดิม, คำสั่ง preflight/deploy, การตรวจ HTTP และการสำรองข้อมูล
+
 ใช้หน้าเว็บ `http://localhost:<Apache-port>/vengg3/install.php` เมื่อนำโปรเจกต์ไว้ที่ `htdocs\vengg3` หรือใช้ `deploy-xampp.ps1` จาก PowerShell หน้าเว็บแสดงเช็กลิสต์แยกแต่ละโปรแกรม ส่วนขยาย PHP และฐานข้อมูล พร้อมสถานะผ่าน/ไม่ผ่านและคำแนะนำ ทั้งสองวิธีตรวจความพร้อมก่อนติดตั้งและแสดงความคืบหน้า 8 ขั้นตอน หน้าเว็บเปิดให้เริ่มติดตั้งจากเครื่อง XAMPP เองเท่านั้น
 
-1. ติดตั้งและเปิด Apache กับ MySQL ใน XAMPP, ติดตั้ง Node.js 22 ขึ้นไปและ Composer; PHP ใน XAMPP ต้องเป็น 8.2 ขึ้นไปและเปิด `pdo_mysql`, `curl`, `mbstring`, `fileinfo`, `zip` รวมถึง Apache `mod_rewrite` และ `AllowOverride All` สำหรับ `htdocs`.
+1. ติดตั้งและเปิด Apache กับ MySQL ใน XAMPP, ติดตั้ง Node.js 22.13 ขึ้นไปและ Composer; PHP ใน XAMPP ต้องเป็น 8.2 ขึ้นไปและเปิด `pdo_mysql`, `curl`, `mbstring`, `fileinfo`, `zip` รวมถึง Apache `mod_rewrite` และ `AllowOverride All` สำหรับ `htdocs`.
 2. หากรายการฐานข้อมูลไม่ผ่าน กด **สร้าง/ตั้งค่าฐานข้อมูล** ในหน้าเว็บ เลือกสร้างใหม่ (ชื่อฐานข้อมูลและบัญชีแอปต้องยังไม่มี) หรือเชื่อมฐานข้อมูลเดิมที่นำเข้าโครงสร้างแล้ว กรอกบัญชีแอปและรหัสผ่านอย่างน้อย 12 ตัวอักษร โหมดสร้างใหม่ใช้บัญชีผู้ดูแล MySQL ชั่วคราวเพื่อสร้างฐานข้อมูล นำเข้า `database.sql` และสร้างบัญชีแอป ระบบบันทึกเฉพาะค่าบัญชีแอปลง `backend/src/config/database.local.php` ซึ่งถูก ignore จาก Git และจะไม่ล้างฐานข้อมูลเดิม
 3. เปิดหน้า `http://localhost:<Apache-port>/vengg3/install.php` กดตรวจสอบความพร้อม แล้วกด **เริ่มติดตั้ง** เมื่อผ่านทุกข้อ หน้าจอจะแสดงขั้นตอนและผลลัพธ์จนเสร็จ หรือเปิด PowerShell ในโฟลเดอร์โปรเจกต์แล้วรัน `powershell -NoProfile -ExecutionPolicy Bypass -File .\deploy-xampp.ps1` (ถ้า XAMPP ไม่ได้อยู่ที่ `C:\xampp` ให้เพิ่ม `-XamppRoot 'D:\xampp'`)
 4. สคริปต์จะติดตั้ง Composer dependencies, build Vue ด้วย base path `/vengg3/`, คัดลอกไฟล์ไป `htdocs\vengg3`, ตั้ง Apache rewrite แล้วตรวจหน้าเว็บ, JavaScript, API และการปิดกั้นไฟล์ภายใน
@@ -91,4 +92,12 @@
 
 ## ข้อควรทำกับข้อมูลเดิม
 
-ไฟล์ snapshot ฐานข้อมูลที่เคย commit มีข้อมูลบัญชีและ token อยู่ในประวัติ Git แม้ลบจาก commit ใหม่แล้ว ผู้ดูแลระบบต้องยกเลิก Telegram bot token เดิม, ยกเลิก session token ของผู้ใช้ และเปลี่ยนรหัสผ่านที่อาจถูกเปิดเผย การล้างประวัติ Git ต้องประสานผู้ร่วมพัฒนาก่อน force push
+ก่อนนำข้อมูลเดิมไปใช้ ให้ตรวจและเปลี่ยน credentials ที่เคยเปิดเผยหรือใช้ซ้ำ รวมถึง session และ integration tokens และทดสอบ restore จากชุดสำรองที่เข้ารหัส
+
+## รายงานความปลอดภัยและแผนพัฒนา
+
+รายงานตรวจความปลอดภัยฉบับละเอียดและหลักฐานการกู้คืนเก็บไว้กับผู้ดูแลระบบ การอัปเดตชุดนี้ยกเลิกการใช้งาน token แบบเดิม ทุกคนต้องเข้าสู่ระบบใหม่ และ session ใหม่มีอายุ 8 ชั่วโมง เมื่อเปลี่ยนรหัสผ่านหรือแอดมินเปลี่ยนสิทธิ์/สถานะ บัญชีจะต้องเข้าสู่ระบบใหม่
+
+รหัสผ่านใหม่ต้องอยู่ระหว่าง 12-72 bytes; หากตั้งค่า frontend แยก origin ให้กำหนด `CORS_ALLOWED_ORIGINS` เป็นรายการ origin ที่เชื่อถือได้ คั่นด้วย comma (ไม่ใส่ slash ท้าย URL) ค่าเริ่มต้นยอมรับเฉพาะ Vite development บน localhost/127.0.0.1:5173 ส่วน XAMPP `/vengg3/api` และ Docker frontend proxy ใช้ origin เดียวกัน
+
+ตรวจ regression ด้วย `php backend/vendor/phpunit/phpunit/phpunit -c backend/phpunit.xml`, `npm --prefix frontend run test:security` และ `powershell -NoProfile -ExecutionPolicy Bypass -File backend/tests/integration/run-security-tests.ps1` (ชุด HTTP ใช้ MariaDB ทดสอบแยกพอร์ต 33307 และ PHP พอร์ต 18099 และล้าง fixture หลังทดสอบ) อย่ารัน `database.sql` ซ้ำบนฐานข้อมูลใช้งานจริง

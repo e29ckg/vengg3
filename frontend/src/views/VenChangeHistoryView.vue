@@ -141,7 +141,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '../services/api'
-import Swal from 'sweetalert2'
+import Swal from '../services/alerts'
 import { exportShiftChangeToWord } from '../services/wordService'
 
 const historyList = ref([])

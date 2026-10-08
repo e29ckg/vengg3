@@ -100,6 +100,7 @@ class SettingModel {
 
     // เพิ่มข้อมูลใหม่
     public function create($table, $name) {
+        if (!in_array($table, ['ven_name','ven_name_sub','sign_name','agency_config'], true)) return false;
         $query = "INSERT INTO `$table` (name) VALUES (:name)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':name', $name);
@@ -108,6 +109,7 @@ class SettingModel {
 
     // แก้ไขข้อมูล
     public function update($table, $id, $name) {
+        if (!in_array($table, ['ven_name','ven_name_sub','sign_name','agency_config'], true)) return false;
         $query = "UPDATE `$table` SET name = :name WHERE id = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':name', $name);
@@ -117,6 +119,7 @@ class SettingModel {
 
     // ลบข้อมูล (ปรับปรุงให้รองรับ Soft Delete ถ้าเป็นตารางเวร)
     public function delete($table, $id) {
+        if (!in_array($table, ['ven_name','ven_name_sub','sign_name','agency_config'], true)) return false;
         if ($table === 'ven_name' || $table === 'ven_name_sub') {
             $query = "UPDATE `$table` SET status = 0 WHERE id = :id";
         } else {
@@ -160,6 +163,7 @@ class SettingModel {
     // ==========================================
 
     public function deleteTable($table, $id) {
+        if (!in_array($table, ['ven_name','ven_name_sub','sign_name','agency_config'], true)) return false;
         try {
             $this->conn->beginTransaction();
 
@@ -585,24 +589,34 @@ class SettingModel {
     }
 
     public function updateTelegramSettings($data) {
+        if (!is_array($data) || !is_string($data['chat_id'] ?? null) || strlen($data['chat_id']) > 100 ||
+            !is_string($data['bot_token'] ?? '') || strlen($data['bot_token'] ?? '') > 255 ||
+            !is_bool($data['clear_bot_token'] ?? false) ||
+            (($data['clear_bot_token'] ?? false) && ($data['bot_token'] ?? '') !== '')) return false;
         try {
             $this->conn->beginTransaction();
             
             $sql = "UPDATE telegram_settings SET 
-                        bot_token = :bot_token, 
                         chat_id = :chat_id, 
                         notify_confirmed = :notify_confirmed, 
                         notify_change_request = :notify_change_request, 
                         notify_approval = :notify_approval 
-                    WHERE id = 1";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([
-                ':bot_token' => $data['bot_token'],
+                    ";
+            $params = [
                 ':chat_id' => $data['chat_id'],
-                ':notify_confirmed' => $data['notify_confirmed'] ? 1 : 0,
-                ':notify_change_request' => $data['notify_change_request'] ? 1 : 0,
-                ':notify_approval' => $data['notify_approval'] ? 1 : 0
-            ]);
+                ':notify_confirmed' => !empty($data['notify_confirmed']) ? 1 : 0,
+                ':notify_change_request' => !empty($data['notify_change_request']) ? 1 : 0,
+                ':notify_approval' => !empty($data['notify_approval']) ? 1 : 0
+            ];
+            if ($data['clear_bot_token'] ?? false) {
+                $sql .= ", bot_token = ''";
+            } elseif (($data['bot_token'] ?? '') !== '') {
+                $sql .= ', bot_token = :bot_token';
+                $params[':bot_token'] = $data['bot_token'];
+            }
+            $sql .= ' WHERE id = 1';
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($params);
 
             $this->conn->prepare("DELETE FROM telegram_notify_times")->execute();
             if (!empty($data['notify_times'])) {
@@ -652,8 +666,17 @@ class SettingModel {
         ];
 
         // ตรวจสอบว่า key ที่ส่งมาอยู่ในรายชื่อที่อนุญาตหรือไม่
-        if (!in_array($key, $allowedKeys)) {
+        if (!in_array($key, $allowedKeys, true)) {
             return false; 
+        }
+        if ($key === 'system_name') {
+            if (!is_string($value) || trim($value) === '' || preg_match_all('/./us', $value) > 255) return false;
+        } elseif ($key === 'advance_swap_days') {
+            $value = filter_var($value, FILTER_VALIDATE_INT);
+            if ($value === false || $value < 0 || $value > 365) return false;
+        } else {
+            if (!in_array($value, [true,false,0,1,'0','1'], true)) return false;
+            $value = (int)$value;
         }
 
         // หากผ่านการตรวจสอบแล้ว ให้อัปเดตข้อมูล
@@ -661,6 +684,22 @@ class SettingModel {
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':val', $value);
         return $stmt->execute();
+    }
+    public function updateSystemSettings($data): bool {
+        if (!is_array($data)) return false;
+        $allowed = ['system_name','allow_swap','allow_retroactive_swap','check_24h_consecutive','maintenance_mode','compact_schedule_view','advance_swap_days'];
+        $values = array_intersect_key($data, array_flip($allowed));
+        if (!$values) return false;
+        $this->conn->beginTransaction();
+        try {
+            foreach ($values as $key => $value) {
+                if (!$this->updateSystemSetting($key, $value)) { $this->conn->rollBack(); return false; }
+            }
+            $this->conn->commit(); return true;
+        } catch (Throwable $error) {
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
+            throw $error;
+        }
     }
 
     // ==========================================

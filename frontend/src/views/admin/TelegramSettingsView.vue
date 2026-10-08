@@ -23,14 +23,16 @@
                       :type="showToken ? 'text' : 'password'" 
                       class="form-control border-start-0 border-end-0 bg-light fw-bold" 
                       v-model="settings.bot_token" 
-                      placeholder="เช่น 123456:ABC-DEF..."
-                      required
+                      :placeholder="hasBotToken ? 'มี Token แล้ว — เว้นว่างเพื่อใช้ค่าเดิม' : 'เช่น 123456:ABC-DEF...'"
+                      :required="!hasBotToken"
+                      autocomplete="off"
                     >
                     <button class="btn btn-light border border-start-0 text-secondary" type="button" @click="showToken = !showToken" tabindex="-1">
                       <i class="bi" :class="showToken ? 'bi-eye-slash text-danger' : 'bi-eye'"></i>
                     </button>
                   </div>
                   <div class="form-text mt-2 small">ได้จาก @BotFather ในแอป Telegram</div>
+                  <button v-if="hasBotToken" type="button" class="btn btn-sm btn-outline-danger mt-2" @click="clearBotToken">ล้าง Token ที่บันทึก</button>
                 </div>
 
                 <div class="mb-2">
@@ -165,7 +167,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '../../services/api' // ตรวจสอบ path ให้ตรงกับโปรเจกต์ของคุณ
-import Swal from 'sweetalert2'
+import Swal from '../../services/alerts'
 
 const loading = ref(false)
 const settings = ref({
@@ -178,6 +180,7 @@ const settings = ref({
 
 const notifyTimes = ref([])
 const showToken = ref(false)
+const hasBotToken = ref(false)
 
 // 🌟 ดึงข้อมูลการตั้งค่าเดิมจาก DB
 const fetchSettings = async () => {
@@ -185,12 +188,13 @@ const fetchSettings = async () => {
     const res = await api.get('?route=admin/telegram_settings')
     if (res.data) {
       settings.value = {
-        bot_token: res.data.bot_token || '',
+        bot_token: '',
         chat_id: res.data.chat_id || '',
         notify_confirmed: res.data.notify_confirmed ?? true,
         notify_change_request: res.data.notify_change_request ?? true,
         notify_approval: res.data.notify_approval ?? true,
       }
+      hasBotToken.value = res.data.has_bot_token === true
       
       if (res.data.notify_times) {
         notifyTimes.value = res.data.notify_times.map(t => ({
@@ -213,6 +217,8 @@ const saveSettings = async () => {
       ...settings.value,
       notify_times: notifyTimes.value
     });
+    if (settings.value.bot_token) hasBotToken.value = true
+    settings.value.bot_token = ''
     Swal.fire('สำเร็จ', 'บันทึกการตั้งค่าเรียบร้อยแล้ว', 'success')
   } catch (err) {
     Swal.fire('ผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error')
@@ -226,6 +232,7 @@ const autoSaveSettings = async () => {
   try {
     await api.post('?route=admin/telegram_settings/update', {
       ...settings.value,
+      bot_token: '',
       notify_times: notifyTimes.value
     });
     
@@ -241,6 +248,22 @@ const autoSaveSettings = async () => {
     
   } catch (err) {
     Swal.fire('ผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error')
+  }
+}
+
+const clearBotToken = async () => {
+  const result = await Swal.fire({title: 'ล้าง Telegram Token?', text: 'ระบบจะหยุดส่งการแจ้งเตือนจนกว่าจะบันทึก Token ใหม่', icon: 'warning', showCancelButton: true, confirmButtonText: 'ล้าง Token', cancelButtonText: 'ยกเลิก'})
+  if (!result.isConfirmed) return
+  loading.value = true
+  try {
+    await api.post('?route=admin/telegram_settings/update', {...settings.value, bot_token: '', clear_bot_token: true, notify_times: notifyTimes.value})
+    settings.value.bot_token = ''
+    hasBotToken.value = false
+    Swal.fire('สำเร็จ', 'ล้าง Token ที่บันทึกแล้ว', 'success')
+  } catch (err) {
+    Swal.fire('ผิดพลาด', 'ไม่สามารถล้าง Token ได้', 'error')
+  } finally {
+    loading.value = false
   }
 }
 

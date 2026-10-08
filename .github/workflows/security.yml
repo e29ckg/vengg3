@@ -1,0 +1,37 @@
+name: Security and build
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  php:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2', '8.4']
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: shivammathur/setup-php@d52fc211a0436f8839a587b3b5b8efddab4744ea # v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_sqlite, zip, curl, mbstring, dom, openssl
+          coverage: none
+      - run: composer install --working-dir=backend --no-interaction --prefer-dist --no-progress
+      - run: composer audit --working-dir=backend --locked
+      - run: find backend/src backend/public backend/bin backend/cron deploy -name '*.php' -print0 | xargs -0 -n1 php -l
+      - run: php backend/vendor/phpunit/phpunit/phpunit -c backend/phpunit.xml
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix frontend
+      - run: npm audit --prefix frontend --audit-level=moderate
+      - run: npm run --prefix frontend test:security
+      - run: npm run --prefix frontend build -- --base=/vengg3/
+        env:
+          VITE_API_BASE_URL: /vengg3/api/

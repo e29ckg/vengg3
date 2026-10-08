@@ -52,7 +52,10 @@ class TelegramService {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // ป้องกันปัญหา SSL บน Localhost
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
         
         $response = curl_exec($ch);
         $error = curl_error($ch);
@@ -60,7 +63,7 @@ class TelegramService {
         curl_close($ch);
 
         if ($error || $httpCode != 200) {
-            error_log("Telegram Send Error: " . $error . " - Response: " . $response);
+            error_log("Telegram request failed; HTTP status: " . $httpCode);
             return false;
         }
         

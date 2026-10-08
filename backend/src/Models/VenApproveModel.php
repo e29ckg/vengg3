@@ -31,43 +31,50 @@ class VenApproveModel {
 
     // 🌟 2. อัปเดตสถานะการอนุมัติ (ใช้ Transaction ป้องกันข้อผิดพลาด)
     public function forceUpdateStatus($change_id, $status) {
+        if (!in_array((string)$status, ['0','1'], true)) return ['success'=>false,'error'=>'สถานะไม่ถูกต้อง','code'=>400];
         try {
-            // เริ่มการทำงานแบบ Transaction (ถ้า Error จะย้อนกลับข้อมูลทั้งหมด ไม่บันทึกครึ่งๆ กลางๆ)
             $this->conn->beginTransaction();
-
-            // ดึงข้อมูลใบคำขอ
-            $stmt = $this->conn->prepare("SELECT * FROM ven_change WHERE id = ?");
-            $stmt->execute([$change_id]);
-            $changeReq = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$changeReq) {
-                $this->conn->rollBack();
-                return ['success' => false, 'error' => 'ไม่พบข้อมูลใบคำขอนี้', 'code' => 404];
+            $request = $this->conn->prepare('SELECT * FROM ven_change WHERE id = ?');
+            $request->execute([$change_id]);
+            $change = $request->fetch(PDO::FETCH_ASSOC);
+            if (!$change) throw new RuntimeException('ไม่พบคำขอ');
+            $ids = [$change['s1_id']];
+            if ((int)$change['is_swap'] === 1) $ids[] = $change['s2_id'];
+            sort($ids, SORT_NUMERIC);
+            $schedules = [];
+            $query = $this->conn->prepare('SELECT id, user_id, status FROM ven_schedule WHERE id = ? FOR UPDATE');
+            foreach ($ids as $id) {
+                $query->execute([$id]);
+                $schedules[(string)$id] = $query->fetch(PDO::FETCH_ASSOC);
             }
-
-            // อัปเดตตาราง ven_schedule
-            $tableName = "ven_schedule";
-            if ($changeReq['is_swap'] == 1) {
-                $stmt1 = $this->conn->prepare("UPDATE $tableName SET status = ? WHERE id = ?");
-                $stmt1->execute([$status, $changeReq['s1_id']]);
-                $stmt2 = $this->conn->prepare("UPDATE $tableName SET status = ? WHERE id = ?");
-                $stmt2->execute([$status, $changeReq['s2_id']]);
-            } else {
-                $stmt1 = $this->conn->prepare("UPDATE $tableName SET status = ? WHERE id = ?");
-                $stmt1->execute([$status, $changeReq['s1_id']]);
+            $locked = $this->conn->prepare('SELECT * FROM ven_change WHERE id = ? FOR UPDATE');
+            $locked->execute([$change_id]);
+            $current = $locked->fetch(PDO::FETCH_ASSOC);
+            if (!$current || !in_array((int)$current['status'], [0,1], true) || $current['s1_id'] != $change['s1_id'] || $current['s2_id'] != $change['s2_id']) throw new RuntimeException('คำขอเปลี่ยนไปแล้วหรือถูกยกเลิก');
+            $later = $this->conn->prepare('SELECT id FROM ven_change WHERE id > ? AND status IN (0,1) AND (s1_id = ? OR s2_id = ?) LIMIT 1');
+            foreach ($ids as $id) {
+                $schedule = $schedules[(string)$id];
+                $expectedOwner = $id == $change['s1_id'] ? $change['user2_id'] : $change['user1_id'];
+                if (!$schedule || (string)$schedule['user_id'] !== (string)$expectedOwner || !in_array((int)$schedule['status'], [1,2], true)) throw new RuntimeException('ตารางเวรเปลี่ยนไปแล้ว');
+                $later->execute([$change_id,$id,$id]);
+                if ($later->fetchColumn()) throw new RuntimeException('มีคำขอใหม่กว่าในเวรนี้');
             }
-
-            // อัปเดตตาราง ven_change
-            $stmtUpdate = $this->conn->prepare("UPDATE ven_change SET status = ? WHERE id = ?");
-            $stmtUpdate->execute([$status, $change_id]);
-
-            // ยืนยันการบันทึก
+            $update = $this->conn->prepare('UPDATE ven_schedule SET status = ? WHERE id = ?');
+            foreach ($ids as $id) $update->execute([(int)$status === 1 ? 1 : 2,$id]);
+            $this->conn->prepare('UPDATE ven_change SET status = ? WHERE id = ?')->execute([$status,$change_id]);
             $this->conn->commit();
-            return ['success' => true];
-
-        } catch (PDOException $e) {
-            $this->conn->rollBack();
-            return ['success' => false, 'error' => 'Database Error: ' . $e->getMessage(), 'code' => 500];
+            return ['success'=>true];
+        } catch (PDOException $error) {
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
+            error_log('Approval database operation failed');
+            return ['success'=>false,'error'=>'ไม่สามารถอัปเดตการอนุมัติได้','code'=>500];
+        } catch (RuntimeException $error) {
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
+            return ['success'=>false,'error'=>'ไม่สามารถเปลี่ยนสถานะคำขอที่ตารางเวรเปลี่ยนไปหรือถูกยกเลิกแล้ว','code'=>409];
+        } catch (Throwable $error) {
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
+            error_log('Approval update failed');
+            return ['success'=>false,'error'=>'ไม่สามารถอัปเดตการอนุมัติได้','code'=>500];
         }
     }
 }

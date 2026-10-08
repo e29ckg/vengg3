@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/GoogleCredentialValidator.php';
 class GoogleCalendarService {
     private $connection;
     private $baseDir;
@@ -75,7 +76,7 @@ class GoogleCalendarService {
         // 5. เชื่อมต่อ Google API และสั่งอัปเดตข้อมูล
         require_once $this->baseDir . '/../../vendor/autoload.php';
         $client = new Google_Client();
-        $client->setAuthConfig($keyFilePath);
+        $client->setAuthConfig(GoogleCredentialValidator::validate(file_get_contents($keyFilePath)));
         $client->addScope(Google_Service_Calendar::CALENDAR_EVENTS);
         $service = new Google_Service_Calendar($client);
 

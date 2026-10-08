@@ -1,6 +1,7 @@
 param([Parameter(Mandatory=$true)][string]$ProjectRoot, [Parameter(Mandatory=$true)][ValidatePattern('^[a-f0-9]{40}$')][string]$ExpectedCommit)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$env:GIT_TERMINAL_PROMPT = '0'
 $root = [IO.Path]::GetFullPath($ProjectRoot).TrimEnd('\')
 $repository = 'https://github.com/e29ckg/vengg3.git'
 $tempRoot = [IO.Path]::GetFullPath((Join-Path (Split-Path (Split-Path $root -Parent) -Parent) 'tmp')).TrimEnd('\') + '\'
@@ -14,7 +15,7 @@ function Git-Run([string[]]$arguments) {
     $previousErrorAction = $ErrorActionPreference
     try {
         $ErrorActionPreference = 'Continue'
-        $output = & git.exe -C $root @arguments 2>$null
+        $output = & git.exe -c http.sslVerify=true -c http.followRedirects=false -C $root @arguments 2>$null
         $code = $LASTEXITCODE
     } finally { $ErrorActionPreference = $previousErrorAction }
     if ($code -ne 0) { throw 'Git command failed; check GitHub connectivity and repository state.' }
@@ -31,6 +32,8 @@ try {
     Git-Run -arguments @('fetch','--no-tags',$repository,'refs/heads/main') | Out-Null
     $latest = Git-Run -arguments @('rev-parse','FETCH_HEAD')
     if ($latest -ne $ExpectedCommit) { throw 'GitHub main changed; check the version again.' }
+    $runtimeChanges = Git-Run -arguments @('diff','--name-only',$previous,$latest,'--','backend/src/config/database.local.php','backend/src/Config/credentials.json','backend/storage','backend/public/uploads/avatars',':(glob)backend/src/Config/credential-*',':(glob)backend/src/config/db-setup-*')
+    if ($runtimeChanges -ne '') { throw 'Release touches runtime credentials or uploads; update cancelled.' }
     & git.exe -C $root merge-base --is-ancestor $previous $latest
     if ($LASTEXITCODE -ne 0) { throw 'History diverged; an automatic fast-forward update is not possible.' }
     New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null

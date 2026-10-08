@@ -108,11 +108,11 @@
             </div>
             <div class="col-md-6">
               <label class="form-label text-muted small">รหัสผ่านใหม่</label>
-              <input type="password" class="form-control" v-model="pwd.new_password" required minlength="6">
+              <input type="password" class="form-control" v-model="pwd.new_password" required minlength="12" maxlength="72">
             </div>
             <div class="col-md-6">
               <label class="form-label text-muted small">ยืนยันรหัสผ่านใหม่</label>
-              <input type="password" class="form-control" v-model="pwd.confirm_password" required minlength="6">
+              <input type="password" class="form-control" v-model="pwd.confirm_password" required minlength="12" maxlength="72">
             </div>
             <div class="col-12 mt-3 text-end">
               <button type="submit" class="btn btn-danger px-4">
@@ -128,8 +128,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '../services/api'
-import Swal from 'sweetalert2'
+import Swal from '../services/alerts'
 
 const profile = ref({
   prefix_name: '',
@@ -141,6 +142,7 @@ const profile = ref({
   bank_account: '',   // เพิ่มใหม่
   bank_comment: ''       
 })
+const router = useRouter()
 
 const pwd = ref({
   old_password: '',
@@ -203,7 +205,9 @@ const changePassword = async () => {
       new_password: pwd.value.new_password
     })
     
-    Swal.fire('สำเร็จ', 'รหัสผ่านถูกเปลี่ยนเรียบร้อยแล้ว', 'success')
+    await Swal.fire('สำเร็จ', 'เปลี่ยนรหัสผ่านแล้ว กรุณาเข้าสู่ระบบใหม่', 'success')
+    localStorage.clear()
+    router.push('/login')
     pwd.value = { old_password: '', new_password: '', confirm_password: '' } // เคลียร์ฟอร์ม
   } catch (error) {
     const msg = error.response?.data?.error || 'เกิดข้อผิดพลาด'

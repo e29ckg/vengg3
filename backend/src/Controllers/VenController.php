@@ -1,7 +1,7 @@
 <?php
 // backend/src/Controllers/VenController.php
 
-require_once '../src/Models/Ven.php';
+require_once __DIR__ . '/../Models/Ven.php';
 
 class VenController {
     private $db;

@@ -1,8 +1,9 @@
 <?php
 // backend/src/Controllers/AuthController.php
 
-require_once '../src/Models/User.php';
-require_once '../src/Middleware/AuthMiddleware.php';
+require_once __DIR__ . '/../Models/User.php';
+require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
+require_once __DIR__ . '/../Services/LoginRateLimiter.php';
 require_once __DIR__ . '/../Models/LogModel.php'; // นำเข้า LogModel ไว้ด้านบน
 
 class AuthController {
@@ -18,11 +19,19 @@ class AuthController {
         $data = json_decode(file_get_contents("php://input"));
 
         // ตรวจสอบว่าส่ง username และ password มาหรือไม่
-        if (!empty($data->username) && !empty($data->password)) {
+        if (is_string($data->username ?? null) && is_string($data->password ?? null) && strlen($data->username) <= 128 && strlen($data->password) <= 72 && $data->username !== '' && $data->password !== '') {
+            $limiter = new LoginRateLimiter(getenv('LOGIN_RATE_DIR') ?: dirname(__DIR__, 2) . '/storage/security');
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
             $userModel = new User($this->db);
+            $bucket = $userModel->loginThrottleKey($data->username);
+            if (!$limiter->attempt($ip, $bucket)) {
+                http_response_code(429); header('Retry-After: 900');
+                echo json_encode(['error' => 'ลองเข้าสู่ระบบหลายครั้งเกินไป กรุณารอแล้วลองใหม่']); return;
+            }
             $result = $userModel->login($data->username, $data->password);
 
             if ($result['success']) {
+                $limiter->succeeded($ip, $bucket);
                 $user = $result['user'];
                 // 🌟 เช็คสถานะระบบก่อนให้เข้าใช้งาน
                 $stmt = $this->db->prepare("SELECT maintenance_mode FROM system_settings WHERE id = 1");

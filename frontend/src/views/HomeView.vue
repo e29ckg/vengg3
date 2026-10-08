@@ -275,7 +275,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { exportShiftChangeToWord, exportDutyReportToWord } from '../services/wordService';
-import Swal from 'sweetalert2'
+import Swal from '../services/alerts'
 import { Modal } from 'bootstrap'
 import api from '../services/api'
 

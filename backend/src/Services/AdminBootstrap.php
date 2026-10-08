@@ -1,13 +1,14 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__ . '/SessionSecurity.php';
 
 function bootstrapAdministrator(PDO $db, string $password, string $username = 'admin'): bool
 {
     if ((int)$db->query('SELECT COUNT(*) FROM user WHERE role = 9')->fetchColumn() > 0) {
         return false;
     }
-    if (strlen($password) < 12 || strlen($password) > 4096) {
-        throw new RuntimeException('ตั้งรหัสผ่าน admin อย่างน้อย 12 ตัวอักษร');
+    if (!SessionSecurity::passwordAllowed($password)) {
+        throw new RuntimeException('รหัสผ่าน admin ต้องอยู่ระหว่าง 12-72 bytes');
     }
     $existing = $db->prepare('SELECT COUNT(*) FROM user WHERE username = ?');
     $existing->execute([$username]);

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:security": "node --test tests/security.test.mjs"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.20",
@@ -14,18 +15,20 @@
     "@fullcalendar/interaction": "^6.1.20",
     "@fullcalendar/vue3": "^6.1.20",
     "@popperjs/core": "^2.11.8",
-    "axios": "^1.15.2",
+    "axios": "^1.20.0",
     "bootstrap": "^5.3.8",
     "docxtemplater": "^3.68.6",
+    "dompurify": "^3.4.16",
     "file-saver": "^2.0.5",
     "pizzip": "^3.2.0",
     "sweetalert2": "^11.26.24",
-    "vue": "^3.5.32",
+    "vue": "^3.5.43",
     "vue-router": "^4.6.4",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.6",
-    "vite": "^8.0.10"
+    "jsdom": "^29.1.1",
+    "vite": "^8.3.4"
   }
 }

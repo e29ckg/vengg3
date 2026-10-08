@@ -2,6 +2,14 @@
 // backend/src/Models/LogModel.php
 
 class LogModel {
+    private static function redact($data) {
+        if (!is_array($data)) return $data;
+        foreach ($data as $key => &$value) {
+            if (preg_match('/password|private[_-]?key|auth[_-]?key|token|secret|bank[_-]?(?:account|comment)|phone|id[_-]?card|credential|authorization|api[_-]?key/i', (string)$key)) $value = '[REDACTED]';
+            elseif (is_array($value)) $value = self::redact($value);
+        }
+        return $data;
+    }
     private $conn;
 
     public function __construct($db) {
@@ -58,8 +66,8 @@ class LogModel {
         $stmt = $this->conn->prepare($query);
 
         // แปลง Array เป็น JSON ก่อนบันทึก (รองรับภาษาไทยไม่ให้เป็นตัวยึกยือ)
-        $oldDataJson = $oldData ? json_encode($oldData, JSON_UNESCAPED_UNICODE) : null;
-        $newDataJson = $newData ? json_encode($newData, JSON_UNESCAPED_UNICODE) : null;
+        $oldDataJson = $oldData ? json_encode(self::redact($oldData), JSON_UNESCAPED_UNICODE) : null;
+        $newDataJson = $newData ? json_encode(self::redact($newData), JSON_UNESCAPED_UNICODE) : null;
 
         $stmt->bindParam(':user_id', $userId);
         $stmt->bindParam(':action', $action);

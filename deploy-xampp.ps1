@@ -71,7 +71,7 @@ try {
     if (!$node -or !$npm -or !$composer) { throw 'Node.js, npm.cmd and Composer must be installed and available in PATH.' }
     $nodeVersion = (& $node.Source --version).TrimStart('v')
     Assert-Exit 'Node.js version check'
-    if ([version]$nodeVersion -lt [version]'22.0.0') { throw "Node.js 22 or newer is required; found $nodeVersion." }
+    if ([version]$nodeVersion -lt [version]'22.13.0') { throw "Node.js 22.13 or newer is required; found $nodeVersion." }
 
     Update-Step 'Checking Apache and its listening port'
     $conf = Get-Content -LiteralPath $httpdConf
@@ -146,6 +146,9 @@ try {
             Copy-TextIfChanged (Join-Path $projectRoot "backend\$file") (Join-Path $target "backend\$file")
         }
         Copy-TextIfChanged (Join-Path $projectRoot 'backend\src\.htaccess') (Join-Path $target 'backend\src\.htaccess')
+        Copy-TextIfChanged (Join-Path $projectRoot 'backend\public\.htaccess') (Join-Path $target 'backend\public\.htaccess')
+        New-Item -ItemType Directory -Force -Path (Join-Path $target 'backend\public\uploads') | Out-Null
+        Copy-TextIfChanged (Join-Path $projectRoot 'backend\public\uploads\.htaccess') (Join-Path $target 'backend\public\uploads\.htaccess')
         if (!(Test-Path -LiteralPath $targetConfig)) {
             Copy-Item -LiteralPath $sourceConfig -Destination $targetConfig
         }

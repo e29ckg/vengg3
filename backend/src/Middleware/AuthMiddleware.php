@@ -30,7 +30,7 @@ class AuthMiddleware {
 
         // 3. ตรวจสอบรูปแบบว่าต้องขึ้นต้นด้วยคำว่า 'Bearer '
         $token = null;
-        if (preg_match('/Bearer\s(\S+)/', $headers, $matches)) {
+        if (preg_match('/\ABearer\s+(\S+)\z/', $headers, $matches)) {
             $token = $matches[1];
         }
 

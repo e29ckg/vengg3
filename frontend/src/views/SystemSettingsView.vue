@@ -64,7 +64,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
-import Swal from 'sweetalert2';
+import Swal from '../services/alerts';
 
 const router = useRouter();
 const isLoading = ref(true);

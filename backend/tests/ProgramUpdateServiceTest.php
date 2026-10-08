@@ -8,7 +8,7 @@ final class ProgramUpdateServiceTest extends TestCase
     {
         $root = 'C:/xampp/htdocs/vengg3';
         return new ProgramUpdateService($root, static function (array $command) use ($root, $branch, $dirty, $remote): string {
-            $arguments = array_slice($command, 3);
+            $arguments = array_slice($command, 7);
             if ($arguments === ['rev-parse', '--show-toplevel']) return $root;
             if ($arguments === ['branch', '--show-current']) return $branch;
             if ($arguments === ['rev-parse', 'HEAD']) return str_repeat('a', 40);

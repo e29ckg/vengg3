@@ -52,9 +52,37 @@ final class DocumentTemplateServiceTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->service->validate($path, 'macro.docx');
     }
+    public function testCompressedOversizedXmlIsRejectedBeforeInflation(): void
+    {
+        $path=$this->directory . '/oversized.docx';
+        copy($this->source,$path);
+        $zip=new ZipArchive(); $zip->open($path);
+        $zip->addFromString('word/document.xml',str_repeat('A',20971521));
+        $zip->close();
+        self::assertLessThan(2097152,filesize($path));
+        $this->expectException(RuntimeException::class);
+        $this->service->validate($path,'oversized.docx');
+    }
     public function testInvalidScopeCannotChooseArbitraryPaths(): void
     {
         $this->expectException(RuntimeException::class);
         $this->service->resolve('../config/database.local.php', 0);
+    }
+    public function testExternalRelationshipsAreRejected(): void
+    {
+        $path=$this->directory.'/external.docx';copy($this->source,$path);
+        $zip=new ZipArchive();$zip->open($path);
+        $zip->addFromString('word/_rels/evil.xml.rels','<Relationships><Relationship TargetMode="External" Target="file://attacker/share" /></Relationships>');$zip->close();
+        $this->expectException(RuntimeException::class);
+        $this->service->validate($path,'external.docx');
+    }
+    public function testUnsafeLegacyFileCanBeResetButNotServed(): void
+    {
+        file_put_contents($this->directory.'/duty-1.docx','unsafe legacy file');
+        self::assertFalse($this->service->metadata('duty',1)['valid']);
+        try { $this->service->resolve('duty',1); self::fail('Unsafe legacy file served'); }
+        catch (RuntimeException $error) { self::assertTrue(true); }
+        $this->service->reset('duty',1);
+        self::assertTrue($this->service->metadata('duty',1)['valid']);
     }
 }

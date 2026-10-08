@@ -1,16 +1,8 @@
 <?php
 // backend/public/index.php
 
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Max-Age: 3600");
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
+require_once __DIR__ . '/../src/Middleware/ApiSecurity.php';
+ApiSecurity::bootstrap();
 
 require_once __DIR__ . '/../src/config/database.php';
 require_once __DIR__ . '/../src/Controllers/VenController.php';
@@ -43,21 +35,28 @@ require_once __DIR__ . '/../src/Controllers/LogController.php';
 require_once __DIR__ . '/../src/Middleware/AuthMiddleware.php';
 
 
-$route = isset($_GET['route']) ? $_GET['route'] : '';
+$route = is_string($_GET['route'] ?? null) ? $_GET['route'] : '';
+ApiSecurity::enforceMethod($route);
 
 $db = new Database();
 $connection = $db->getConnection();
 
 // --- ระบบ Routing ---
 switch ($route) {
+    case 'auth/logout':
+        $user = AuthMiddleware::checkToken($connection);
+        (new User($connection))->revokeSession($user['id']);
+        echo json_encode(['success' => true]);
+        break;
     case 'admin/templates/list':
     case 'admin/templates/upload':
+    case 'admin/templates/validate':
     case 'admin/templates/reset':
     case 'documents/template':
         if ($route === 'documents/template') AuthMiddleware::checkToken($connection);
         else AuthMiddleware::checkAdmin($connection);
-        $action = ['admin/templates/list' => 'list', 'admin/templates/upload' => 'upload', 'admin/templates/reset' => 'reset', 'documents/template' => 'download'][$route];
-        $method = ['list' => 'GET', 'upload' => 'POST', 'reset' => 'DELETE', 'download' => 'GET'][$action];
+        $action = ['admin/templates/list' => 'list', 'admin/templates/upload' => 'upload', 'admin/templates/validate' => 'validate', 'admin/templates/reset' => 'reset', 'documents/template' => 'download'][$route];
+        $method = ['list' => 'GET', 'upload' => 'POST', 'validate' => 'POST', 'reset' => 'DELETE', 'download' => 'GET'][$action];
         if ($_SERVER['REQUEST_METHOD'] !== $method) {
             http_response_code(405);
             echo json_encode(['error' => 'Method not allowed']);
@@ -136,25 +135,17 @@ switch ($route) {
         $userId = is_array($userData) ? $userData['id'] : $userData->id;
         $data = json_decode(file_get_contents("php://input"), true);
 
-        // 1. ดึงรหัสเดิมมาเช็ค
-        $stmt = $connection->prepare("SELECT password_hash FROM user WHERE id = ?");
-        $stmt->execute([$userId]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($user && password_verify($data['old_password'], $user['password_hash'])) {
-            $newHash = password_hash($data['new_password'], PASSWORD_DEFAULT);
-            $stmtUpdate = $connection->prepare("UPDATE user SET password_hash = ? WHERE id = ?");
-            $stmtUpdate->execute([$newHash, $userId]);
+        if ((new User($connection))->changePassword($userId, $data['old_password'] ?? null, $data['new_password'] ?? null)) {
             
             echo json_encode(["success" => true, "message" => "Password changed"]);
         } else {
             http_response_code(400);
-            echo json_encode(["error" => "รหัสผ่านปัจจุบันไม่ถูกต้อง"]);
+            echo json_encode(["error" => "รหัสผ่านปัจจุบันไม่ถูกต้อง หรือรหัสใหม่ไม่อยู่ระหว่าง 12-72 bytes"]);
         }
         break;
 
     case 'admin/user/list':
-        AuthMiddleware::checkDirector($connection);        
+        AuthMiddleware::checkAdmin($connection);
         $controller = new UserController(new User($connection));
         $controller->listUsers();
         break;
@@ -293,7 +284,12 @@ switch ($route) {
 
     case 'ven/list':
         $currentUser = AuthMiddleware::checkToken($connection);
-        $month = isset($_GET['month']) ? $_GET['month'] : null;        
+        $month = $_GET['monthYear'] ?? $_GET['month'] ?? null;
+        if (!is_string($month) || !preg_match('/\A(?:19|20)[0-9]{2}-(?:0[1-9]|1[0-2])\z/', $month)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid month. Use YYYY-MM.']);
+            break;
+        }
         $controller = new VenController($connection);
         $controller->getList($month);
         break;
@@ -488,7 +484,7 @@ switch ($route) {
     case 'users/list':
         AuthMiddleware::checkDirector($connection);        
         $controller = new UserController(new User($connection));
-        $controller->listUsers();
+        $controller->listUserDirectory();
         break;
 
     case 'report/personal-schedule':
