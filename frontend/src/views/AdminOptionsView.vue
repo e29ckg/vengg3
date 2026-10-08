@@ -1,133 +1,44 @@
 <template>
-  <div class="container-fluid py-4">
-    <div class="row justify-content-center">
-      <div class="col-md-9 col-lg-6">
-        <div class="card shadow-sm border-0">
-             <div class="card-header bg-dark text-white py-3">
-            <h5 class="mb-0"> <i class="bi bi-card-checklist"></i> จัดการข้อมูลตัวเลือกในระบบ</h5>
-          </div>
-          <div class="card-body p-4">
-              <div class="card shadow-sm border-0">
-                <div class="card-header bg-white pb-0">
-                  <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
-                    <li class="nav-item">
-                      <button class="nav-link active fw-bold" id="prefix-tab" data-bs-toggle="tab" data-bs-target="#prefix" type="button">
-                        คำนำหน้าชื่อ
-                      </button>
-                    </li>
-                    <li class="nav-item">
-                      <button class="nav-link fw-bold" id="position-tab" data-bs-toggle="tab" data-bs-target="#position" type="button">
-                        ตำแหน่ง
-                      </button>
-                    </li>
-                    <li class="nav-item">
-                      <button class="nav-link fw-bold" id="department-tab" data-bs-toggle="tab" data-bs-target="#department" type="button">
-                        กลุ่มงาน
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-
-          </div>
-
-        <div class="tab-content" id="myTabContent">
-          
-          <div class="tab-pane fade show active" id="prefix" role="tabpanel">
-            <div class="d-flex mb-3">
-              <input type="text" class="form-control me-2" v-model="newItems.prefix" placeholder="เพิ่มคำนำหน้าชื่อ เช่น นาย, นางสาว">
-              <button class="btn btn-success px-4" @click="addItem('prefix')">
-                <i class="bi bi-plus-circle"></i> เพิ่ม
-              </button>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th width="80">ลำดับ</th>
-                    <th>คำนำหน้าชื่อ</th>
-                    <th width="120" class="text-center">จัดการ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(item, index) in options.prefixes" :key="index">
-                    <td>{{ index + 1 }}</td>
-                    <td>{{ item }}</td>
-                    <td class="text-center">
-                      <button class="btn btn-sm btn-outline-danger" @click="removeItem('prefix', item)">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="tab-pane fade" id="position" role="tabpanel">
-            <div class="d-flex mb-3">
-              <input type="text" class="form-control me-2" v-model="newItems.position" placeholder="เพิ่มชื่อตำแหน่ง">
-              <button class="btn btn-success px-4" @click="addItem('position')">
-                <i class="bi bi-plus-circle"></i> เพิ่ม
-              </button>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th width="80">ลำดับ</th>
-                    <th>ชื่อตำแหน่ง</th>
-                    <th width="120" class="text-center">จัดการ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(item, index) in options.positions" :key="index">
-                    <td>{{ index + 1 }}</td>
-                    <td>{{ item }}</td>
-                    <td class="text-center">
-                      <button class="btn btn-sm btn-outline-danger" @click="removeItem('position', item)">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="tab-pane fade" id="department" role="tabpanel">
-            <div class="d-flex mb-3">
-              <input type="text" class="form-control me-2" v-model="newItems.department" placeholder="เพิ่มชื่อกลุ่มงาน/ส่วน">
-              <button class="btn btn-success px-4" @click="addItem('department')">
-                <i class="bi bi-plus-circle"></i> เพิ่ม
-              </button>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th width="80">ลำดับ</th>
-                    <th>ชื่อกลุ่มงาน</th>
-                    <th width="120" class="text-center">จัดการ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(item, index) in options.departments" :key="index">
-                    <td>{{ index + 1 }}</td>
-                    <td>{{ item }}</td>
-                    <td class="text-center">
-                      <button class="btn btn-sm btn-outline-danger" @click="removeItem('department', item)">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          
-
-        </div>
+  <div class="container py-4" style="max-width: 900px">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-dark text-white py-3">
+        <h5 class="mb-0"><i class="bi bi-card-checklist me-2"></i>จัดการข้อมูลตัวเลือกในระบบ</h5>
       </div>
-    </div>
+      <div class="card-body p-4">
+        <ul class="nav nav-tabs mb-4" role="tablist" aria-label="ประเภทตัวเลือก">
+          <li v-for="category in categories" :key="category.type" class="nav-item" role="presentation">
+            <button :id="`${category.type}-tab`" type="button" role="tab" class="nav-link fw-bold"
+              :class="{active: activeType === category.type}" :aria-selected="activeType === category.type"
+              aria-controls="options-panel" @click="activeType = category.type">
+              {{ category.label }} <span class="badge bg-secondary ms-1">{{ options[category.key].length }}</span>
+            </button>
+          </li>
+        </ul>
+        <div id="options-panel" role="tabpanel" :aria-labelledby="`${activeType}-tab`">
+          <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+            <h6 class="mb-0">รายการ{{ activeCategory.label }}</h6>
+            <button type="button" class="btn btn-success" :disabled="loading || busy" @click="addItem">
+              <i class="bi bi-plus-circle me-1"></i>เพิ่ม{{ activeCategory.label }}
+            </button>
+          </div>
+          <div v-if="error" class="alert alert-danger d-flex justify-content-between align-items-center gap-2" role="alert">
+            <span>{{ error }}</span>
+            <button type="button" class="btn btn-sm btn-outline-danger text-nowrap" :disabled="loading || busy" @click="fetchOptions">ลองอีกครั้ง</button>
+          </div>
+          <div v-if="loading" class="text-center text-muted py-4" role="status">กำลังโหลดข้อมูล...</div>
+          <div v-else class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light"><tr><th style="width: 80px">ลำดับ</th><th>{{ activeCategory.label }}</th><th style="width: 100px" class="text-center">จัดการ</th></tr></thead>
+              <tbody>
+                <tr v-for="(item, index) in activeItems" :key="item">
+                  <td>{{ index + 1 }}</td><td>{{ item }}</td>
+                  <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger" :disabled="busy"
+                    :aria-label="`ลบ${item}`" @click="removeItem(item)"><i class="bi bi-trash"></i></button></td>
+                </tr>
+                <tr v-if="!activeItems.length && !error"><td colspan="3" class="text-center text-muted py-4">ยังไม่มี{{ activeCategory.label }} กดปุ่มเพิ่มเพื่อเริ่มต้น</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -135,83 +46,77 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import api from '../services/api'
 import Swal from 'sweetalert2'
 
-const options = ref({
-  prefixes: [],
-  positions: [],
-  departments: []
-})
+const categories = [
+  {type: 'prefix', key: 'prefixes', label: 'คำนำหน้าชื่อ', placeholder: 'เช่น นาย, นางสาว'},
+  {type: 'position', key: 'positions', label: 'ตำแหน่ง', placeholder: 'กรอกชื่อตำแหน่ง'},
+  {type: 'department', key: 'departments', label: 'กลุ่มงาน', placeholder: 'กรอกชื่อกลุ่มงาน/ส่วน'}
+]
+const options = ref({prefixes: [], positions: [], departments: []})
+const activeType = ref('prefix'), loading = ref(false), busy = ref(false), error = ref('')
+const activeCategory = computed(() => categories.find(category => category.type === activeType.value))
+const activeItems = computed(() => options.value[activeCategory.value.key])
 
-const newItems = ref({
-  prefix: '',
-  position: '',
-  department: ''
-})
-
-// ดึงข้อมูลทั้งหมด
-const fetchOptions = async () => {
+async function fetchOptions() {
+  loading.value = true
+  error.value = ''
   try {
-    const res = await api.get('?route=admin/options/get')
-    if (res.data) {
-      options.value.prefixes = res.data.prefixes || []
-      options.value.positions = res.data.positions || []
-      options.value.departments = res.data.departments || []
-    }
-  } catch (error) {
-    console.error("Load error:", error)
-  }
+    const {data} = await api.get('?route=admin/options/get')
+    for (const category of categories) options.value[category.key] = Array.isArray(data?.[category.key]) ? data[category.key] : []
+  } catch (e) {
+    error.value = e.response?.data?.error || 'โหลดข้อมูลไม่สำเร็จ กรุณาลองอีกครั้ง'
+  } finally { loading.value = false }
 }
 
-// เพิ่มข้อมูลใหม่
-const addItem = async (type) => {
-  const value = newItems.value[type].trim()
-  if (!value) return
-
+async function addItem() {
+  if (busy.value || loading.value) return
+  const category = activeCategory.value
+  busy.value = true
   try {
-    await api.post('?route=admin/options/add', { type, value })
-    Swal.fire({ icon: 'success', title: 'เพิ่มข้อมูลแล้ว', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false })
-    newItems.value[type] = '' // เคลียร์ช่องกรอก
-    fetchOptions() // รีโหลดข้อมูล
-  } catch (error) {
-    Swal.fire('ผิดพลาด', 'ไม่สามารถเพิ่มข้อมูลได้', 'error')
-  }
-}
-
-// ลบข้อมูล
-const removeItem = async (type, value) => {
-  const result = await Swal.fire({
-    title: 'ยืนยันการลบ?',
-    text: `ต้องการลบ "${value}" ใช่หรือไม่?`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33',
-    confirmButtonText: 'ใช่, ลบทิ้ง',
-    cancelButtonText: 'ยกเลิก'
-  })
-
-  if (result.isConfirmed) {
-    try {
-      await api.post('?route=admin/options/delete', { type, value })
-      Swal.fire('สำเร็จ', 'ลบข้อมูลเรียบร้อยแล้ว', 'success')
-      fetchOptions()
-    } catch (error) {
-      Swal.fire('ผิดพลาด', 'ไม่สามารถลบได้ (อาจมีการใช้งานข้อมูลนี้อยู่)', 'error')
+    const result = await Swal.fire({
+      title: `เพิ่ม${category.label}`, input: 'text', inputLabel: category.label, inputPlaceholder: category.placeholder,
+      showCancelButton: true, confirmButtonText: 'บันทึก', cancelButtonText: 'ยกเลิก', showLoaderOnConfirm: true,
+      allowOutsideClick: () => !Swal.isLoading(), allowEscapeKey: () => !Swal.isLoading(),
+      preConfirm: async input => {
+        const value = input.trim()
+        if (!value) { Swal.showValidationMessage(`กรุณากรอก${category.label}`); return false }
+        if (options.value[category.key].includes(value)) { Swal.showValidationMessage('มีข้อมูลนี้อยู่แล้วในระบบ'); return false }
+        try {
+          await api.post('?route=admin/options/add', {type: category.type, value})
+          return value
+        } catch (e) { Swal.showValidationMessage(e.response?.data?.error || 'บันทึกไม่สำเร็จ กรุณาลองอีกครั้ง'); return false }
+      }
+    })
+    if (result.isConfirmed) {
+      options.value[category.key].push(result.value)
+      await fetchOptions()
+      await Swal.fire({icon: 'success', title: 'เพิ่มข้อมูลแล้ว', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false})
     }
-  }
+  } finally { busy.value = false }
 }
 
-onMounted(() => fetchOptions())
+async function removeItem(value) {
+  if (busy.value) return
+  const category = activeCategory.value
+  busy.value = true
+  try {
+    const result = await Swal.fire({
+      title: `ลบ${category.label}?`, text: `ต้องการลบ "${value}" ใช่หรือไม่?`, icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'ลบข้อมูล', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#d33', showLoaderOnConfirm: true,
+      allowOutsideClick: () => !Swal.isLoading(), allowEscapeKey: () => !Swal.isLoading(),
+      preConfirm: async () => {
+        try { await api.post('?route=admin/options/delete', {type: category.type, value}); return true }
+        catch (e) { Swal.showValidationMessage(e.response?.data?.error || 'ลบไม่สำเร็จ กรุณาลองอีกครั้ง'); return false }
+      }
+    })
+    if (result.isConfirmed) {
+      options.value[category.key] = options.value[category.key].filter(item => item !== value)
+      await fetchOptions()
+    }
+  } finally { busy.value = false }
+}
+onMounted(fetchOptions)
 </script>
-
-<style scoped>
-.nav-tabs .nav-link {
-  color: #6c757d;
-}
-.nav-tabs .nav-link.active {
-  color: #0d6efd;
-  border-bottom: 3px solid #0d6efd;
-}
-</style>
