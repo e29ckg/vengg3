@@ -49,7 +49,7 @@ const formatThaiDate = (dateString) => {
 
 export const exportShiftChangeToWord = async (changeData, venDetail) => {
     try {
-        const response = await fetch('/templates/shift_change_form.docx');
+        const response = await fetch(`${import.meta.env.BASE_URL}templates/shift_change_form.docx`);
         if (!response.ok) throw new Error('ไม่พบไฟล์ Template');
         
         const content = await response.arrayBuffer();
@@ -157,7 +157,7 @@ export const exportShiftChangeToWord = async (changeData, venDetail) => {
 // 🌟 อัปเดตฟังก์ชันให้รับพารามิเตอร์ dayShifts เพิ่มเข้ามา
 export const exportDutyReportToWord = async (venDetail, dayShifts, venInfo) => {
     try {
-        const response = await fetch('/templates/duty_report_form.docx');
+        const response = await fetch(`${import.meta.env.BASE_URL}templates/duty_report_form.docx`);
         if (!response.ok) throw new Error('ไม่พบไฟล์ Template');
         
         const content = await response.arrayBuffer();

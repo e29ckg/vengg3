@@ -1,0 +1,17 @@
+Options -Indexes
+DirectoryIndex index.html
+RewriteEngine On
+
+# Only generated avatars are public. Never execute uploaded scripts.
+RewriteRule ^api/uploads/avatars/([A-Za-z0-9_-]+\.(?:jpg|jpeg|png|gif|webp))$ backend/public/uploads/avatars/$1 [END,NC]
+RewriteRule ^api/uploads/ - [F,END]
+RewriteRule ^api/?$ backend/public/index.php [END]
+RewriteRule ^api/ - [F,END]
+
+# The checkout also contains PHP source and local database credentials.
+RewriteRule ^(?:backend|frontend|deploy|\.git|\.github)(?:/|$) - [F,END,NC]
+RewriteRule ^(?:database\.sql|docker-compose\.yml|deploy-xampp\.ps1|readme\.md|USER_MANUAL\.md|UserManual\.md|note\.md|run_notify\.bat|\.env(?:\..*)?)$ - [F,END,NC]
+
+RewriteRule ^(?:assets|templates)/ - [END]
+RewriteRule ^(?:favicon\.svg|index\.html)$ - [END]
+RewriteRule ^ index.html [END]
