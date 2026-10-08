@@ -53,7 +53,7 @@ switch ($route) {
     case 'admin/program/status':
     case 'admin/program/update':
         AuthMiddleware::checkAdmin($connection);
-        require_once __DIR__ . '/../Controllers/ProgramUpdateController.php';
+        require_once __DIR__ . '/../src/Controllers/ProgramUpdateController.php';
         $programController = new ProgramUpdateController();
         if ($route === 'admin/program/status' && $_SERVER['REQUEST_METHOD'] === 'GET') {
             $programController->status();
