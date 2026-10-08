@@ -4,7 +4,7 @@ declare(strict_types=1);
 // Called only by the localhost installer after its CSRF and installation lock checks.
 function setupDatabase(array $input, string $projectRoot): void
 {
-    foreach (['mode', 'db_host', 'db_port', 'db_name', 'db_user', 'db_password', 'admin_user', 'admin_password'] as $key) {
+    foreach (['mode', 'db_host', 'db_port', 'db_name', 'db_user', 'db_password', 'admin_user', 'admin_password', 'app_admin_password'] as $key) {
         if (isset($input[$key]) && (!is_scalar($input[$key]) || strlen((string)$input[$key]) > 4096)) {
             throw new RuntimeException('ข้อมูลตั้งค่าฐานข้อมูลไม่ถูกต้อง');
         }
@@ -15,6 +15,10 @@ function setupDatabase(array $input, string $projectRoot): void
     $name = (string)($input['db_name'] ?? '');
     $user = (string)($input['db_user'] ?? '');
     $password = (string)($input['db_password'] ?? '');
+    $administratorPassword = (string)($input['app_admin_password'] ?? '');
+    if ($mode === 'create' && strlen($administratorPassword) < 12) {
+        throw new RuntimeException('ตั้งรหัสผ่านบัญชี admin อย่างน้อย 12 ตัวอักษรก่อนสร้างฐานข้อมูล');
+    }
     if (!in_array($mode, ['create', 'connect'], true) ||
         !in_array($host, ['127.0.0.1', 'localhost'], true) || !$port || $port < 1 || $port > 65535 ||
         !preg_match('/\A[a-zA-Z][a-zA-Z0-9_]{0,63}\z/', $name) ||
@@ -66,6 +70,8 @@ function setupDatabase(array $input, string $projectRoot): void
     try {
         $app = new PDO($dsn . ";dbname=$name", $user, $password, $options);
         $app->query('SELECT 1 FROM user LIMIT 1');
+        require_once $projectRoot . '/backend/src/Services/AdminBootstrap.php';
+        bootstrapAdministrator($app, $administratorPassword);
     } catch (PDOException $error) {
         throw new RuntimeException('บัญชีแอปเชื่อมฐานข้อมูลไม่ได้หรือยังไม่มีตาราง user กรุณาตรวจค่าและโครงสร้างฐานข้อมูล');
     }

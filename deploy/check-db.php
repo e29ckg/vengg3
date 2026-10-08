@@ -1,6 +1,6 @@
 <?php
 // Used by deploy-xampp.ps1. Never print credentials or connection errors.
-if (PHP_SAPI !== 'cli' || $argc !== 2) {
+if (PHP_SAPI !== 'cli' || !in_array($argc, [2, 3], true) || ($argc === 3 && $argv[2] !== '--admin')) {
     exit(2);
 }
 $configPath = $argv[1];
@@ -22,6 +22,9 @@ try {
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
     $pdo->query('SELECT 1 FROM user LIMIT 1');
+    if ($argc === 3 && (int)$pdo->query('SELECT COUNT(*) FROM user WHERE role = 9 AND status = 10')->fetchColumn() === 0) {
+        throw new RuntimeException('No active administrator');
+    }
     fwrite(STDOUT, "Database connection and schema OK\n");
 } catch (Throwable $error) {
     fwrite(STDERR, "Database connection or schema failed; check database.local.php and import database.sql.\n");

@@ -84,5 +84,10 @@ Check 'database' 'MySQL and database schema' 'Start MySQL, check database.local.
     if ($LASTEXITCODE -ne 0) { throw 'Database check failed' }
     'Connection and user table OK'
 }
+Check 'administrator' 'Administrator account' 'Create the initial administrator through database setup.' {
+    & $php (Join-Path $PSScriptRoot 'check-db.php') (Join-Path $projectRoot 'backend\src\config\database.local.php') --admin 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'Administrator unavailable' }
+    'Active administrator found'
+}
 $payload = @{ok=(@($results | Where-Object {$_.status -ne 'passed'}).Count -eq 0); checks=@($results.ToArray())}
 $payload | ConvertTo-Json -Depth 4 -Compress

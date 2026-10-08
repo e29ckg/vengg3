@@ -90,7 +90,7 @@ if ($action === 'database') {
     try {
         require_once __DIR__ . '/deploy/setup-database.php';
         setupDatabase($_POST, __DIR__);
-        echo json_encode(['ok' => true, 'message' => 'บันทึกค่าฐานข้อมูลสำเร็จ กำลังตรวจสอบความพร้อมอีกครั้ง'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['ok' => true, 'message' => 'ตั้งค่าฐานข้อมูลและผู้ดูแลเรียบร้อย กำลังตรวจสอบความพร้อมอีกครั้ง'], JSON_UNESCAPED_UNICODE);
     } catch (RuntimeException $error) {
         http_response_code(400);
         echo json_encode(['ok' => false, 'message' => $error->getMessage()], JSON_UNESCAPED_UNICODE);
@@ -252,6 +252,8 @@ $safeToken = htmlspecialchars($csrfToken, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         <label>บัญชีสำหรับแอป<input name="db_user" value="vengg_app" pattern="[a-zA-Z][a-zA-Z0-9_]{0,31}" required autocomplete="off"></label>
         <label>รหัสผ่านบัญชีแอป (อย่างน้อย 12 ตัวอักษร)<input name="db_password" type="password" minlength="12" required autocomplete="new-password"></label>
       </div>
+      <p><strong>ผู้ดูแลระบบเริ่มต้น: admin</strong> — สิทธิ์สูงสุด (role 9) หากมีผู้ดูแลอยู่แล้ว ระบบจะใช้บัญชีเดิม</p>
+      <label>รหัสผ่าน admin (อย่างน้อย 12 ตัวอักษร)<input name="app_admin_password" type="password" minlength="12" required autocomplete="new-password"></label>
       <div id="database-admin">
         <p>บัญชีผู้ดูแลใช้เฉพาะสร้างฐานข้อมูลและบัญชีแอป รหัสผ่านผู้ดูแลจะไม่ถูกบันทึก</p>
         <div class="form-grid">
@@ -303,6 +305,7 @@ const requirements = {
   override: ['Apache: ใช้ไฟล์ .htaccess', 'ตั้ง AllowOverride All สำหรับ htdocs แล้วเริ่ม Apache ใหม่'],
   db_config: ['ไฟล์ตั้งค่าฐานข้อมูล', 'สร้าง backend/src/config/database.local.php พร้อมค่าการเชื่อมต่อ'],
   database: ['MySQL และโครงสร้างฐานข้อมูล', 'เปิด MySQL ตรวจค่าการเชื่อมต่อ และนำเข้า database.sql'],
+  administrator: ['บัญชีผู้ดูแลสิทธิ์สูงสุด', 'ใช้เมนูสร้าง/ตั้งค่าฐานข้อมูลเพื่อตั้งรหัสผ่านและสร้าง admin เมื่อยังไม่มีผู้ดูแล'],
   installer: ['ตัวติดตั้งพร้อมทำงาน', 'ตรวจ PowerShell, PHP proc_open และสิทธิ์ของบัญชีที่รัน Apache; ดูรายละเอียดการตรวจสอบด้านล่าง']
 };
 function renderChecklist(checks = [], finished = false) {
@@ -324,13 +327,13 @@ function renderChecklist(checks = [], finished = false) {
     title.textContent = label;
     const detail = document.createElement('div');
     detail.className = 'check-detail';
-    const details = {'Complete': 'ไฟล์ครบถ้วน', 'Enabled': 'เปิดใช้งาน', 'Available in PATH': 'เรียกใช้ได้จาก PATH', 'Enabled in httpd.conf': 'เปิดใช้งานใน httpd.conf', 'AllowOverride All configured': 'ตั้งค่า AllowOverride All แล้ว', 'database.local.php found': 'พบไฟล์ database.local.php', 'Connection and user table OK': 'เชื่อมต่อได้และพบตาราง user'};
+    const details = {'Complete': 'ไฟล์ครบถ้วน', 'Enabled': 'เปิดใช้งาน', 'Available in PATH': 'เรียกใช้ได้จาก PATH', 'Enabled in httpd.conf': 'เปิดใช้งานใน httpd.conf', 'AllowOverride All configured': 'ตั้งค่า AllowOverride All แล้ว', 'database.local.php found': 'พบไฟล์ database.local.php', 'Connection and user table OK': 'เชื่อมต่อได้และพบตาราง user', 'Active administrator found': 'พบผู้ดูแลที่เปิดใช้งานแล้ว'};
     detail.textContent = state === 'failed' ? hint : state === 'passed' ? (details[check.detail] || check.detail || 'พร้อมใช้งาน') : state === 'unavailable' ? 'ตัวตรวจสอบไม่ส่งผลรายการนี้ กรุณาตรวจสอบอีกครั้ง' : 'กำลังตรวจสอบ';
     const badge = document.createElement('span');
     badge.className = `check-badge ${state === 'passed' ? 'ok' : state === 'failed' ? 'error' : 'subtle'}`;
     badge.textContent = state === 'passed' ? 'ผ่าน' : state === 'failed' ? 'ไม่ผ่าน' : state === 'unavailable' ? 'ยังไม่ได้ตรวจ' : 'รอผล';
     content.append(title, detail);
-    if (state === 'failed' && (id === 'db_config' || id === 'database')) {
+    if (state === 'failed' && ['db_config', 'database', 'administrator'].includes(id)) {
       const action = document.createElement('button');
       action.type = 'button';
       action.className = 'db-action';
@@ -446,6 +449,7 @@ installButton.addEventListener('click', install);
 const databaseForm = document.getElementById('database-form');
 const databaseMode = document.getElementById('database-mode');
 databaseMode.addEventListener('change', () => {
+  databaseForm.elements.app_admin_password.required = databaseMode.value === 'create';
   document.getElementById('database-admin').hidden = databaseMode.value !== 'create';
   document.getElementById('database-submit').textContent = databaseMode.value === 'create' ? 'สร้างและบันทึก' : 'ตรวจสอบและบันทึก';
 });
