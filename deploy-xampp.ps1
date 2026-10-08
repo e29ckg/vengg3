@@ -27,10 +27,18 @@ function Assert-Exit([string]$name) {
 
 function Copy-Tree([string]$from, [string]$to, [string[]]$excludeDirs = @()) {
     New-Item -ItemType Directory -Force -Path $to | Out-Null
-    $args = @($from, $to, '/E', '/R:2', '/W:1', '/NFL', '/NDL', '/NJH', '/NJS', '/NP', '/XF', 'database.local.php')
+    $args = @($from, $to, '/E', '/R:2', '/W:1', '/NFL', '/NDL', '/NJH', '/NJS', '/NP', '/XF', 'database.local.php', '.htaccess')
     if ($excludeDirs) { $args += '/XD'; $args += $excludeDirs }
     & robocopy @args | Out-Null
     if ($LASTEXITCODE -gt 7) { throw "Copy failed from $from to $to (robocopy $LASTEXITCODE)." }
+}
+
+function Copy-TextIfChanged([string]$from, [string]$to) {
+    $sourceText = (Get-Content -LiteralPath $from -Raw).Replace("`r`n", "`n")
+    if (!(Test-Path -LiteralPath $to) -or
+        (Get-Content -LiteralPath $to -Raw).Replace("`r`n", "`n") -cne $sourceText) {
+        Copy-Item -LiteralPath $from -Destination $to -Force
+    }
 }
 
 try {
@@ -119,8 +127,9 @@ try {
             Copy-Tree (Join-Path $projectRoot "backend\$folder") (Join-Path $target "backend\$folder") $excluded
         }
         foreach ($file in @('composer.json', 'composer.lock')) {
-            Copy-Item -LiteralPath (Join-Path $projectRoot "backend\$file") -Destination (Join-Path $target "backend\$file") -Force
+            Copy-TextIfChanged (Join-Path $projectRoot "backend\$file") (Join-Path $target "backend\$file")
         }
+        Copy-TextIfChanged (Join-Path $projectRoot 'backend\src\.htaccess') (Join-Path $target 'backend\src\.htaccess')
         if (!(Test-Path -LiteralPath $targetConfig)) {
             Copy-Item -LiteralPath $sourceConfig -Destination $targetConfig
         }
@@ -136,7 +145,8 @@ try {
         Copy-Item -LiteralPath $_.FullName -Destination $target -Recurse -Force
     }
     $rewriteFile = Join-Path $target '.htaccess'
-    if (Test-Path -LiteralPath $rewriteFile) {
+    if ((Test-Path -LiteralPath $rewriteFile) -and
+        (Get-Content -LiteralPath $rewriteFile -Raw) -cne (Get-Content -LiteralPath (Join-Path $projectRoot 'deploy\xampp.htaccess') -Raw)) {
         Copy-Item -LiteralPath $rewriteFile -Destination (Join-Path $target '.htaccess.xampp-backup') -Force
     }
     Copy-Item -LiteralPath (Join-Path $projectRoot 'deploy\xampp.htaccess') -Destination $rewriteFile -Force
