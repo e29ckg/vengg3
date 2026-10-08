@@ -68,7 +68,7 @@
 
 ## Deploy บน XAMPP (Windows)
 
-ใช้หน้าเว็บ `http://localhost:<Apache-port>/vengg3/install.php` เมื่อนำโปรเจกต์ไว้ที่ `htdocs\vengg3` หรือใช้ `deploy-xampp.ps1` จาก PowerShell ทั้งสองวิธีตรวจความพร้อมก่อนติดตั้งและแสดงความคืบหน้า 8 ขั้นตอน หน้าเว็บเปิดให้เริ่มติดตั้งจากเครื่อง XAMPP เองเท่านั้น
+ใช้หน้าเว็บ `http://localhost:<Apache-port>/vengg3/install.php` เมื่อนำโปรเจกต์ไว้ที่ `htdocs\vengg3` หรือใช้ `deploy-xampp.ps1` จาก PowerShell หน้าเว็บแสดงเช็กลิสต์แยกแต่ละโปรแกรม ส่วนขยาย PHP และฐานข้อมูล พร้อมสถานะผ่าน/ไม่ผ่านและคำแนะนำ ทั้งสองวิธีตรวจความพร้อมก่อนติดตั้งและแสดงความคืบหน้า 8 ขั้นตอน หน้าเว็บเปิดให้เริ่มติดตั้งจากเครื่อง XAMPP เองเท่านั้น
 
 1. ติดตั้งและเปิด Apache กับ MySQL ใน XAMPP, ติดตั้ง Node.js 22 ขึ้นไปและ Composer; PHP ใน XAMPP ต้องเป็น 8.2 ขึ้นไปและเปิด `pdo_mysql`, `curl`, `mbstring`, `fileinfo`, `zip` รวมถึง Apache `mod_rewrite` และ `AllowOverride All` สำหรับ `htdocs`.
 2. สร้างฐานข้อมูลจาก `database.sql` และสร้าง `backend/src/config/database.local.php` ตาม `database.example.php` ในโปรเจกต์ต้นทางหรือ `C:\xampp\htdocs\vengg3` โดยใช้บัญชีฐานข้อมูลเฉพาะแอป ถ้าปลายทางมีไฟล์นี้อยู่ สคริปต์จะคงไฟล์เดิมไว้ และจะไม่ล้างฐานข้อมูลหรือไฟล์อัปโหลด

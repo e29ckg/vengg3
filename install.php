@@ -75,11 +75,37 @@ function runDeployment(bool $preflight, callable $onLine): int
 $action = $_GET['action'] ?? '';
 if ($action === 'check') {
     header('Content-Type: application/json; charset=utf-8');
+    $checks = [];
+    try {
+    if (function_exists('proc_open')) {
+        $checkProcess = @proc_open(
+            ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
+                __DIR__ . '/deploy/check-requirements.ps1', '-XamppRoot', dirname(__DIR__, 2)],
+            [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['file', 'NUL', 'w']],
+            $checkPipes, __DIR__, null, ['bypass_shell' => true]
+        );
+        if (is_resource($checkProcess)) {
+            fclose($checkPipes[0]);
+            $checkOutput = stream_get_contents($checkPipes[1]);
+            fclose($checkPipes[1]);
+            $checkExit = proc_close($checkProcess);
+            $report = json_decode($checkOutput, true);
+            if ($checkExit === 0 && is_array($report['checks'] ?? null)) {
+                $checks = $report['checks'];
+            }
+        }
+    }
+    } catch (Throwable $error) {
+        // The installer row reports failure; do not expose process environment details.
+    }
     $lines = [];
     $exitCode = runDeployment(true, static function (string $line) use (&$lines): void {
         $lines[] = $line;
     });
-    echo json_encode(['ok' => $exitCode === 0, 'lines' => $lines], JSON_INVALID_UTF8_SUBSTITUTE);
+    $checks[] = ['id' => 'installer', 'status' => $exitCode === 0 && $checks !== [] ? 'passed' : 'failed',
+        'detail' => '', 'hint' => 'Check PowerShell, PHP proc_open and Apache account permissions.'];
+    $ready = $exitCode === 0 && count(array_filter($checks, static fn(array $check): bool => $check['status'] !== 'passed')) === 0;
+    echo json_encode(['ok' => $ready, 'checks' => $checks, 'lines' => $lines], JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
 
@@ -142,6 +168,18 @@ $safeToken = htmlspecialchars($csrfToken, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     .status { font-weight: 700; margin-bottom: 10px; }
     .ok { color: #17724f; }
     .error { color: #ab3434; }
+    .checklist { list-style: none; padding: 0; margin: 14px 0; }
+    .checklist li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #dfe7ed; }
+    .checklist li:last-child { border-bottom: 0; }
+    .check-icon { flex: 0 0 26px; height: 26px; border-radius: 50%; text-align: center; line-height: 26px; background: #e6edf2; color: #576b7d; font-weight: 700; }
+    .passed .check-icon { background: #daf2e7; color: #17724f; }
+    .failed .check-icon { background: #fce3e3; color: #ab3434; }
+    .check-content { flex: 1; min-width: 0; }
+    .check-title { font-weight: 650; }
+    .check-detail { color: #576b7d; font-size: .88rem; margin-top: 3px; overflow-wrap: anywhere; }
+    .check-badge { font-size: .8rem; flex-shrink: 0; padding-top: 3px; }
+    details { margin-top: 14px; }
+    summary { cursor: pointer; color: #576b7d; }
     .bar { height: 12px; border-radius: 99px; background: #e0e9ef; overflow: hidden; margin: 14px 0; }
     .bar > div { width: 0; height: 100%; background: #168867; transition: width .25s ease; }
     button { border: 0; border-radius: 8px; padding: 11px 16px; color: #fff; background: #166c87; font: inherit; font-weight: 700; cursor: pointer; }
@@ -161,8 +199,9 @@ $safeToken = htmlspecialchars($csrfToken, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
   <h2>1. ตรวจสอบความพร้อม</h2>
   <div class="panel">
     <div id="check-status" class="status">กำลังตรวจสอบ...</div>
+    <ul id="checklist" class="checklist" aria-live="polite" aria-busy="true"></ul>
     <button id="check-button" class="secondary" type="button">ตรวจสอบอีกครั้ง</button>
-    <pre id="check-log" aria-live="polite"></pre>
+    <details><summary>รายละเอียดการตรวจสอบ</summary><pre id="check-log"></pre></details>
   </div>
 
   <h2>2. ติดตั้งหรืออัปเดต</h2>
@@ -184,6 +223,55 @@ const installLog = document.getElementById('install-log');
 const progress = document.querySelector('[role="progressbar"]');
 const barFill = document.getElementById('bar-fill');
 let busy = false;
+const checklist = document.getElementById('checklist');
+const requirements = {
+  xampp: ['XAMPP', 'ติดตั้ง XAMPP ที่มี Apache, PHP และ MySQL'],
+  files: ['ไฟล์โปรเจกต์ครบถ้วน', 'ดาวน์โหลดโปรเจกต์ให้ครบ รวมโฟลเดอร์ frontend, backend และ deploy'],
+  php: ['PHP 8.2 ขึ้นไป', 'ใช้ XAMPP ที่มี PHP 8.2 ขึ้นไป'],
+  php_pdo_mysql: ['PHP: PDO MySQL', 'เปิด pdo_mysql ใน php.ini แล้วเริ่ม Apache ใหม่'],
+  php_curl: ['PHP: cURL', 'เปิด curl ใน php.ini แล้วเริ่ม Apache ใหม่'],
+  php_mbstring: ['PHP: mbstring', 'เปิด mbstring ใน php.ini แล้วเริ่ม Apache ใหม่'],
+  php_fileinfo: ['PHP: fileinfo', 'เปิด fileinfo ใน php.ini แล้วเริ่ม Apache ใหม่'],
+  php_zip: ['PHP: ZIP', 'เปิด zip ใน php.ini แล้วเริ่ม Apache ใหม่'],
+  node: ['Node.js 22 ขึ้นไป', 'ติดตั้ง Node.js 22 ขึ้นไป แล้วเริ่ม Apache ใหม่เพื่ออ่าน PATH'],
+  npm: ['npm', 'ติดตั้ง npm พร้อม Node.js แล้วเริ่ม Apache ใหม่'],
+  composer: ['Composer', 'ติดตั้ง Composer และเพิ่มใน PATH แล้วเริ่ม Apache ใหม่'],
+  apache: ['Apache พร้อมใช้งาน', 'เปิด Apache ใน XAMPP และตรวจพอร์ต Listen ใน httpd.conf'],
+  rewrite: ['Apache: mod_rewrite', 'เปิด LoadModule rewrite_module ใน httpd.conf แล้วเริ่ม Apache ใหม่'],
+  override: ['Apache: ใช้ไฟล์ .htaccess', 'ตั้ง AllowOverride All สำหรับ htdocs แล้วเริ่ม Apache ใหม่'],
+  db_config: ['ไฟล์ตั้งค่าฐานข้อมูล', 'สร้าง backend/src/config/database.local.php พร้อมค่าการเชื่อมต่อ'],
+  database: ['MySQL และโครงสร้างฐานข้อมูล', 'เปิด MySQL ตรวจค่าการเชื่อมต่อ และนำเข้า database.sql'],
+  installer: ['ตัวติดตั้งพร้อมทำงาน', 'ตรวจ PowerShell, PHP proc_open และสิทธิ์ของบัญชีที่รัน Apache; ดูรายละเอียดการตรวจสอบด้านล่าง']
+};
+function renderChecklist(checks = [], finished = false) {
+  const byId = new Map(checks.map(check => [check.id, check]));
+  checklist.replaceChildren();
+  for (const [id, [label, hint]] of Object.entries(requirements)) {
+    const check = byId.get(id);
+    const state = check?.status || (finished ? 'unavailable' : 'pending');
+    const row = document.createElement('li');
+    row.className = state;
+    const icon = document.createElement('span');
+    icon.className = 'check-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = state === 'passed' ? '✓' : state === 'failed' ? '✕' : '…';
+    const content = document.createElement('div');
+    content.className = 'check-content';
+    const title = document.createElement('div');
+    title.className = 'check-title';
+    title.textContent = label;
+    const detail = document.createElement('div');
+    detail.className = 'check-detail';
+    const details = {'Complete': 'ไฟล์ครบถ้วน', 'Enabled': 'เปิดใช้งาน', 'Available in PATH': 'เรียกใช้ได้จาก PATH', 'Enabled in httpd.conf': 'เปิดใช้งานใน httpd.conf', 'AllowOverride All configured': 'ตั้งค่า AllowOverride All แล้ว', 'database.local.php found': 'พบไฟล์ database.local.php', 'Connection and user table OK': 'เชื่อมต่อได้และพบตาราง user'};
+    detail.textContent = state === 'failed' ? hint : state === 'passed' ? (details[check.detail] || check.detail || 'พร้อมใช้งาน') : state === 'unavailable' ? 'ตัวตรวจสอบไม่ส่งผลรายการนี้ กรุณาตรวจสอบอีกครั้ง' : 'กำลังตรวจสอบ';
+    const badge = document.createElement('span');
+    badge.className = `check-badge ${state === 'passed' ? 'ok' : state === 'failed' ? 'error' : 'subtle'}`;
+    badge.textContent = state === 'passed' ? 'ผ่าน' : state === 'failed' ? 'ไม่ผ่าน' : state === 'unavailable' ? 'ยังไม่ได้ตรวจ' : 'รอผล';
+    content.append(title, detail);
+    row.append(icon, content, badge);
+    checklist.append(row);
+  }
+}
 
 function appendLine(element, line) {
   element.textContent += (element.textContent ? '\n' : '') + line;
@@ -200,9 +288,13 @@ async function checkRequirements() {
   checkStatus.textContent = 'กำลังตรวจสอบ...';
   checkStatus.className = 'status';
   checkLog.textContent = '';
+  checklist.setAttribute('aria-busy', 'true');
+  renderChecklist();
   try {
     const response = await fetch('?action=check', {cache: 'no-store'});
     const result = await response.json();
+    if (!response.ok || !Array.isArray(result.checks)) throw new Error('ไม่ได้รับผลเช็กลิสต์จากตัวตรวจสอบ');
+    renderChecklist(result.checks, true);
     checkLog.textContent = result.lines.join('\n');
     checkStatus.textContent = result.ok ? 'พร้อมติดตั้ง' : 'ยังไม่พร้อมติดตั้ง — ดูรายละเอียดด้านล่าง';
     checkStatus.className = `status ${result.ok ? 'ok' : 'error'}`;
@@ -211,10 +303,12 @@ async function checkRequirements() {
       installStatus.textContent = result.ok ? 'พร้อมเริ่ม' : 'แก้สิ่งที่ขาดแล้วตรวจสอบอีกครั้ง';
     }
   } catch (error) {
+    renderChecklist(Object.keys(requirements).map(id => ({id, status: 'unavailable'})), true);
     checkStatus.textContent = 'ตรวจสอบไม่สำเร็จ';
     checkStatus.className = 'status error';
     checkLog.textContent = String(error);
   } finally {
+    checklist.setAttribute('aria-busy', 'false');
     checkButton.disabled = false;
   }
 }
