@@ -78,7 +78,7 @@ class VenTransferController {
         }
     }
 
-    public function cancel($data) {
+    public function cancel($currentUserId, $data) {
         $change_id = $data['change_id'] ?? null;
 
         if (!$change_id) {
@@ -87,7 +87,7 @@ class VenTransferController {
             return;
         }
 
-        $result = $this->transferModel->cancelTransfer($change_id);
+        $result = $this->transferModel->cancelTransfer($change_id, $currentUserId);
 
         if ($result['success']) {
             $changeReq = $result['data']; // ข้อมูลของใบเปลี่ยนเวรก่อนถูกยกเลิก
@@ -111,7 +111,6 @@ class VenTransferController {
             // 🌟 2. บันทึก Log การยกเลิกใบเปลี่ยนเวร
             try {
                 // ดึง ID ของคนที่กดยกเลิก
-                $currentUserId = AuthMiddleware::getUserIdFromToken($this->connection);
                 $logModel = new LogModel($this->connection);
                 $changeNo = $changeReq['change_no'] ?? $change_id; // ดึงเลขที่ใบเปลี่ยนมาแสดง
 

@@ -2,10 +2,6 @@
 // backend/src/config/database.php
 
 class Database {
-    private $host = "db"; 
-    private $db_name = "vengg_db";
-    private $username = "root";
-    private $password = "root"; // รหัสตาม docker-compose
     public $conn;
 
     public function getConnection() {
@@ -13,7 +9,11 @@ class Database {
 
         try {
             // สร้างการเชื่อมต่อแบบ PDO
-            $this->conn = new PDO("mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";charset=utf8mb4", $this->username, $this->password);
+            $host = getenv('DB_HOST') ?: 'localhost';
+            $name = getenv('DB_NAME') ?: 'vengg_db';
+            $user = getenv('DB_USER') ?: '';
+            $password = getenv('DB_PASS') ?: '';
+            $this->conn = new PDO("mysql:host={$host};dbname={$name};charset=utf8mb4", $user, $password);
             
             // ตั้งค่าให้แสดง Error หากมีข้อผิดพลาดใน SQL
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -22,7 +22,9 @@ class Database {
             $this->conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
             
         } catch(PDOException $exception) {
-            echo json_encode(["error" => "Database connection error: " . $exception->getMessage()]);
+            error_log('Database connection error: ' . $exception->getMessage());
+            http_response_code(503);
+            echo json_encode(["error" => "Database connection unavailable"]);
             exit();
         }
 

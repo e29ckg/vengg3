@@ -47,166 +47,29 @@
 
 ---
 
-## ⚙️ การตั้งค่า Environment Variables (.env)
+## การติดตั้งด้วย Docker
 
-ก่อนเริ่มการติดตั้งและการรันระบบ คุณจำเป็นต้องตั้งค่า Environment Variables เพื่อเชื่อมต่อระหว่าง Frontend, Backend และฐานข้อมูล
+1. คัดลอก `.env.example` เป็น `.env` ที่ root แล้วตั้ง `DB_ROOT_PASSWORD` และ `DB_PASS` เป็นรหัสใหม่ที่คาดเดายาก (`DB_USER` เป็นบัญชีเฉพาะแอป)
+2. รัน `docker compose up -d --build` ระบบจะนำเข้า `database.sql` ที่มีเฉพาะโครงสร้างและค่าเริ่มต้นเมื่อสร้าง volume ฐานข้อมูลใหม่
+3. สร้างบัญชีผู้ดูแลระบบครั้งแรก โดยกำหนด `ADMIN_PASSWORD` อย่างน้อย 12 ตัวอักษรใน environment แล้วรัน `docker compose exec -e ADMIN_PASSWORD backend php bin/create_admin.php` (สามารถกำหนด `ADMIN_USERNAME` เพิ่มได้) อย่าเก็บรหัสนี้ในไฟล์ที่ commit หรือในประวัติ shell
+4. เปิดเว็บที่ `http://localhost:8080` API สำหรับทดสอบในเครื่องอยู่ที่ `http://localhost:8000/?route=test` หากต้องใช้ phpMyAdmin ให้รัน `docker compose --profile tools up -d phpmyadmin` แล้วเปิด `http://localhost:8081`
 
-### 1. ตั้งค่าฝั่ง Backend (เชื่อมต่อฐานข้อมูล)
-ไปที่โฟลเดอร์ `backend/` คัดลอกไฟล์ `.env.example` (ถ้ามี) หรือสร้างไฟล์ใหม่ชื่อ `.env` และกำหนดค่าดังนี้:
-```env
-# ตั้งค่าการเชื่อมต่อฐานข้อมูล
-DB_HOST=localhost
-DB_NAME=vengg_db
-DB_USER=root
-DB_PASS=root
-# หรือค่าพอร์ตอื่นๆ ตามการตั้งค่า Server/Docker ของคุณ
+ข้อมูลรูปภาพและ Google credentials ใช้ Docker volumes เพื่อให้ยังอยู่หลังสร้าง container ใหม่ ฐานข้อมูลใช้ `db_data` volume; การเปลี่ยนไฟล์ `database.sql` ไม่แก้ฐานข้อมูลใน volume เดิม
 
-```
+## การติดตั้งแบบไม่ใช้ Docker
 
-*(หมายเหตุ: หากโค้ดเดิมของคุณเก็บค่าคอนฟิกไว้ที่ `backend/src/Config/database.php` สามารถข้ามขั้นตอนนี้และไปแก้ที่ไฟล์ PHP โดยตรงได้เลย)*
+- ใช้ PHP 8.2 ขึ้นไป, MySQL 8 และ Node.js 22 ขึ้นไป
+- นำเข้า `database.sql` ในฐานข้อมูล `vengg_db` แล้วกำหนด `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS` ใน environment ของ PHP
+- ใน `backend/` รัน `composer install` และตั้ง web root ไปที่ `backend/public/`
+- สร้างแอดมินด้วย `ADMIN_PASSWORD=... php backend/bin/create_admin.php` โดยกำหนดรหัสผ่านผ่าน environment ของ shell
+- ใน `frontend/` คัดลอก `.env.example` เป็น `.env` แล้วแก้ `VITE_API_BASE_URL` ให้ตรงกับ URL ของไดเรกทอรี `backend/public/` จากนั้นรัน `npm ci` และ `npm run dev`
 
-### 2. ตั้งค่าฝั่ง Frontend (เชื่อมต่อ API)
+## การตรวจสอบ
 
-ไปที่โฟลเดอร์ `frontend/` สร้างไฟล์ใหม่ชื่อ `.env` และกำหนดค่า Path ของ API ฝั่ง Backend:
+- PHP: `php -l` สำหรับไฟล์ใน `backend/` และ `vendor/bin/phpunit` หลัง `composer install`
+- Frontend: `npm ci` และ `npm run build`
+- Docker: `docker compose config` และ `docker compose build`
 
-```env
-# URL ของ Backend API
-VITE_API_URL=http://localhost:8000/api
-# หรือ VITE_API_URL=http://localhost/vengg3/backend/public/ (สำหรับการรันผ่าน XAMPP)
+## ข้อควรทำกับข้อมูลเดิม
 
-```
-
----
-
-## 🚀 การติดตั้งและใช้งาน (Installation & Setup)
-
-โปรเจกต์นี้รองรับการติดตั้ง 2 รูปแบบ ทั้งแบบ **ติดตั้งด้วย Docker (แนะนำ)** ที่สะดวกและรวดเร็ว หรือแบบ **ติดตั้งลงเครื่องโดยตรง (Manual Setup)**
-
-### 🐳 ทางเลือกที่ 1: การติดตั้งด้วย Docker (Recommended)
-
-วิธีนี้เหมาะสำหรับการเซ็ตอัประบบอย่างรวดเร็ว โดยไม่ต้องลงเครื่องมือหลายตัวให้ยุ่งยาก
-
-**สิ่งที่ต้องมี:**
-
-* [Docker Desktop](https://www.docker.com/products/docker-desktop) หรือ Docker Engine และ Docker Compose
-
-**ขั้นตอนการรันระบบ:**
-
-1. Clone โปรเจกต์ลงมาที่เครื่องของคุณ:
-```bash
-git clone https://github.com/e29ckg/vengg3.git
-cd vengg3
-
-
-```
-
-
-2. ทำการตั้งค่าไฟล์ `.env` ตามหัวข้อ **การตั้งค่า Environment Variables** ด้านบน
-3. รันคำสั่ง Docker Compose เพื่อสร้างและเปิดใช้งาน Container ทั้งหมด (Vue, PHP/Apache, MySQL):
-```bash
-docker-compose up -d --build
-
-```
-
-
-4. **การจัดการฐานข้อมูล:** * เข้าสู่ระบบ phpMyAdmin ผ่าน Docker (มักจะตั้งไว้ที่ `http://localhost:8080`)
-* สร้างฐานข้อมูลใหม่ และ Import ไฟล์ `database.sql` ที่แนบมากับโปรเจกต์
-
-
-5. **เข้าใช้งานระบบ:** * Frontend (Vue.js): `http://localhost:5173` (หรือพอร์ตที่กำหนด)
-* Backend API: `http://localhost:8000`
-
-
-
----
-
-### 💻 ทางเลือกที่ 2: การติดตั้งแบบปกติ (Manual Local Setup)
-
-สำหรับผู้ที่ใช้งาน Local Server เช่น XAMPP, MAMP หรือ WAMP
-
-**สิ่งที่ต้องมี:**
-
-* [Node.js](https://nodejs.org/) (เวอร์ชัน 16 ขึ้นไป แนะนำ 18 LTS)
-* PHP (เวอร์ชัน 8.0 ขึ้นไป)
-* MySQL หรือ MariaDB
-* Composer (สำหรับติดตั้ง Google API Client)
-
-#### 🛠️ 1. ส่วนของ Backend (PHP & MySQL)
-
-1. นำโฟลเดอร์โปรเจกต์ไปวางไว้ในโฟลเดอร์ Web Server ของคุณ (เช่น `C:\xampp\htdocs\vengg3`)
-2. **นำเข้าฐานข้อมูล (Import Database):**
-* เปิด phpMyAdmin และสร้างฐานข้อมูลใหม่ (เช่น `vengg_db`)
-* Import ไฟล์ `database.sql`
-
-
-3. ทำการตั้งค่าการเชื่อมต่อฐานข้อมูลใน `.env` หรือ `database.php`
-4. **ติดตั้ง PHP Dependencies:**
-* เปิด Terminal ในโฟลเดอร์ `backend/` แล้วรัน:
-```bash
-composer install
-
-```
-
-
-
-
-
-#### 🎨 2. ส่วนของ Frontend (Vue.js)
-
-1. เปิด Terminal แล้วเข้าไปที่โฟลเดอร์ `frontend/`:
-```bash
-cd frontend
-
-```
-
-
-2. ติดตั้ง Dependencies ทั้งหมด:
-```bash
-npm install
-
-```
-
-
-3. สร้างและตั้งค่าไฟล์ `.env` สำหรับชี้เป้าหมายไปที่ Backend (ดูตัวอย่างที่หัวข้อด้านบน)
-4. รันระบบในโหมดการพัฒนา (Development):
-```bash
-npm run dev
-
-```
-
-
-5. **สำหรับการนำไปใช้งานจริง (Production Build):**
-* รันคำสั่งด้านล่าง ระบบจะสร้างโฟลเดอร์ `dist/` ให้นำไฟล์ข้างในไปวางบน Web Server:
-```bash
-npm run build
-
-```
-
-
-
-
-
----
-
-## 🔑 การตั้งค่าเพิ่มเติมหลังติดตั้ง (Post-Installation)
-
-เพื่อให้ฟีเจอร์การเชื่อมต่อภายนอกทำงานได้สมบูรณ์ แอดมินต้องดำเนินการดังนี้หลังเข้าใช้งานระบบครั้งแรก:
-
-1. **Google Calendar API:** * ไปที่เมนู **"ตั้งค่า Google Calendar"** * อัปโหลดไฟล์ `credentials.json` (จาก Google Cloud Console)
-* ระบุ `Calendar ID` เพื่อให้ระบบสามารถเขียนกิจกรรมลงปฏิทินได้
-
-
-2. **Telegram Bot:** * ไปที่เมนู **"ตั้งค่าการแจ้งเตือน"** * กรอก `Bot Token` (จาก BotFather) และ `Chat ID` ของกลุ่มที่ต้องการให้บอทส่งข้อความแจ้งเตือน
-3. **ไฟล์ Template Word:**
-* นำไฟล์ `.docx` สำหรับใบขอเปลี่ยนเวร ไปวางในโฟลเดอร์ `frontend/public/templates/` ให้เรียบร้อย
-
-
-
----
-
-## 👨‍💻 ข้อมูลการพัฒนา
-
-**พัฒนาโดย:** PKKJC
-
-**เวอร์ชัน:** 3.0.0
-
+ไฟล์ snapshot ฐานข้อมูลที่เคย commit มีข้อมูลบัญชีและ token อยู่ในประวัติ Git แม้ลบจาก commit ใหม่แล้ว ผู้ดูแลระบบต้องยกเลิก Telegram bot token เดิม, ยกเลิก session token ของผู้ใช้ และเปลี่ยนรหัสผ่านที่อาจถูกเปิดเผย การล้างประวัติ Git ต้องประสานผู้ร่วมพัฒนาก่อน force push

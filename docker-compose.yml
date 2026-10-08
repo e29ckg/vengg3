@@ -1,67 +1,80 @@
-version: '3.8' # แนะนำให้ใส่ version ของ Compose file ครับ
-
 services:
   db:
     image: mysql:8.0
-    container_name: vengg_db
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in .env}
       MYSQL_DATABASE: vengg_db
+      MYSQL_USER: ${DB_USER:-vengg_app}
+      MYSQL_PASSWORD: ${DB_PASS:?Set DB_PASS in .env}
       TZ: Asia/Bangkok
-    ports:
-      - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
+      - ./database.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     restart: always
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    container_name: vengg_pma
+    profiles: [tools]
     environment:
       PMA_HOST: db
-      MYSQL_ROOT_PASSWORD: root
     ports:
-      - "8081:80" 
+      - "127.0.0.1:8081:80"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: vengg_web
     environment:
       TZ: Asia/Bangkok
+      DB_HOST: db
+      DB_NAME: vengg_db
+      DB_USER: ${DB_USER:-vengg_app}
+      DB_PASS: ${DB_PASS:?Set DB_PASS in .env}
     ports:
-      - "80:80"
+      - "127.0.0.1:8000:80"
     volumes:
-      - .:/var/www/html/vengg3
+      - avatars:/var/www/html/vengg3/backend/public/uploads/avatars
+      - google_credentials:/var/www/html/vengg3/backend/src/Config
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: ven_frontend # ปรับชื่อ container ให้ใช้ _ (underscore) เหมือนตัวอื่นๆ เพื่อความสวยงาม
     ports:
-      - "8080:80" # เข้าเว็บ Frontend ผ่านพอร์ต 8080
+      - "8080:80"
     restart: always
-    depends_on: # 🛠️ เพิ่ม: ให้ Frontend รอ Backend รันเสร็จก่อนค่อยทำงาน
+    depends_on:
       - backend
 
   cron-notifier:
     build: 
       context: ./backend
       dockerfile: Dockerfile
-    container_name: ven_cron_notifier
     environment:
       TZ: Asia/Bangkok
+      DB_HOST: db
+      DB_NAME: vengg_db
+      DB_USER: ${DB_USER:-vengg_app}
+      DB_PASS: ${DB_PASS:?Set DB_PASS in .env}
     volumes:
-      - .:/var/www/html/vengg3
+      - google_credentials:/var/www/html/vengg3/backend/src/Config
     command: sh -c "while true; do php /var/www/html/vengg3/backend/cron/daily_notify.php; sleep 60; done"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   db_data:
+  avatars:
+  google_credentials:

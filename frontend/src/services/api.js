@@ -4,8 +4,8 @@ import router from '../router'; // เพิ่มบรรทัดนี้ �
 
 // ดึงค่า URL มาจากไฟล์ .env
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-  timeout: import.meta.env.VITE_API_TIMEOUT,
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/',
+  timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 30000,
   headers: {
     'Content-Type': 'application/json'
   }

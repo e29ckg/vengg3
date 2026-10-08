@@ -304,12 +304,13 @@ switch ($route) {
 
     // 🌟 สำหรับยกเลิกใบเปลี่ยนเวร
     case 'ven/transfer/cancel':
-        AuthMiddleware::checkToken($connection);        
+        $userData = AuthMiddleware::checkToken($connection);
+        $currentUserId = is_array($userData) ? $userData['id'] : $userData->id;
         $transferModel = new VenTransferModel($connection);
         $transferController = new VenTransferController($transferModel, $connection);        
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = json_decode(file_get_contents("php://input"), true);
-            $transferController->cancel($data);
+            $transferController->cancel($currentUserId, $data);
         } else {
             http_response_code(405);
             echo json_encode(["error" => "Method Not Allowed"]);
@@ -500,7 +501,7 @@ switch ($route) {
     // ⚙️ การเงิน ออกรายงาน (Financ Report)
     // ==========================================
     case 'finance/report':
-        AuthMiddleware::checkToken($connection); 
+        AuthMiddleware::checkFinance($connection);
         $financeModel = new FinanceModel($connection);
         $financeController = new FinanceController($financeModel);
         $month = $_GET['month'] ?? date('Y-m');
@@ -509,7 +510,7 @@ switch ($route) {
         break;
 
     case 'get_commands':
-        AuthMiddleware::checkToken($connection);        
+        AuthMiddleware::checkFinance($connection);
         $financeModel = new FinanceModel($connection);
         $financeController = new FinanceController($financeModel);        
         $month = $_GET['month'] ?? date('Y-m');

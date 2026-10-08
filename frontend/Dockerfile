@@ -1,7 +1,7 @@
 # ==========================================
 # Stage 1: Build Stage (ใช้ Node.js)
 # ==========================================
-FROM node:20-alpine as build-stage
+FROM node:22-alpine AS build-stage
 
 # กำหนดโฟลเดอร์ทำงานใน Container
 WORKDIR /app
@@ -10,18 +10,20 @@ WORKDIR /app
 COPY package*.json ./
 
 # ติดตั้ง Dependencies
-RUN npm install
+RUN npm ci
 
 # คัดลอกไฟล์โปรเจกต์ทั้งหมด
 COPY . .
 
 # สั่ง Build โปรเจกต์ (Vite จะสร้างโฟลเดอร์ /dist)
+ARG VITE_API_BASE_URL=/api/
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
 # ==========================================
 # Stage 2: Production Stage (ใช้ Nginx)
 # ==========================================
-FROM nginx:alpine as production-stage
+FROM nginx:alpine AS production-stage
 
 # คัดลอกไฟล์ที่ Build เสร็จแล้วจาก Stage 1 ไปไว้ใน Nginx
 COPY --from=build-stage /app/dist /usr/share/nginx/html
