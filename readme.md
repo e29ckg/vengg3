@@ -81,6 +81,8 @@
 
 ## การตรวจสอบ
 
+ผู้ดูแล (`role=9`) ใช้เมนู **ผู้ดูแลระบบ → อัปเดตโปรแกรม** ที่ `/vengg3/admin/program-update` เพื่อตรวจและอัปเดตจาก GitHub `e29ckg/vengg3` สาขา `main` ได้บน XAMPP/Windows ที่ติดตั้งจาก Git ต้องมี Git และ Composer ใน PATH ของ Apache และ checkout ต้องอยู่บน main โดยไม่มีไฟล์ tracked ที่แก้ค้างไว้ ระบบเตรียม dependencies ก่อนอัปเดตแบบ fast-forward และคงไฟล์ตั้งค่าฐานข้อมูล/ไฟล์อัปโหลดที่ถูก ignore ไว้ การอัปเดตนี้ไม่รัน SQL หรือ migration ฐานข้อมูล หากประวัติ Git แตกแขนงต้องให้ผู้ดูแลจัดการด้วยตนเอง หากขั้นตอนหลังเปลี่ยนไฟล์ล้มเหลวและไม่มีการแก้ไฟล์ระหว่างทาง ระบบจะคืน commit และ dependencies เดิม
+
 - PHP: `php -l` สำหรับไฟล์ใน `backend/` และ `vendor/bin/phpunit` หลัง `composer install`
 - Frontend: `npm ci` และ `npm run build`
 - Docker: `docker compose config` และ `docker compose build`

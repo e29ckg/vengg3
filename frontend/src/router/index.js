@@ -4,6 +4,7 @@ import LoginView from '../views/LoginView.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    { path: '/admin/program-update', name: 'program-update', component: () => import('../views/admin/ProgramUpdateView.vue'), meta: { requiresAuth: true, roles: [9] } },
     { 
       path: '/', 
       redirect: '/login' 

@@ -50,6 +50,20 @@ $connection = $db->getConnection();
 
 // --- ระบบ Routing ---
 switch ($route) {
+    case 'admin/program/status':
+    case 'admin/program/update':
+        AuthMiddleware::checkAdmin($connection);
+        require_once __DIR__ . '/../Controllers/ProgramUpdateController.php';
+        $programController = new ProgramUpdateController();
+        if ($route === 'admin/program/status' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+            $programController->status();
+        } elseif ($route === 'admin/program/update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $programController->update();
+        } else {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+        }
+        break;
     case 'test':
         echo json_encode(["status" => "success", "message" => "Backend is working!"]);
         break;
