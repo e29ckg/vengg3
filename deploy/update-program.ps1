@@ -3,7 +3,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $root = [IO.Path]::GetFullPath($ProjectRoot).TrimEnd('\')
 $repository = 'https://github.com/e29ckg/vengg3.git'
-$stage = [IO.Path]::GetFullPath((Join-Path $env:TEMP ('vengg3-update-' + [guid]::NewGuid().ToString('N'))))
+$tempRoot = [IO.Path]::GetFullPath((Join-Path (Split-Path (Split-Path $root -Parent) -Parent) 'tmp')).TrimEnd('\') + '\'
+$stage = [IO.Path]::GetFullPath((Join-Path $tempRoot ('v3u-' + [guid]::NewGuid().ToString('N').Substring(0,8))))
 $applied = $false
 $previous = ''
 $vendorMoved = $false
@@ -32,6 +33,7 @@ try {
     if ($latest -ne $ExpectedCommit) { throw 'GitHub main changed; check the version again.' }
     & git.exe -C $root merge-base --is-ancestor $previous $latest
     if ($LASTEXITCODE -ne 0) { throw 'History diverged; an automatic fast-forward update is not possible.' }
+    New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
     New-Item -ItemType Directory -Path $stage | Out-Null
     $archive = Join-Path $stage 'release.zip'
     Git-Run -arguments @('archive','--format=zip',"--output=$archive",$latest) | Out-Null
@@ -46,12 +48,15 @@ try {
     if (!(Test-Path -LiteralPath (Join-Path $release 'index.html')) -or !(Test-Path -LiteralPath (Join-Path $release 'assets'))) { throw 'The release has no compiled XAMPP frontend.' }
     $php = Join-Path (Split-Path (Split-Path $root -Parent) -Parent) 'php\php.exe'
     Write-Host '[3/5] Preparing dependencies before applying files'
-    $composer = Get-Command composer.bat -ErrorAction Stop
-    Push-Location (Join-Path $release 'backend')
-    try {
-        & $composer.Source install --no-dev --no-interaction --prefer-dist --no-progress --no-scripts --no-plugins
-        if ($LASTEXITCODE -ne 0) { throw 'Composer dependency preparation failed.' }
-    } finally { Pop-Location }
+    $dependenciesChanged = (Git-Run -arguments @('diff','--name-only',$previous,$latest,'--','backend/composer.json','backend/composer.lock')) -ne '' -or !(Test-Path -LiteralPath (Join-Path $vendor 'autoload.php'))
+    if ($dependenciesChanged) {
+        $composer = Get-Command composer.bat -ErrorAction Stop
+        Push-Location (Join-Path $release 'backend')
+        try {
+            & $composer.Source install --no-dev --no-interaction --prefer-dist --no-progress --no-scripts --no-plugins
+            if ($LASTEXITCODE -ne 0) { throw 'Composer dependency preparation failed.' }
+        } finally { Pop-Location }
+    } else { Write-Host 'Dependencies unchanged; keeping installed vendor files.' }
     foreach ($file in Get-ChildItem (Join-Path $release 'backend') -Filter '*.php' -Recurse -File | Where-Object {$_.FullName -notlike '*\vendor\*'}) {
         & $php -l $file.FullName | Out-Null
         if ($LASTEXITCODE -ne 0) { throw 'Release PHP syntax validation failed.' }
@@ -60,12 +65,14 @@ try {
     if ((Git-Run -arguments @('status','--porcelain','--untracked-files=no')) -ne '' -or (Git-Run -arguments @('rev-parse','HEAD')) -ne $previous) { throw 'Checkout changed during preparation; update cancelled.' }
     Git-Run -arguments @('merge','--ff-only',$latest) | Out-Null
     $applied = $true
-    if (Test-Path -LiteralPath $vendor) {
-        Move-Item -LiteralPath $vendor -Destination $backupVendor
-        $vendorMoved = $true
+    if ($dependenciesChanged) {
+        if (Test-Path -LiteralPath $vendor) {
+            Move-Item -LiteralPath $vendor -Destination $backupVendor
+            $vendorMoved = $true
+        }
+        Move-Item -LiteralPath $preparedVendor -Destination $vendor
+        $vendorInstalled = $true
     }
-    Move-Item -LiteralPath $preparedVendor -Destination $vendor
-    $vendorInstalled = $true
     Write-Host '[5/5] Checking installed version'
     if ((Git-Run -arguments @('rev-parse','HEAD')) -ne $latest -or !(Test-Path (Join-Path $root 'backend\vendor\autoload.php'))) { throw 'Installed version validation failed.' }
     Write-Host "Update complete: $latest"
@@ -82,9 +89,9 @@ try {
     }
     exit 1
 } finally {
-    $tempRoot = [IO.Path]::GetFullPath($env:TEMP).TrimEnd('\') + '\'
     $resolvedStage = [IO.Path]::GetFullPath($stage)
-    if (($succeeded -or !$vendorMoved) -and $resolvedStage.StartsWith($tempRoot,[StringComparison]::OrdinalIgnoreCase) -and (Split-Path $resolvedStage -Leaf) -like 'vengg3-update-*' -and (Test-Path -LiteralPath $resolvedStage)) {
-        Remove-Item -LiteralPath $resolvedStage -Recurse -Force
+    if (($succeeded -or !$vendorMoved) -and $resolvedStage.StartsWith($tempRoot,[StringComparison]::OrdinalIgnoreCase) -and (Split-Path $resolvedStage -Leaf) -like 'v3u-*' -and (Test-Path -LiteralPath $resolvedStage)) {
+        try { Remove-Item -LiteralPath $resolvedStage -Recurse -Force -ErrorAction Stop }
+        catch { Write-Host "Temporary cleanup incomplete; remove this folder later: $resolvedStage" }
     }
 }
