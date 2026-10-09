@@ -52,7 +52,7 @@
 1. คัดลอก `.env.example` เป็น `.env` ที่ root แล้วตั้ง `DB_ROOT_PASSWORD` และ `DB_PASS` เป็นรหัสใหม่ที่คาดเดายาก (`DB_USER` เป็นบัญชีเฉพาะแอป)
 2. รัน `docker compose up -d --build` ระบบจะนำเข้า `database.sql` ที่มีเฉพาะโครงสร้างและค่าเริ่มต้นเมื่อสร้าง volume ฐานข้อมูลใหม่
 3. สร้างบัญชีผู้ดูแลระบบครั้งแรก โดยกำหนด `ADMIN_PASSWORD` อย่างน้อย 12 ตัวอักษรใน environment แล้วรัน `docker compose exec -e ADMIN_PASSWORD backend php bin/create_admin.php` (สามารถกำหนด `ADMIN_USERNAME` เพิ่มได้) อย่าเก็บรหัสนี้ในไฟล์ที่ commit หรือในประวัติ shell
-4. เปิดเว็บที่ `http://localhost:8080` API สำหรับทดสอบในเครื่องอยู่ที่ `http://localhost:89/?route=test` หากต้องใช้ phpMyAdmin ให้รัน `docker compose --profile tools up -d phpmyadmin` แล้วเปิด `http://localhost:8081`
+4. เปิดเว็บที่ `http://localhost:8080` API สำหรับทดสอบในเครื่องอยู่ที่ `http://localhost:89/?route=test` และ phpMyAdmin สำหรับจัดการฐานข้อมูลอยู่ที่ `http://localhost:8081` (เข้าถึงได้จากเครื่องนี้เท่านั้น) เข้าสู่ระบบด้วย `DB_USER` และ `DB_PASS` ในไฟล์ `.env`
 
 ข้อมูลรูปภาพและ Google credentials ใช้ Docker volumes เพื่อให้ยังอยู่หลังสร้าง container ใหม่ ฐานข้อมูลใช้ `db_data` volume; การเปลี่ยนไฟล์ `database.sql` ไม่แก้ฐานข้อมูลใน volume เดิม
 

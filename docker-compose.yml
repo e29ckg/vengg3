@@ -19,11 +19,11 @@ services:
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    profiles: [tools]
     environment:
       PMA_HOST: db
     ports:
       - "127.0.0.1:8081:80"
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
