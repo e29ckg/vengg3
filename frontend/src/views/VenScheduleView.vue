@@ -477,7 +477,15 @@ const removeSchedule = async (id) => {
     }
   }
 
-  if ((await Swal.fire({ title: 'ลบชื่อนี้?', icon: 'warning', showCancelButton: true })).isConfirmed) { 
+  if ((await Swal.fire({
+    title: 'ลบชื่อนี้?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc3545',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'ยืนยันลบ',
+    cancelButtonText: 'ยกเลิก'
+  })).isConfirmed) {
     await api.post('?route=admin/ven_schedule/remove', { id }); 
     fetchMonthSchedules();
   } 

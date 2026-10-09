@@ -7,7 +7,9 @@ const policy = {ALLOWED_TAGS: ['b','strong','i','em','u','br','p','div','span','
 const clean = value => typeof value === 'string' || value?.nodeType ? DOMPurify.sanitize(value, policy) : value
 const cleanOptions = options => {
   const result = {...options}
-  for (const key of ['html', 'title', 'footer', 'confirmButtonText', 'cancelButtonText', 'denyButtonText']) result[key] = clean(result[key])
+  for (const key of ['html', 'title', 'footer', 'confirmButtonText', 'cancelButtonText', 'denyButtonText']) {
+    if (Object.hasOwn(result, key)) result[key] = clean(result[key])
+  }
   return result
 }
 alerts.fire = function (...arguments_) {

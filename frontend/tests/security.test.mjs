@@ -27,3 +27,10 @@ test('mixin defaults and validation messages are also sanitized', async () => {
   assert.equal(document.querySelector('#swal2-validation-message b').textContent,'retry')
   alerts.close(); await promise
 })
+
+test('modal buttons keep their default labels when labels are omitted', async () => {
+  const promise = alerts.fire({title:'Confirm?',icon:'warning',showCancelButton:true})
+  assert.ok(document.querySelector('.swal2-confirm').textContent.trim())
+  assert.ok(document.querySelector('.swal2-cancel').textContent.trim())
+  alerts.close(); await promise
+})
