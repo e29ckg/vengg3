@@ -99,7 +99,9 @@ const handleLogin = async () => {
     Swal.fire({
       icon: 'error',
       title: 'เข้าสู่ระบบไม่สำเร็จ',
-      text: error.response?.data?.error || 'เกิดข้อผิดพลาด ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
+      text: error.response?.data?.error || 'เกิดข้อผิดพลาด ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
+      showConfirmButton: true,
+      confirmButtonText: 'ตกลง',
     })
   } finally {
     isLoading.value = false // ปิดตัวโหลดหมุนๆ
