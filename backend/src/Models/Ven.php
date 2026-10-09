@@ -21,21 +21,14 @@ class Ven {
                     CONCAT_WS(' ', CONCAT(IFNULL(p.prefix_name, ''), IFNULL(p.first_name, '')), p.last_name) AS title,
                     p.position AS position,
                     vns.color AS backgroundColor,
+                    vn.dn AS shift_type,
+                    SUBSTRING_INDEX(SUBSTRING_INDEX(vn.dn, '(', -1), ')', 1) AS time_period,
 
-                    /* 🌟 1. ใช้ CASE WHEN ในการกำหนดเวลาเริ่มต้น (สำหรับนำไปใช้เรียงลำดับและตัด .substring(0,5)) */
-                    CASE 
-                        WHEN vn.dn LIKE '%nightCourt%' THEN '16:30:00'
-                        WHEN vn.dn LIKE '%กลางคืน%' THEN '16:30:00'
-                        WHEN vn.dn LIKE '%กลางวัน%' THEN '08:30:00'
-                        ELSE '08:30:00' 
-                    END AS ven_time,
+                    /* เวลาเริ่มจากช่วงเวลาที่กำหนดในชื่อเวร */
+                    REPLACE(SUBSTRING_INDEX(SUBSTRING_INDEX(SUBSTRING_INDEX(vn.dn, '(', -1), ')', 1), '-', 1), '.', ':') AS ven_time,
                     
-                    /* 🌟 2. (แถม) เผื่อส่งข้อความเวลาเต็มๆ ไปแสดงในหน้า Modal ค้นหาหรือปริ้นเอกสาร */
-                    CASE 
-                        WHEN vn.dn LIKE '%nightCourt%' THEN '16.30 - 20.00'
-                        WHEN vn.dn LIKE '%กลางคืน%' THEN '16.30 - 08.30'
-                        ELSE '08.30 - 16.30'
-                    END AS ven_time_text,
+                    /* ช่วงเวลาเต็มสำหรับรายละเอียดเวร */
+                    REPLACE(SUBSTRING_INDEX(SUBSTRING_INDEX(vn.dn, '(', -1), ')', 1), '-', ' - ') AS ven_time_text,
 
                     vc.id AS ven_com_id,
                     vc.ven_name_id,
@@ -79,21 +72,14 @@ class Ven {
 
                     vn.name AS duty_main,
                     vn.name_full AS duty_main_full,
+                    vn.dn AS shift_type,
+                    SUBSTRING_INDEX(SUBSTRING_INDEX(vn.dn, '(', -1), ')', 1) AS time_period,
                     
-                    /* 🌟 1. ใช้ CASE WHEN ในการกำหนดเวลาเริ่มต้น (สำหรับนำไปใช้เรียงลำดับและตัด .substring(0,5)) */
-                    CASE 
-                        WHEN vn.dn LIKE '%nightCourt%' THEN '16:30:00'
-                        WHEN vn.dn LIKE '%กลางคืน%' THEN '16:30:00'
-                        WHEN vn.dn LIKE '%กลางวัน%' THEN '08:30:00'
-                        ELSE '08:30:00' 
-                    END AS ven_time,
+                    /* เวลาเริ่มจากช่วงเวลาที่กำหนดในชื่อเวร */
+                    REPLACE(SUBSTRING_INDEX(SUBSTRING_INDEX(SUBSTRING_INDEX(vn.dn, '(', -1), ')', 1), '-', 1), '.', ':') AS ven_time,
                     
-                    /* 🌟 2. (แถม) เผื่อส่งข้อความเวลาเต็มๆ ไปแสดงในหน้า Modal ค้นหาหรือปริ้นเอกสาร */
-                    CASE 
-                        WHEN vn.dn LIKE '%nightCourt%' THEN '16.30 - 20.00'
-                        WHEN vn.dn LIKE '%กลางคืน%' THEN '16.30 - 08.30'
-                        ELSE '08.30 - 16.30'
-                    END AS ven_time_text,
+                    /* ช่วงเวลาเต็มสำหรับรายละเอียดเวร */
+                    REPLACE(SUBSTRING_INDEX(SUBSTRING_INDEX(vn.dn, '(', -1), ')', 1), '-', ' - ') AS ven_time_text,
 
                     vc.id AS ven_com_id,
                     vc.ven_name_id,

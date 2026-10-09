@@ -122,7 +122,7 @@
                    class="schedule-item mb-1 p-1 rounded-1 border d-flex justify-content-between align-items-start"
                    :draggable="isScheduleEditable(schedule)" 
                    @dragstart="startDragFromCalendar($event, schedule)"
-                   :class="{ 'clash-warning blink': isClashing(schedule) }"
+                   :class="{ 'clash-warning blink': isClashing(schedule) }" :title="warningText(schedule)"
                    :style="{ 
                      backgroundColor: schedule.color, 
                      color: getTextColor(schedule.color),
@@ -131,7 +131,7 @@
                    }">
                 
                 <div :title="`${schedule.user_name} (${schedule.ven_time.substring(0,5)} น.)`" style="max-width: 85%; line-height: 1.2; font-size: 0.7rem; cursor: pointer;" @click="showScheduleDetails(schedule)">
-                  <span class="fw-bold d-block text-truncate">{{ schedule.user_name }}</span>
+                  <span class="fw-bold d-block text-truncate">{{ schedule.user_name }} <i v-if="isClashing(schedule)" class="bi bi-exclamation-triangle-fill" :title="warningText(schedule)"></i></span>
                   
                   <span class="d-block text-truncate" style="opacity: 0.8; font-size: 0.6rem;">
                     <i class="bi bi-clock me-1"></i>{{ schedule.ven_time.substring(0,5) }} | {{ schedule.com_num }} - {{ schedule.sub_name }}
@@ -244,6 +244,7 @@ import { useRoute } from 'vue-router'
 import { ref, computed, onMounted } from 'vue'
 import api from '../services/api'
 import Swal from '../services/alerts'
+import { getShiftWarnings, warningLabels } from '../services/shiftWarnings.mjs'
 import { Modal } from 'bootstrap'
 
 const route = useRoute()
@@ -274,6 +275,9 @@ const subDuties = ref([])
 const activeSubDuty = ref('')
 const eligibleUsers = ref([])
 const allSchedules = ref([])
+const warningSchedules = ref([])
+const activePeriod = ref('')
+const check24h = ref(true)
 let autoAssignModalInstance = null
 const selectedStartUser = ref('')
 const peoplePerDay = ref(1)
@@ -318,18 +322,30 @@ const isScheduleEditable = (sch) => {
 
 // --- API & Logic ---
 const fetchCommands = async () => { commands.value = (await api.get('?route=admin/ven_com/list&action=list')).data || [] }
-const fetchMonthSchedules = async () => { allSchedules.value = (await api.get(`?route=admin/ven_schedule/list_month&month=${currentMonth.value}`)).data || [] }
+const fetchMonthSchedules = async () => {
+  const [year, month] = currentMonth.value.split('-').map(Number)
+  const months = [-1, 0, 1].map(offset => {
+    const date = new Date(Date.UTC(year, month - 1 + offset, 1))
+    return date.toISOString().slice(0, 7)
+  })
+  const results = await Promise.all(months.map(value =>
+    api.get(`?route=admin/ven_schedule/list_month&month=${value}`).then(response => response.data || [])
+  ))
+  allSchedules.value = results[1]
+  warningSchedules.value = results.flat()
+}
 
 const onMonthChange = () => {
-  activeCommand.value = ''; activeSubDuty.value = ''; subDuties.value = []; eligibleUsers.value = []
+  activeCommand.value = ''; activeSubDuty.value = ''; subDuties.value = []; eligibleUsers.value = []; activePeriod.value = ''
   fetchMonthSchedules()
 }
 
 const onCommandChange = async () => {
   if (!activeCommand.value) return
   const res = await api.get(`?route=admin/ven_schedule/ven_name_list`)
-  const main = res.data.data.find(v => v.id === activeCommand.value.ven_name_id)
+  const main = res.data.data.find(v => String(v.id) === String(activeCommand.value.ven_name_id))
   subDuties.value = main?.subs?.sort((a, b) => a.srt - b.srt) || []
+  activePeriod.value = main?.dn || ''
   activeSubDuty.value = ''; eligibleUsers.value = []
 }
 
@@ -346,34 +362,33 @@ const startDragFromCalendar = (e, sch) => {
   e.dataTransfer.setData('source', 'calendar'); e.dataTransfer.setData('scheduleID', sch.id)
 }
 
-// 🌟 ฟังก์ชันตรวจสอบ เวรเร่งรัด vs เวรกลางคืน// 🌟 ฟังก์ชันตรวจสอบ เวรเร่งรัด vs เวรกลางคืน (ละเว้นเวร 0 บาท)
-const checkFastTrackAndNightConflict = (userId, targetDay, targetShiftStr, targetPrice) => {
-  
-  // 1. ถ้าเวรที่กำลังจะจัดมีราคา 0 บาท ให้ปล่อยผ่านได้เลย ไม่ต้องเช็คเงื่อนไขใดๆ
-  if (targetPrice !== undefined && Number(targetPrice) === 0) return false;
+const warningForSchedule = (schedule, excludeIds = [], additional = []) =>
+  getShiftWarnings(schedule, [...warningSchedules.value, ...additional], {
+    check24h: check24h.value,
+    excludeIds
+  })
 
-  const userShiftsToday = allSchedules.value.filter(s => String(s.user_id) === String(userId) && parseInt(s.day) === parseInt(targetDay));
-  
-  const targetStr = (targetShiftStr || '').toLowerCase();
-  const isTargetFastTrack = targetStr.includes('เร่งรัด') || targetStr.includes('16:30-20:00');
-  const isTargetNight = targetStr.includes('กลางคืน') || targetStr.includes('16:30-08:30');
+const candidateSchedule = (date, userId, source = null) => ({
+  ...source,
+  date,
+  user_id: userId,
+  ven_name_id: source?.ven_name_id ?? activeCommand.value?.ven_name_id,
+  time_period: source?.time_period ?? activePeriod.value.match(/\(([^)]+)\)/)?.[1],
+  shift_type: source?.shift_type ?? activePeriod.value
+})
 
-  for (const shift of userShiftsToday) {
-    // 2. ถ้าเวรที่มีอยู่แล้วในระบบวันนั้นเป็นเวร 0 บาท ให้ข้ามการตรวจเวรนั้นไปเลย
-    if (Number(shift.price) === 0) continue;
-
-    const existingStr = `${shift.shift_type || ''} ${shift.sub_name || ''} ${shift.title || ''} ${shift.ven_time || ''}`.toLowerCase();
-
-    const existingIsFastTrack = existingStr.includes('เร่งรัด') || existingStr.includes('16:30-20:00');
-    const existingIsNight = existingStr.includes('กลางคืน') || existingStr.includes('16:30-08:30');
-
-    // ถ้าพบว่าชนกัน (เร่งรัดชนกลางคืน)
-    if ((isTargetFastTrack && existingIsNight) || (isTargetNight && existingIsFastTrack)) {
-      return true; 
-    }
-  }
-  return false;
-};
+const confirmScheduleWarnings = async (warnings, action) => {
+  if (!warnings.length) return true
+  const result = await Swal.fire({
+    title: 'แจ้งเตือนเวลาปฏิบัติงาน',
+    text: warnings.map(reason => warningLabels[reason]).join(' / '),
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: `รับทราบ ยืนยัน${action}`,
+    cancelButtonText: 'ยกเลิก'
+  })
+  return result.isConfirmed
+}
 
 const toggleCommandStatus = async (newStatus) => {
   const statusText = newStatus === 0 ? 'ยืนยันการจัดเวรและเปิดให้สมาชิกแลกเปลี่ยน?' : 'ปลดล็อคเพื่อกลับมาแก้ไขตารางเวร?';
@@ -415,32 +430,10 @@ const onDrop = async (e, day) => {
     const uID = e.dataTransfer.getData('userID')
     if (!uID || !activeCommand.value || !activeSubDuty.value) return
 
-    if (allSchedules.value.some(s => parseInt(s.day) === day && s.com_id === activeCommand.value.id && String(s.user_id) === String(uID))) {
-      return Swal.fire('รายชื่อซ้ำ!', 'บุคคลนี้มีเวรในคำสั่งนี้ของวันนี้แล้ว', 'warning')
-    }
+    const targetDate = `${currentMonth.value}-${String(day).padStart(2, '0')}`
+    const candidate = candidateSchedule(targetDate, uID)
+    if (!(await confirmScheduleWarnings(warningForSchedule(candidate), 'จัดเวร'))) return
 
-    // 🌟 ดักเช็คเงื่อนไข เวรเร่งรัด vs เวรกลางคืน
-    const shiftInfoStr = `${activeCommand.value.ven_name_title || ''} ${activeSubDuty.value.name || ''}`;
-    
-    // ดึงราคาของเวรที่กำลังจะจัด (อ้างอิงจาก activeSubDuty หรือ activeCommand)
-    const newPrice = activeSubDuty.value?.price !== undefined ? activeSubDuty.value.price : activeCommand.value?.price;
-    
-    if (checkFastTrackAndNightConflict(uID, day, shiftInfoStr)) {
-      const confirm = await Swal.fire({
-        title: 'จัดเวรชนกัน!',
-        text: 'เจ้าหน้าที่มี "เวรเร่งรัด" และ "เวรกลางคืน" ในวันเดียวกัน ต้องการจัดเวรนี้ต่อไปหรือไม่?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#f39c12',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'ยืนยันจัดเวร',
-        cancelButtonText: 'ยกเลิก'
-      });
-      // ถ้าแอดมินกดยกเลิก ให้จบการทำงานตรงนี้เลย (ไม่บันทึก)
-      if (!confirm.isConfirmed) return;
-    }
-
-    // บันทึกเมื่อไม่มีปัญหา หรือแอดมินกดยืนยันแล้ว
     await api.post('?route=admin/ven_schedule/add', { date: `${currentMonth.value}-${String(day).padStart(2,'0')}`, com_id: activeCommand.value.id, sub_id: activeSubDuty.value.id, user_id: uID })
     fetchMonthSchedules()
   } 
@@ -464,25 +457,9 @@ const onDrop = async (e, day) => {
       }
     }
 
-    if (allSchedules.value.some(s => parseInt(s.day) === day && s.com_id === old.com_id && String(s.user_id) === String(old.user_id))) {
-      return Swal.fire('ย้ายไม่ได้!', 'มีชื่อบุคคลนี้ในวันนั้นอยู่แล้ว', 'warning')
-    }
-
-    // 🌟 ดักเช็คเงื่อนไข เวรเร่งรัด vs เวรกลางคืน (กรณีลากย้ายวัน)
-    const oldShiftInfoStr = `${old.shift_type || ''} ${old.sub_name || ''} ${old.title || ''}`;
-    if (checkFastTrackAndNightConflict(old.user_id, day, oldShiftInfoStr, old.price)) {
-      const confirm = await Swal.fire({
-        title: 'ย้ายเวรชนกัน!',
-        text: 'เจ้าหน้าที่มี "เวรเร่งรัด" และ "เวรกลางคืน" ในวันเดียวกัน ต้องการย้ายมาวันนี้ต่อไปหรือไม่?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#f39c12',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'ยืนยันย้ายเวร',
-        cancelButtonText: 'ยกเลิก'
-      });
-      if (!confirm.isConfirmed) return;
-    }
+    const targetDate = `${currentMonth.value}-${String(day).padStart(2, '0')}`
+    const candidate = candidateSchedule(targetDate, old.user_id, old)
+    if (!(await confirmScheduleWarnings(warningForSchedule(candidate, [old.id]), 'ย้ายเวร'))) return
 
     await api.post('?route=admin/ven_schedule/remove', { id: old.id })
     await api.post('?route=admin/ven_schedule/add', { date: `${currentMonth.value}-${String(day).padStart(2,'0')}`, com_id: old.com_id, sub_id: old.sub_id, user_id: old.user_id })
@@ -553,6 +530,15 @@ const runAutoAssign = async () => {
   })
   
   if (payloads.length) {
+    const planned = payloads.map((payload, index) => ({
+      ...candidateSchedule(payload.date, payload.user_id),
+      id: `planned-${index}`
+    }))
+    const warnings = [...new Set(planned.flatMap(candidate =>
+      warningForSchedule(candidate, [], planned.filter(other => other !== candidate))
+    ))]
+    if (!(await confirmScheduleWarnings(warnings, 'จัดเวรอัตโนมัติ'))) return
+
     Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() })
     for (const payload of payloads) { await api.post('?route=admin/ven_schedule/add', payload) }
     autoAssignModalInstance.hide()
@@ -565,26 +551,10 @@ const runAutoAssign = async () => {
   }
 }
 
-const isClashing = (sch) => {
-  // 1. ถ้าเวรเป้าหมายนี้ price = 0 ให้ข้ามการตรวจสอบไปเลย
-  if (Number(sch.price) === 0) { return false; }
+const isClashing = (sch) => warningForSchedule(sch).length > 0
 
-  // 2. 🌟 ดึงเฉพาะเวรของ User นี้ "และต้องไม่ใช่เวรที่ price = 0" มาตรวจสอบ
-  const userShifts = allSchedules.value.filter(s => s.user_id === sch.user_id && Number(s.price) !== 0);
-  
-  const sameDay = userShifts.filter(s => parseInt(s.day) === parseInt(sch.day));
-  
-  // เช็คเวรในวันเดียวกัน (มีทั้งกลางวันและกลางคืน)
-  if (sameDay.length > 1 && sameDay.some(s => s.shift_type.includes('กลางวัน')) && sameDay.some(s => s.shift_type.includes('กลางคืน'))) return true;
-  
-  // เช็คเวรข้ามวัน (กลางคืนวันนี้ ต่อด้วย กลางวันพรุ่งนี้)
-  if (sch.shift_type.includes('กลางคืน') && userShifts.find(s => parseInt(s.day) === parseInt(sch.day)+1 && s.shift_type.includes('กลางวัน'))) return true;
-  
-  // เช็คเวรข้ามวันย้อนหลัง (กลางวันวันนี้ ต่อจาก กลางคืนเมื่อวาน)
-  if (sch.shift_type.includes('กลางวัน') && userShifts.find(s => parseInt(s.day) === parseInt(sch.day)-1 && s.shift_type.includes('กลางคืน'))) return true;
-  
-  return false;
-}
+const warningText = (sch) =>
+  warningForSchedule(sch).map(reason => warningLabels[reason]).join(' / ')
 
 const getThaiDayShort = (day) => {
   const [y, m] = currentMonth.value.split('-')
@@ -625,9 +595,11 @@ const showScheduleDetails = (sch) => {
           <i class="bi bi-clock-fill fs-4 text-warning me-3"></i>
           <div style="line-height: 1.2;">
             <small class="text-muted d-block mb-1">เวลาปฏิบัติงาน</small>
-            <strong class="text-dark">${sch.ven_time || '-'} น.</strong>
+            <strong class="text-dark">${sch.time_period || sch.ven_time || '-'} น.</strong>
           </div>
         </div>
+
+        ${warningText(sch) ? `<div class="alert alert-warning small">${warningText(sch)}</div>` : ''}
         
         <div class="d-flex align-items-center">
           <i class="bi bi-cash-coin fs-4 text-success me-3"></i>
@@ -719,6 +691,7 @@ const syncToGoogle = async () => {
 // 🌟 แก้ไข onMounted ให้ตั้งค่า Parameter ครบถ้วน
 onMounted(async () => { 
   await fetchCommands(); 
+  check24h.value = (await api.get('?route=system_settings')).data?.check_24h_consecutive == 1
   
   autoAssignModalInstance = new Modal(document.getElementById('autoAssignModal'))
   

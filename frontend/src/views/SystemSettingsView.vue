@@ -35,7 +35,7 @@
                 <div class="setting-item d-flex justify-content-between align-items-center p-3 mb-3 border rounded-3 bg-white transition-hover">
                   <div>
                     <h6 class="fw-bold mb-1">แจ้งเตือนการเข้าเวรติดต่อกัน 24 ชม.</h6>
-                    <p class="text-muted small mb-0">หากเปิด: ระบบจะแจ้งเตือนเมื่อพบการอยู่เวรเช้า-ดึกติดกัน</p>
+                    <p class="text-muted small mb-0">หากเปิด: ระบบจะแจ้งเตือนเมื่อช่วงเวรต่อเนื่องกันอย่างน้อย 24 ชั่วโมง ทั้งวันเดียวกันและข้ามวัน</p>
                   </div>
                   <div class="form-check form-switch">
                     <input 
