@@ -236,5 +236,19 @@ CREATE TABLE `ven_user` (
 INSERT INTO `agency_settings` (`id`, `agency_name`, `directors`, `admins`, `finances`) VALUES (1, '', '[]', '[]', '[]');
 INSERT INTO `google_service_settings` (`setting_key`, `setting_value`) VALUES ('google_calendar_id', ''), ('google_service_account', '');
 INSERT INTO `system_settings` (`id`, `user_options`) VALUES (1, '{"prefixes":[],"positions":[],"departments":[]}');
+INSERT INTO `telegram_notify_times` (`send_time`, `status`, `notify_day`) VALUES ('06:00:00', 1, 0), ('19:00:00', 1, 1);
 INSERT INTO `telegram_settings` (`id`, `bot_token`, `chat_id`) VALUES (1, '', '');
 INSERT INTO `ven_time` (`name_th`, `time_period`, `srt`) VALUES ('กลางวัน', '08.30-16.30', 1), ('กลางคืน', '16.30-08.30', 2),('nightCourt', '16.30-20.00', 3);
+
+-- Safe to run on an existing XAMPP database. Do not import database.sql over live data.
+CREATE TABLE IF NOT EXISTS `telegram_delivery_log` (
+  `send_date` date NOT NULL,
+  `send_time` time NOT NULL,
+  `notify_day` tinyint NOT NULL,
+  `target_date` date NOT NULL,
+  `status` varchar(16) NOT NULL DEFAULT 'started',
+  `message_count` int NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `finished_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`send_date`, `send_time`, `notify_day`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

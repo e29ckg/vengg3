@@ -79,3 +79,32 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\deploy-xampp.ps1
 - การ deploy นี้ **ไม่รัน database migration**; หากรุ่นใหม่เปลี่ยน schema ต้องมีแผน migration/rollback แยก และทดสอบกับสำเนาฐานก่อน
 - GitHub เก็บโค้ดและคู่มือ ไม่ใช่ที่เก็บฐานข้อมูลจริงหรือรหัสผ่าน เครื่องที่คัดลอกแอปจากสคริปต์อาจไม่มี `.git` จึงไม่ควรสมมติว่าเมนูอัปเดตผ่าน Git ในแอปใช้ได้กับการติดตั้งแบบนี้
 - ให้ผู้ดูแลตรวจงานด้านความปลอดภัยที่ยังค้าง เช่น การเปลี่ยน credentials เดิม, การใช้ runtime ที่ยังได้รับการสนับสนุน, HTTPS และการยืนยัน restore
+
+## 6. แจ้งเตือนเวรผ่าน Telegram ด้วย Windows Task Scheduler
+
+1. ตั้งค่า Bot Token, Chat ID และเวลาแจ้งเตือนในหน้า **ตั้งค่าระบบ** ของเว็บ เก็บ token เฉพาะในฐานข้อมูลของเครื่องนี้
+2. สำรองฐานข้อมูล แล้วรัน `deploy/migrations/20261009_telegram_delivery_log.sql` ด้วยบัญชี MySQL ที่มีสิทธิ์ `CREATE` เพียงครั้งเดียว ไฟล์นี้เพิ่มตารางบันทึกการส่งและไม่ลบข้อมูลเดิม ฐานที่ติดตั้งใหม่จาก `database.sql` มีตารางนี้อยู่แล้ว
+3. ทดสอบสองรอบตัวอย่างโดยไม่ส่งออก Telegram: 06:00 แจ้งเวรวันนี้ (`notify_day=0`) และ 19:00 แจ้งเวรวันพรุ่งนี้ (`notify_day=1`)
+
+   ```powershell
+   C:\xampp\php\php.exe -f C:\xampp\htdocs\vengg3\backend\cron\daily_notify.php -- --dry-run --at=2026-10-09T06:00 --preview
+   C:\xampp\php\php.exe -f C:\xampp\htdocs\vengg3\backend\cron\daily_notify.php -- --dry-run --at=2026-10-09T19:00 --preview
+   ```
+
+   ผลลัพธ์ควรมี `matched` และข้อความเวรที่ยืนยันคำสั่งแล้ว (`ven_com.status = 1`) หาก `matched` เป็น 0 ให้ตรวจเวลาในตาราง `telegram_notify_times` โหมดนี้ไม่เขียนบันทึกการส่ง
+4. ทดสอบส่งข้อความสั้นหนึ่งครั้งด้วย `--send-test` แล้วตรวจในห้อง Telegram:
+
+   ```powershell
+   C:\xampp\php\php.exe -f C:\xampp\htdocs\vengg3\backend\cron\daily_notify.php -- --send-test
+   ```
+
+5. เปิด PowerShell แบบ Administrator แล้วลงทะเบียนงานให้ทำทุกนาทีโดยไม่ต้องมีผู้ใช้ล็อกอิน:
+
+   ```powershell
+   powershell -NoProfile -ExecutionPolicy Bypass -File C:\xampp\htdocs\vengg3\deploy\register-telegram-task.ps1 -Enable
+   Get-ScheduledTask -TaskName 'Vengg3 Telegram Daily Schedule' | Select-Object TaskName,State
+   ```
+
+งานใช้บัญชี `NETWORK SERVICE` และ PHP CLI ของ XAMPP ตรวจว่าบัญชีนี้อ่านไฟล์แอป เชื่อม MariaDB และเข้าถึง `api.telegram.org` ได้ การส่งประจำวันทำงานเฉพาะนาทีที่เปิดใช้งานใน `telegram_notify_times`; ถ้าไม่มีเวรที่ยืนยันจะไม่ส่ง ตาราง `telegram_delivery_log` ป้องกันการส่งซ้ำสำหรับวัน เวลา และวันเป้าหมายเดียวกัน หากการส่งล้มเหลวหรือผลเครือข่ายไม่ชัดเจน ระบบบันทึก `failed` และไม่ลองซ้ำอัตโนมัติเพื่อหลีกเลี่ยงข้อความซ้ำ ตรวจ `Get-ScheduledTaskInfo` และตารางบันทึก แล้วแก้ปัญหาเป็นรายกรณี
+
+ปิดงานชั่วคราวด้วย `Disable-ScheduledTask -TaskName 'Vengg3 Telegram Daily Schedule'` และเปิดอีกครั้งด้วย `Enable-ScheduledTask -TaskName 'Vengg3 Telegram Daily Schedule'` งานที่ติดตั้งมีระยะทำซ้ำ 10 ปี; ต่ออายุด้วยการรันสคริปต์ลงทะเบียนอีกครั้งก่อนครบกำหนด

@@ -59,11 +59,13 @@ class TelegramService {
         
         $response = curl_exec($ch);
         $error = curl_error($ch);
+        $curlCode = curl_errno($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        if ($error || $httpCode != 200) {
-            error_log("Telegram request failed; HTTP status: " . $httpCode);
+        $payload = is_string($response) ? json_decode($response, true) : null;
+        if ($error || $httpCode != 200 || !is_array($payload) || ($payload['ok'] ?? false) !== true) {
+            error_log("Telegram request failed; HTTP status: " . $httpCode . "; cURL code: " . $curlCode);
             return false;
         }
         
