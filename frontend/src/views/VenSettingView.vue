@@ -8,6 +8,35 @@
         </button>
       </div>
 
+      <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-body p-4">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h5 class="fw-bold mb-0"><i class="bi bi-clock me-2"></i>ช่วงเวลาเวร</h5>
+            <button class="btn btn-outline-primary btn-sm fw-bold" @click="openTimeModal()">
+              <i class="bi bi-plus-circle me-1"></i>เพิ่มช่วงเวลา
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead><tr><th>ลำดับ</th><th>ชื่อช่วงเวลา</th><th>เวลา</th><th>การใช้งาน</th><th class="text-end">จัดการ</th></tr></thead>
+              <tbody>
+                <tr v-for="time in timeOptions" :key="time.id">
+                  <td>{{ time.srt }}</td>
+                  <td>{{ time.name_th }}</td>
+                  <td>{{ time.time_period }}</td>
+                  <td>{{ Number(time.used_count) > 0 ? `ใช้ในชื่อเวร ${time.used_count} รายการ` : 'ยังไม่ถูกใช้' }}</td>
+                  <td class="text-end text-nowrap">
+                    <button class="btn btn-outline-primary btn-sm me-2" @click="openTimeModal(time)">แก้ไข</button>
+                    <button class="btn btn-outline-danger btn-sm" :disabled="Number(time.used_count) > 0" :title="Number(time.used_count) > 0 ? 'ช่วงเวลานี้ถูกใช้ในชื่อเวรแล้ว' : 'ลบช่วงเวลา'" @click="deleteTime(time)">ลบ</button>
+                  </td>
+                </tr>
+                <tr v-if="timeOptions.length === 0"><td colspan="5" class="text-center text-muted py-3">ยังไม่มีช่วงเวลาเวร</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <div class="row row-cols-1 row-cols-lg-2 g-4">
         <div class="col" v-for="(ven, index) in venData" :key="ven.id">
           <div class="card h-100 shadow-sm border-0 rounded-4">
@@ -72,6 +101,39 @@
             </div>
 
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="venTimeModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+          <div class="modal-header bg-primary text-white border-0 rounded-top-4">
+            <h5 class="modal-title fw-bold">{{ isEditingTime ? 'แก้ไขช่วงเวลาเวร' : 'เพิ่มช่วงเวลาเวร' }}</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="ปิด"></button>
+          </div>
+          <form @submit.prevent="saveTime">
+            <div class="modal-body p-4">
+              <div class="mb-3">
+                <label for="venTimeName" class="form-label fw-semibold">ชื่อช่วงเวลา</label>
+                <input id="venTimeName" v-model.trim="timeForm.name_th" class="form-control" type="text" maxlength="50" required :disabled="selectedTimeUsedCount > 0" placeholder="เช่น กลางวัน">
+              </div>
+              <div class="mb-3">
+                <label for="venTimePeriod" class="form-label fw-semibold">ช่วงเวลา</label>
+                <input id="venTimePeriod" v-model.trim="timeForm.time_period" class="form-control" type="text" required :disabled="selectedTimeUsedCount > 0" placeholder="08.30-16.30">
+                <div class="form-text">ใช้รูปแบบ ชั่วโมง.นาที-ชั่วโมง.นาที เช่น 16.30-08.30</div>
+              </div>
+              <div class="mb-3">
+                <label for="venTimeSort" class="form-label fw-semibold">ลำดับการแสดงผล</label>
+                <input id="venTimeSort" v-model.number="timeForm.srt" class="form-control" type="number" min="1" max="9999" required>
+              </div>
+              <p v-if="selectedTimeUsedCount > 0" class="small text-muted mb-0">ช่วงเวลานี้ถูกใช้ในชื่อเวรแล้ว จึงเปลี่ยนได้เฉพาะลำดับ</p>
+            </div>
+            <div class="modal-footer border-0">
+              <button type="button" class="btn btn-light" data-bs-dismiss="modal">ยกเลิก</button>
+              <button type="submit" class="btn btn-primary" :disabled="isSavingTime">{{ isSavingTime ? 'กำลังบันทึก...' : 'บันทึก' }}</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -148,10 +210,10 @@
                 </div>
                 
                 <div class="col-md-4 mb-3">
-                  <label class="form-label small fw-bold">กลางวัน/กลางคืน</label>
+                  <label class="form-label small fw-bold">ช่วงเวลาเวร</label>
                   <select class="form-select" v-model="mainForm.dn" required>
                     <option value="" disabled>-- เลือกช่วงเวลา --</option>
-                    <option v-for="t in timeOptions" :key="t.id" :value="t.name_th + '(' + t.time_period + ')'">
+                    <option v-for="t in timeOptions" :key="t.id" :value="timeLabel(t)">
                       {{ t.name_th }}({{ t.time_period }})
                     </option>
                   </select>
@@ -238,6 +300,65 @@ import { Modal } from 'bootstrap'
 // ==========================================
 const timeOptions = ref([])
 const venData = ref([])
+const isEditingTime = ref(false)
+const isSavingTime = ref(false)
+const selectedTimeUsedCount = ref(0)
+const timeForm = ref({ id: null, name_th: '', time_period: '', srt: 1 })
+let timeModalInstance = null
+
+const timeLabel = time => `${time.name_th}(${time.time_period})`
+
+const fetchTimeOptions = async () => {
+  try {
+    const response = await api.get('?route=admin/ven_time')
+    timeOptions.value = Array.isArray(response.data) ? response.data : []
+  } catch (error) {
+    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดช่วงเวลาเวรได้', 'error')
+  }
+}
+
+const openTimeModal = (time = null) => {
+  isEditingTime.value = Boolean(time)
+  selectedTimeUsedCount.value = Number(time?.used_count || 0)
+  timeForm.value = time
+    ? { id: Number(time.id), name_th: time.name_th, time_period: time.time_period, srt: Number(time.srt) }
+    : { id: null, name_th: '', time_period: '', srt: Math.max(0, ...timeOptions.value.map(item => Number(item.srt) || 0)) + 1 }
+  timeModalInstance.show()
+}
+
+const saveTime = async () => {
+  isSavingTime.value = true
+  try {
+    await api.post('?route=admin/ven_time', timeForm.value)
+    timeModalInstance.hide()
+    await fetchTimeOptions()
+    Swal.fire('สำเร็จ', 'บันทึกช่วงเวลาเวรแล้ว', 'success')
+  } catch (error) {
+    Swal.fire('ข้อผิดพลาด', error.response?.data?.error || 'ไม่สามารถบันทึกช่วงเวลาเวรได้', 'error')
+  } finally {
+    isSavingTime.value = false
+  }
+}
+
+const deleteTime = async time => {
+  if (Number(time.used_count) > 0) return
+  const confirmation = await Swal.fire({
+    title: 'ลบช่วงเวลาเวร?',
+    text: `${time.name_th} (${time.time_period})`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'ลบ',
+    cancelButtonText: 'ยกเลิก'
+  })
+  if (!confirmation.isConfirmed) return
+  try {
+    await api.delete(`?route=admin/ven_time&id=${encodeURIComponent(time.id)}`)
+    await fetchTimeOptions()
+    Swal.fire('สำเร็จ', 'ลบช่วงเวลาเวรแล้ว', 'success')
+  } catch (error) {
+    Swal.fire('ข้อผิดพลาด', error.response?.data?.error || 'ไม่สามารถลบช่วงเวลาเวรได้', 'error')
+  }
+}
 
 const fetchVenFullData = async () => {
   try {
@@ -340,11 +461,11 @@ const getTextColor = (bgColor) => {
 // ==========================================
 let mainModalInstance = null
 const isEditingMain = ref(false)
-const mainForm = ref({ id: '', srt: 1, name: '', dn: 'กลางวัน(08.30-16.30)', name_full: '' })
+const mainForm = ref({ id: '', srt: 1, name: '', dn: '', name_full: '' })
 
 const addMainVen = () => {
   isEditingMain.value = false
-  mainForm.value = { id: '', srt: venData.value.length + 1, name: '', dn: 'กลางวัน(08.30-16.30)', name_full: '' }
+  mainForm.value = { id: '', srt: venData.value.length + 1, name: '', dn: timeOptions.value[0] ? timeLabel(timeOptions.value[0]) : '', name_full: '' }
   mainModalInstance.show()
 }
 
@@ -359,7 +480,7 @@ const editMainVen = async (ven) => {
         id: data.id, 
         srt: data.srt || 0, 
         name: data.name, 
-        dn: data.dn || 'กลางวัน(08.30-16.30)',
+        dn: data.dn || (timeOptions.value[0] ? timeLabel(timeOptions.value[0]) : ''),
         name_full: data.name_full || '' 
       };
       Swal.close();
@@ -527,16 +648,6 @@ const moveUserDown = async (index) => {
   }
 }
 
-// 🌟 ดึงข้อมูลเวลา
-const fetchTimeOptions = async () => {
-  try {
-    const response = await api.get('?route=admin/ven_time')
-    timeOptions.value = response.data
-  } catch (error) {
-    console.error('ไม่สามารถดึงข้อมูลเวลาเวรได้', error)
-  }
-}
-
 // ==========================================
 // 🌟 Initialize เมื่อหน้าเว็บโหลดเสร็จ
 // ==========================================
@@ -545,6 +656,7 @@ onMounted(() => {
   fetchAllUsers() 
   fetchTimeOptions()
   subModalInstance = new Modal(document.getElementById('subVenModal'))
+  timeModalInstance = new Modal(document.getElementById('venTimeModal'))
   mainModalInstance = new Modal(document.getElementById('mainVenModal'))
   manageUsersModalInstance = new Modal(document.getElementById('manageVenUsersModal'))
 })

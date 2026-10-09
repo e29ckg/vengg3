@@ -47,6 +47,7 @@ final class ApiSecurity
         if (!in_array($route, array_merge($read, $write), true)) return;
         $methods = in_array($route, $read, true) ? ['GET'] : ['POST'];
         if (in_array($route, ['admin/system_settings','admin/agency_settings'], true)) $methods = ['GET','POST'];
+        if ($route === 'admin/ven_time') $methods = ['GET','POST','DELETE'];
         if ($route === 'user/profile/update') $methods = ['POST','PUT'];
         if (in_array($route, ['admin/ven_com/delete','admin/templates/reset'], true)) $methods = ['DELETE'];
         if ($route === 'admin/options/delete') $methods = ['POST','DELETE'];

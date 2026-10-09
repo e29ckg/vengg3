@@ -518,14 +518,6 @@ class SettingModel {
         }
     }
 
-    // ดึงข้อมูลช่วงเวลาเวรทั้งหมด
-    public function getVenTimes() {
-        $query = "SELECT * FROM ven_time ORDER BY srt ASC";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-    
     // ดึงรายการขอเปลี่ยนเวรทั้งหมด
     public function getAllChangeRequests() {
         $query = "SELECT vc.id, vc.change_no, vc.status, vc.created_at, 

@@ -221,9 +221,10 @@ switch ($route) {
     
     case 'admin/ven_time':
         AuthMiddleware::checkDirector($connection);
-        $settingModel = new SettingModel($connection);
-        echo json_encode($settingModel->getVenTimes());
-        break;    
+        require_once __DIR__ . '/../src/Models/VenTimeModel.php';
+        require_once __DIR__ . '/../src/Controllers/VenTimeController.php';
+        (new VenTimeController(new VenTimeModel($connection)))->handle();
+        break;
 
     // ==========================================
     // จัดการคำสั่งเวร (Ven Command)
