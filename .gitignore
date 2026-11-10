@@ -90,3 +90,13 @@ backend/storage/document-templates/
 backend/storage/security/
 backend/src/Config/credential-*
 backend/src/config/db-setup-*
+deploy/legacy-migration/*.local.php
+deploy/legacy-migration/*report*.json
+backend/storage/legacy-migration/
+backend/storage/command-status-fix/
+backend/storage/home-performance/
+
+# Private operational reports from local production migration and profiling.
+/HOME_PERFORMANCE_*.md
+/MIGRATION_RESULT_*.md
+/MIGRATION_VENGG_TO_VENGG_DB.md

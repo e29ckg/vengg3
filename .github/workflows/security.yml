@@ -22,6 +22,8 @@ jobs:
       - run: composer audit --working-dir=backend --locked
       - run: find backend/src backend/public backend/bin backend/cron deploy -name '*.php' -print0 | xargs -0 -n1 php -l
       - run: php backend/vendor/phpunit/phpunit/phpunit -c backend/phpunit.xml
+      - run: php backend/tests/legacy-migration-test.php
+      - run: php -d disable_functions=curl_init backend/tests/ven-command-status-test.php
   frontend:
     runs-on: ubuntu-latest
     steps:
@@ -31,7 +33,7 @@ jobs:
           node-version: '22'
       - run: npm ci --prefix frontend
       - run: npm audit --prefix frontend --audit-level=moderate
-      - run: npm run --prefix frontend test:security
+      - run: npm test --prefix frontend
       - run: npm run --prefix frontend build -- --base=/vengg3/
         env:
           VITE_API_BASE_URL: /vengg3/api/

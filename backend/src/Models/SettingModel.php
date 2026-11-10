@@ -850,6 +850,7 @@ class SettingModel {
                          p2.position AS user2_dep,
                          /* 🌟 1. ใช้ CASE WHEN ในการกำหนดเวลาเริ่มต้น (สำหรับนำไปใช้เรียงลำดับและตัด .substring(0,5)) */
                     CASE 
+                        WHEN vn.dn LIKE '%(%)%' THEN CONCAT(REPLACE(SUBSTRING_INDEX(SUBSTRING_INDEX(SUBSTRING_INDEX(vn.dn, '(', -1), ')', 1), '-', 1), '.', ':'), ':00')
                         WHEN vn.dn LIKE '%nightCourt%' THEN '16:30:00'
                         WHEN vn.dn LIKE '%กลางคืน%' THEN '16:30:00'
                         WHEN vn.dn LIKE '%กลางวัน%' THEN '08:30:00'
@@ -858,6 +859,7 @@ class SettingModel {
                     
                     /* 🌟 2. (แถม) เผื่อส่งข้อความเวลาเต็มๆ ไปแสดงในหน้า Modal ค้นหาหรือปริ้นเอกสาร */
                     CASE 
+                        WHEN vn.dn LIKE '%(%)%' THEN REPLACE(SUBSTRING_INDEX(SUBSTRING_INDEX(vn.dn, '(', -1), ')', 1), '-', ' - ')
                         WHEN vn.dn LIKE '%nightCourt%' THEN '16.30 - 20.00'
                         WHEN vn.dn LIKE '%กลางคืน%' THEN '16.30 - 08.30'
                         ELSE '08.30 - 16.30'

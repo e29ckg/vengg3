@@ -39,6 +39,11 @@ class TelegramService {
             }
         }
 
+        if (!function_exists('curl_init')) {
+            error_log('Telegram transport unavailable: PHP cURL extension is not loaded');
+            return false;
+        }
+
         // 3. เตรียมส่ง API ไปที่ Telegram
         $url = "https://api.telegram.org/bot" . $this->settings['bot_token'] . "/sendMessage";
         

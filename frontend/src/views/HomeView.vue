@@ -273,11 +273,11 @@
 
 <script setup>
 // home view
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { exportShiftChangeToWord, exportDutyReportToWord } from '../services/wordService';
 import Swal from '../services/alerts'
-import { getShiftWarnings, shiftInterval, warningLabels } from '../services/shiftWarnings.mjs'
+import { shiftInterval, warningLabels } from '../services/shiftWarnings.mjs'
+import { createCalendarWarningLookup, groupCalendarDays, loadCalendarMonths } from '../services/calendarData.mjs'
 import { Modal } from 'bootstrap'
 import api from '../services/api'
 
@@ -374,7 +374,6 @@ const fetchUserInfo = async () => {
       currentUsername.value = response.data.username
       userRole.value = response.data.role
       
-      await fetchSystemSettings() // 🌟 ดึงข้อมูล Settings หลังจาก Login เสร็จ
       
       localStorage.setItem('user_id', response.data.user_id)
       localStorage.setItem('role', response.data.role)
@@ -429,11 +428,10 @@ const isToday = (day) => {
   return dateStr === todayStr
 }
 
+const schedulesByDate = computed(() => groupCalendarDays(allSchedules.value))
 const getSchedulesForDay = (day) => {
-  if (!Array.isArray(allSchedules.value)) return [] 
-  
   const dateStr = `${currentMonth.value}-${String(day).padStart(2, '0')}`
-  return allSchedules.value.filter(s => s.date === dateStr)
+  return schedulesByDate.value.get(dateStr) || []
 }
 
 const updateCurrentMonth = () => {
@@ -462,26 +460,25 @@ const formatMonthThai = (ym) => {
   return `${thaiMonths[parseInt(m)-1]} ${parseInt(y)+543}`
 }
 
+let calendarLoadId = 0
+let calendarAbort = null
 const fetchVenData = async () => {
+  const loadId = ++calendarLoadId
+  calendarAbort?.abort()
+  calendarAbort = new AbortController()
+  const signal = calendarAbort.signal
   isLoading.value = true
-  const token = localStorage.getItem('token')
   try {
-    const response = await api.get(`?route=ven/list&monthYear=${currentMonth.value}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    
-    allSchedules.value = Array.isArray(response.data) ? response.data : []
-    const [year, month] = currentMonth.value.split('-').map(Number)
-    const adjacent = [-1, 1].map(offset => {
-      const date = new Date(Date.UTC(year, month - 1 + offset, 1))
-      return date.toISOString().slice(0, 7)
-    })
-    const nearby = await Promise.all(adjacent.map(month =>
-      api.get(`?route=ven/list&monthYear=${month}`).then(result => result.data)
-    ))
-    warningSchedules.value = [...allSchedules.value, ...nearby.flat()]
+    const data = await loadCalendarMonths(month =>
+      api.get(`?route=ven/list&monthYear=${month}`, { signal }).then(result => Array.isArray(result.data) ? result.data : []),
+      currentMonth.value
+    )
+    if (loadId !== calendarLoadId) return
+    allSchedules.value = data.schedules
+    warningSchedules.value = data.context
     
   } catch (error) {
+    if (loadId !== calendarLoadId || signal.aborted) return
     console.error("Error fetching calendar:", error)
     allSchedules.value = [] 
     warningSchedules.value = []
@@ -491,9 +488,10 @@ const fetchVenData = async () => {
       handleLogout()
     }
   } finally {
-    isLoading.value = false
+    if (loadId === calendarLoadId) isLoading.value = false
   }
 }
+onUnmounted(() => { calendarLoadId++; calendarAbort?.abort() })
 
 const selectedVen = ref(null)
 let detailModalInstance = null 
@@ -577,11 +575,10 @@ const loadRecipients = async () => {
 };
 
 
-const warningsForShift = (shift, excludeIds = []) =>
-  getShiftWarnings(shift, warningSchedules.value, {
-    check24h: systemSettings.value.check_24h_consecutive,
-    excludeIds
-  })
+const warningLookup = computed(() => createCalendarWarningLookup(warningSchedules.value, {
+  check24h: systemSettings.value.check_24h_consecutive
+}))
+const warningsForShift = (shift, excludeIds = []) => warningLookup.value(shift, excludeIds)
 
 const hasDuplicateShift = (shift) =>
   warningsForShift(shift).some(reason => reason === 'sameShift' || reason === 'sameStart')
@@ -828,6 +825,7 @@ const downloadWordForm = async (historyItem) => {
       didOpen: () => Swal.showLoading()
     });
 
+    const [{ exportShiftChangeToWord }] = await Promise.all([import('../services/wordService'), fetchAgencyConfig()]);
     const director = getActiveSigner('directors');
     const admins = getActiveSigner('admins');
     const venInfo = {
@@ -871,6 +869,7 @@ const downloadDutyReport = async (venDetail) => {
       didOpen: () => Swal.showLoading()
     });
 
+    const [{ exportDutyReportToWord }] = await Promise.all([import('../services/wordService'), fetchAgencyConfig()]);
     const director = getActiveSigner('directors');
     const admins = getActiveSigner('admins');
     const venInfo = {
@@ -959,11 +958,8 @@ const fetchAgencyConfig = async () => {
 }
 
 onMounted(async() => {
-  fetchLatestUpdate();
-  fetchVenData()
-  await fetchAgencyConfig()
-  await fetchUserInfo()
   detailModalInstance = new Modal(document.getElementById('venDetailModal'))
+  await Promise.allSettled([fetchLatestUpdate(), fetchVenData(), fetchUserInfo(), fetchSystemSettings()])
 })
 </script>
 
